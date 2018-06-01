@@ -32,6 +32,7 @@ ENV CKAN_STORAGE_PATH=/var/lib/ckan
 
 # Build-time variables specified by docker-compose.yml / .env
 ARG CKAN_SITE_URL
+ARG CKAN_ADMIN_PASSWORD
 
 # Create ckan user
 RUN useradd -r -u 900 -m -c "ckan account" -d $CKAN_HOME -s /bin/false ckan
@@ -57,13 +58,11 @@ RUN ckan-pip install -U pip && \
 RUN mkdir /ckan_devel
 RUN chmod -R a+w /ckan_devel
 VOLUME /ckan_devel
-#RUN mkdir -p /tull
-#RUN chmod a+w /tull
-#RUN chown -R ckan:ckan /ckan_devel
 
 ENTRYPOINT ["/ckan-entrypoint.sh"]
 
 USER ckan
 EXPOSE 5000
 
-CMD ["ckan-paster","serve","/etc/ckan/production.ini"]
+CMD tail -f /dev/null
+#CMD ["ckan-paster","serve","/etc/ckan/production.ini"]

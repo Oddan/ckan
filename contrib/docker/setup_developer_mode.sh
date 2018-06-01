@@ -13,5 +13,10 @@ ckan-pip install -e $CKAN_VENV/src/ckan/
 rm $CKAN_CONFIG/who.ini
 ln -s $CKAN_VENV/src/ckan/ckan/config/who.ini $CKAN_CONFIG/who.ini
 
+# modifying configuration file
+sed 's/^debug =.*$/debug = true/' /etc/ckan/production.ini | \
+sed 's/^ckan.site_url =.*$/ckan.site_url = http:\/\/localhost:5000/'  > /etc/ckan/production.ini.2
+
 # restarting server
 # ckan-paster serve --reload /etc/ckan/production.ini
+ckan-paster serve /etc/ckan/production.ini
