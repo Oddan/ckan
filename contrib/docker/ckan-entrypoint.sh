@@ -37,7 +37,13 @@ set_environment () {
 }
 
 write_config () {
-  ckan-paster make-config --no-interactive ckan "$CONFIG"
+    ckan-paster make-config --no-interactive ckan "$CONFIG"
+
+    # setup sysadmin
+    cd $CKAN_VENV/src/ckan
+    ckan-paster user add admin email=admin@localhost name=admin password=$CKAN_ADMIN_PASSWORD -c /etc/ckan/production.ini
+    ckan-paster sysadmin add admin -c /etc/ckan/production.ini
+    cd -
 }
 
 # If we don't already have a config file, bootstrap
