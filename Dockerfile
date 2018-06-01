@@ -53,6 +53,14 @@ RUN ckan-pip install -U pip && \
     chmod +x /ckan-entrypoint.sh && \
     chown -R ckan:ckan $CKAN_HOME $CKAN_VENV $CKAN_CONFIG $CKAN_STORAGE_PATH
 
+# setup volume to which developer version of the code base can be mounted
+RUN mkdir /ckan_devel
+RUN chmod -R a+w /ckan_devel
+VOLUME /ckan_devel
+#RUN mkdir -p /tull
+#RUN chmod a+w /tull
+#RUN chown -R ckan:ckan /ckan_devel
+
 ENTRYPOINT ["/ckan-entrypoint.sh"]
 
 USER ckan
