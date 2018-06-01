@@ -1,5 +1,5 @@
 #!/bin/sh
-set -e
+set -e # exit if command has a non-zero exit status
 
 # URL for the primary database, in the format expected by sqlalchemy (required
 # unless linked to a container called 'db')
