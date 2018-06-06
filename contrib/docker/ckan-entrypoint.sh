@@ -36,20 +36,20 @@ set_environment () {
   export CKAN_MAX_UPLOAD_SIZE_MB=${CKAN_MAX_UPLOAD_SIZE_MB}
 }
 
-write_config () {
-    ckan-paster make-config --no-interactive ckan "$CONFIG"
+# write_config () {
+#     ckan-paster make-config --no-interactive ckan "$CONFIG"
 
-    # setup sysadmin
-    cd $CKAN_VENV/src/ckan
-    ckan-paster user add admin email=admin@localhost name=admin password=$CKAN_ADMIN_PASSWORD -c /etc/ckan/production.ini
-    ckan-paster sysadmin add admin -c /etc/ckan/production.ini
-    cd -
-}
+#     # setup sysadmin
+#     cd $CKAN_VENV/src/ckan
+#     ckan-paster user add admin email=admin@localhost name=admin password=$CKAN_ADMIN_PASSWORD -c /etc/ckan/production.ini
+#     ckan-paster sysadmin add admin -c /etc/ckan/production.ini
+#     cd -
+# }
 
-# If we don't already have a config file, bootstrap
-if [ ! -e "$CONFIG" ]; then
-  write_config
-fi
+# # If we don't already have a config file, bootstrap
+# if [ ! -e "$CONFIG" ]; then
+#   write_config
+# fi
 
 # Get or create CKAN_SQLALCHEMY_URL
 if [ -z "$CKAN_SQLALCHEMY_URL" ]; then
@@ -69,5 +69,5 @@ if [ -z "$CKAN_DATAPUSHER_URL" ]; then
 fi
 
 set_environment
-ckan-paster --plugin=ckan db init -c "${CKAN_CONFIG}/production.ini"
+# ckan-paster --plugin=ckan db init -c "${CKAN_CONFIG}/production.ini"
 exec "$@"
