@@ -10,7 +10,7 @@ from flask import Flask, Blueprint
 from flask.ctx import _AppCtxGlobals
 from flask.sessions import SessionInterface
 
-from werkzeug.exceptions import HTTPException
+from werkzeug.exceptions import default_exceptions, HTTPException
 from werkzeug.routing import Rule
 
 from flask_babel import Babel
@@ -27,14 +27,18 @@ from ckan.lib import helpers
 from ckan.lib import jinja_extensions
 from ckan.common import config, g, request, ungettext
 import ckan.lib.app_globals as app_globals
+import ckan.lib.plugins as lib_plugins
+
+
 from ckan.plugins import PluginImplementations
 from ckan.plugins.interfaces import IBlueprint, IMiddleware, ITranslation
 from ckan.views import (identify_user,
                         set_cors_headers_for_response,
                         check_session_cookie,
+                        set_controller_and_action
                         )
 
-
+import ckan.lib.plugins as lib_plugins
 import logging
 log = logging.getLogger(__name__)
 
@@ -71,9 +75,8 @@ def make_flask_stack(conf, **app_conf):
     root = os.path.dirname(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-    debug = asbool(app_conf.get('debug', app_conf.get('DEBUG', False)))
+    debug = asbool(conf.get('debug', conf.get('DEBUG', False)))
     testing = asbool(app_conf.get('testing', app_conf.get('TESTING', False)))
-
     app = flask_app = CKANFlask(__name__)
     app.debug = debug
     app.testing = testing
@@ -179,6 +182,9 @@ def make_flask_stack(conf, **app_conf):
         if hasattr(plugin, 'get_blueprint'):
             app.register_extension_blueprint(plugin.get_blueprint())
 
+    lib_plugins.register_package_blueprints(app)
+    lib_plugins.register_group_blueprints(app)
+
     # Set flask routes in named_routes
     for rule in app.url_map.iter_rules():
         if '.' not in rule.endpoint:
@@ -200,6 +206,8 @@ def make_flask_stack(conf, **app_conf):
         app = plugin.make_middleware(app, config)
 
     # Fanstatic
+    fanstatic_enable_rollup = asbool(app_conf.get('fanstatic_enable_rollup',
+                                                  False))
     if debug:
         fanstatic_config = {
             'versioning': True,
@@ -207,6 +215,7 @@ def make_flask_stack(conf, **app_conf):
             'minified': False,
             'bottom': True,
             'bundle': False,
+            'rollup': fanstatic_enable_rollup,
         }
     else:
         fanstatic_config = {
@@ -215,6 +224,7 @@ def make_flask_stack(conf, **app_conf):
             'minified': True,
             'bottom': True,
             'bundle': True,
+            'rollup': fanstatic_enable_rollup,
         }
     root_path = config.get('ckan.root_path', None)
     if root_path:
@@ -280,6 +290,10 @@ def ckan_before_request():
     # Sets g.user and g.userobj
     identify_user()
 
+    # Provide g.controller and g.action for backward compatibility
+    # with extensions
+    set_controller_and_action()
+
 
 def ckan_after_request(response):
     u'''Common handler executed after all Flask requests'''
@@ -298,7 +312,8 @@ def ckan_after_request(response):
 
 def helper_functions():
     u'''Make helper functions (`h`) available to Flask templates'''
-    helpers.load_plugin_helpers()
+    if not helpers.helper_functions:
+        helpers.load_plugin_helpers()
     return dict(h=helpers.helper_functions)
 
 
@@ -408,12 +423,17 @@ def _register_error_handler(app):
     u'''Register error handler'''
 
     def error_handler(e):
-        extra_vars = {u'code': e.code, u'content': e.description}
-        return base.render(u'error_document_template.html', extra_vars), e.code
+        if isinstance(e, HTTPException):
+            extra_vars = {u'code': [e.code], u'content': e.description}
+            # TODO: Remove
+            g.code = [e.code]
 
-    app.register_error_handler(400, error_handler)
-    app.register_error_handler(401, error_handler)
-    app.register_error_handler(403, error_handler)
-    app.register_error_handler(404, error_handler)
-    app.register_error_handler(500, error_handler)
-    app.register_error_handler(503, error_handler)
+            return base.render(
+                u'error_document_template.html', extra_vars), e.code
+        extra_vars = {u'code': [500], u'content': u'Internal server error'}
+        return base.render(u'error_document_template.html', extra_vars), 500
+
+    for code in default_exceptions:
+        app.register_error_handler(code, error_handler)
+    if not app.debug and not app.testing:
+        app.register_error_handler(Exception, error_handler)
