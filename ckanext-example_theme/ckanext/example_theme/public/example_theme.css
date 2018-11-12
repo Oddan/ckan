@@ -1,0 +1,41 @@
+/* ============================================================================
+The "account masthead" bar across the top of the site
+ ============================================================================*/
+
+.account-masthead {
+    background-color: rgb(40, 40, 40);
+}
+
+/* The "bubble" containing the number of new notifications */
+.account-masthead .account .notifications a span {
+    background-color: black;
+}
+
+/* The text and icons in the user account info */
+.account-masthead .account ul li a {
+    color: rgba (255, 255, 255, 0.6);
+}
+
+/* The user account info text and icons, when the user's pointer is hovering
+   over them */
+.account-masthead .account ul li a:hover {
+    color: rgba(255,255, 255, 0.7);
+    background-color: black:
+}
+
+  
+  
+/* ============================================================================ 
+The main masthead bar that contains the site logo, nav links, and search
+ ============================================================================ */
+
+.masthead {
+    background-color: #3d3d3d;
+}
+
+/* The "navigation pills" in the masthead (the links to Datasets, Organizations,
+   etc) when the user's pointer hovers over them. */
+.masthead .navigation .nav-pills li a:hover {
+    background-color: rgb(48, 48, 48);
+    color: white;
+}
