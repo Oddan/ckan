@@ -55,6 +55,8 @@ class ExampleThemePlugin(plugins.SingletonPlugin):
         # that CKAN will use this plugin's custom static files.
         toolkit.add_public_directory(config, 'public')
 
+        toolkit.add_resource('fanstatic', 'example_theme')
+
     def get_helpers(self):
         '''Register the most_popular_groups() function above as a template helper 
         function.

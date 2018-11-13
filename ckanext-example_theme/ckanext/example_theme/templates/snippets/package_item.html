@@ -1,0 +1,14 @@
+{% ckan_extends %}
+
+{% block content %}
+  {{ super() }}
+
+  {% resource 'example_theme/example_theme_popover.js' %}
+
+<button data-module="example_theme_popover"
+	data-module-title="{{ package.title }}"
+	data-module-license="{{ package.license_title }}"
+	data-module-num_resources="{{ package.num_resources }}"x>
+    <i class="fa fa-info-circle"></i>
+  </button>
+{% endblock %}
