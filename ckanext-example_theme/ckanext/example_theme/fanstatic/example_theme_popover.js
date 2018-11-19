@@ -22,6 +22,7 @@ ckan.module('example_theme_popover', function ($) {
 	_snippedReceived: false,
 	
 	_onClick: function(event) {
+	    this.$('i').greenify();
 	    if (!this._snippedReceived) {
 		this.sandbox.client.getTemplate('example_theme_popover.html',
 						this.options,
@@ -37,7 +38,7 @@ ckan.module('example_theme_popover', function ($) {
 		this.el.popover('hide');
 	    }
 	},
-	
+
 	_onReceiveSnippet: function(html) {
 	    this.el.popover('destroy');
 
