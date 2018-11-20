@@ -67,8 +67,30 @@ VOLUME /ckan_devel
 
 ENTRYPOINT ["/ckan-entrypoint.sh"]
 
+# setup ssh access and emacs
+RUN apt-get update
+RUN apt-get install -q -y openssh-server
+
+# allow use of X
+VOLUME /tmp/.X11-unix
+RUN apt-get -q -y install x11-xserver-utils
+
+RUN sed 's/^#\?X11Forwarding.*$/X11Forwarding yes/' /etc/ssh/sshd_config | \
+sed 's/^#\?X11DisplayOffset.*$/X11DisplayOffset 10/' | \
+sed 's/^#\?X11UseLocalhost.*$/X11UseLocalhost no/' > /etc/ssh/sshd_config
+
+RUN /etc/init.d/ssh restart
+# change password of 'root', needed when using ssh
+# (@@ should really rely on ssh keys here, but had trouble making it work)
+RUN echo 'root:screencast' | chpasswd
+
+# install emacs and ipython
+RUN apt-get install -q -y ipython
+RUN apt-get install -q -y emacs
+
 USER ckan
 EXPOSE 5000
+EXPOSE 22
 
 CMD tail -f /dev/null
 #CMD ["ckan-paster","serve","/etc/ckan/production.ini"]
