@@ -74,6 +74,7 @@ RUN apt-get install -q -y openssh-server
 # allow use of X
 VOLUME /tmp/.X11-unix
 RUN apt-get -q -y install x11-xserver-utils
+RUN apt-get -q -y install x11-apps
 
 RUN sed 's/^#\?X11Forwarding.*$/X11Forwarding yes/' /etc/ssh/sshd_config | \
 sed 's/^#\?X11DisplayOffset.*$/X11DisplayOffset 10/' | \
