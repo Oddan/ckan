@@ -1,0 +1,19 @@
+<div role="main" class="hero">
+    <div class="container", align="center">
+      <div class="row row1", style="width:600px;text-align:center">
+          {% block promoted %}
+            {% snippet 'home/snippets/promoted.html' %}
+          {% endblock %}
+      </div>
+    </div>
+  </div>
+  <div role="main">
+    <div class="container", align="center">
+      <div class="row row2", style="width:600px">
+        {% block frontpage_datasets_list %}
+          {# call the datasets_list_html snippet #}
+          {% snippet 'snippets/simple_frontpage_datasets_list.html'%}
+        {% endblock %}
+      </div>
+    </div>
+  </div>
