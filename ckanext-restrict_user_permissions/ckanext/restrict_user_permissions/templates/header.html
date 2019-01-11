@@ -2,6 +2,8 @@
 
 {# Modifies the links in the top-menu bars displayed in all pages of the website #}
 
+{# TODO: remove the menu that appears on the left-hand side of the navigation bar. I am not sure where that is coming from. #}
+
 {% block header_wrapper %}
 
     {{ super() }}
@@ -39,7 +41,9 @@
     {% block header_site_navigation_tabs %}
 		{{ h.build_nav_main(
 		    ('dataset.search', _('Datasets')),
-		    ('organization.index', _('Organizations')) ) }}
+            ('organization.index', _('Organizations')),
+            ('group.index', _('Groups')) ) }}
 	{% endblock %}
+
 
 {% endblock %}
