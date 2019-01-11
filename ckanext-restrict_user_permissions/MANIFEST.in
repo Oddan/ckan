@@ -1,0 +1,4 @@
+include README.rst
+include LICENSE
+include requirements.txt
+recursive-include ckanext/restrict_user_permissions *.html *.json *.js *.less *.css *.mo
