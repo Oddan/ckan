@@ -75,9 +75,18 @@ RUN apt-get install -q -y openssh-server
 VOLUME /tmp/.X11-unix
 RUN apt-get -q -y install x11-xserver-utils
 
-RUN sed 's/^#\?X11Forwarding.*$/X11Forwarding yes/' /etc/ssh/sshd_config | \
-sed 's/^#\?X11DisplayOffset.*$/X11DisplayOffset 10/' | \
-sed 's/^#\?X11UseLocalhost.*$/X11UseLocalhost no/' > /etc/ssh/sshd_config
+RUN sed 's/^#\?X11Forwarding.*$/X11Forwarding yes/' /etc/ssh/sshd_config > /tmp1
+RUN sed 's/^#\?X11DisplayOffset.*$/X11DisplayOffset 10/' /tmp1 > tmp2
+RUN sed 's/^#PermitRootLogin.*$/PermitRootLogin yes/' /tmp2 > tmp3
+RUN sed 's/^#\?X11UseLocalhost.*$/X11UseLocalhost no/' /tmp3 > /etc/ssh/sshd_config
+RUN rm tmp1
+RUN rm tmp2
+RUN rm tmp3
+
+
+# RUN sed 's/^#\?X11Forwarding.*$/X11Forwarding yes/' /etc/ssh/sshd_config | \
+# sed 's/^#\?X11DisplayOffset.*$/X11DisplayOffset 10/' | \
+# sed 's/^#\?X11UseLocalhost.*$/X11UseLocalhost no/' > /etc/ssh/sshd_config
 
 RUN /etc/init.d/ssh restart
 # change password of 'root', needed when using ssh
