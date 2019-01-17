@@ -2,6 +2,7 @@
 
 import os
 import re
+import time
 import inspect
 import itertools
 import pkgutil
@@ -107,6 +108,13 @@ def make_flask_stack(conf, **app_conf):
         app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
         DebugToolbarExtension(app)
 
+        from werkzeug.debug import DebuggedApplication
+        app = DebuggedApplication(app, True)
+        app = app.app
+
+        log = logging.getLogger('werkzeug')
+        log.setLevel(logging.DEBUG)
+
     # Use Beaker as the Flask session interface
     class BeakerSessionInterface(SessionInterface):
         def open_session(self, app, request):
@@ -180,7 +188,11 @@ def make_flask_stack(conf, **app_conf):
     # Set up each IBlueprint extension as a Flask Blueprint
     for plugin in PluginImplementations(IBlueprint):
         if hasattr(plugin, 'get_blueprint'):
-            app.register_extension_blueprint(plugin.get_blueprint())
+            plugin_blueprints = plugin.get_blueprint()
+            if not isinstance(plugin_blueprints, list):
+                plugin_blueprints = [plugin_blueprints]
+            for blueprint in plugin_blueprints:
+                app.register_extension_blueprint(blueprint)
 
     lib_plugins.register_package_blueprints(app)
     lib_plugins.register_group_blueprints(app)
@@ -294,6 +306,8 @@ def ckan_before_request():
     # with extensions
     set_controller_and_action()
 
+    g.__timer = time.time()
+
 
 def ckan_after_request(response):
     u'''Common handler executed after all Flask requests'''
@@ -306,6 +320,11 @@ def ckan_after_request(response):
 
     # Set CORS headers if necessary
     response = set_cors_headers_for_response(response)
+
+    r_time = time.time() - g.__timer
+    url = request.environ['CKAN_CURRENT_URL'].split('?')[0]
+
+    log.info(' %s render time %.3f seconds' % (url, r_time))
 
     return response
 

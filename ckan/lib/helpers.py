@@ -48,7 +48,7 @@ import ckan.authz as authz
 import ckan.plugins as p
 import ckan
 
-from ckan.common import _, ungettext, c, request, session, json
+from ckan.common import _, ungettext, c, g, request, session, json
 from markupsafe import Markup, escape
 
 
@@ -731,7 +731,7 @@ def _link_active_pylons(kwargs):
 
 
 def _link_active_flask(kwargs):
-    blueprint, endpoint = request.url_rule.endpoint.split('.')
+    blueprint, endpoint = p.toolkit.get_endpoint()
     return(kwargs.get('controller') == blueprint and
            kwargs.get('action') == endpoint)
 
@@ -785,7 +785,7 @@ def nav_link(text, *args, **kwargs):
 def nav_link_flask(text, *args, **kwargs):
     if len(args) > 1:
         raise Exception('Too many unnamed parameters supplied')
-    blueprint, endpoint = request.url_rule.endpoint.split('.')
+    blueprint, endpoint = p.toolkit.get_endpoint()
     if args:
         kwargs['controller'] = blueprint or None
         kwargs['action'] = endpoint or None
@@ -907,10 +907,12 @@ def build_nav(menu_item, title, **kw):
 def map_pylons_to_flask_route_name(menu_item):
     '''returns flask routes for old fashioned route names'''
     # Pylons to Flask legacy route names mappings
-    if config.get('ckan.legacy_route_mappings'):
-        if isinstance(config.get('ckan.legacy_route_mappings'), string_types):
-            LEGACY_ROUTE_NAMES.update(json.loads(config.get(
-                'ckan.legacy_route_mappings')))
+    mappings = config.get('ckan.legacy_route_mappings')
+    if mappings:
+        if isinstance(mappings, string_types):
+            LEGACY_ROUTE_NAMES.update(json.loads(mappings))
+        elif isinstance(mappings, dict):
+            LEGACY_ROUTE_NAMES.update(mappings)
 
     if menu_item in LEGACY_ROUTE_NAMES:
         log.info('Route name "{}" is deprecated and will be removed.\
@@ -1152,8 +1154,10 @@ def sorted_extras(package_extras, auto_clean=False, subs=None, exclude=None):
 
 @core_helper
 def check_access(action, data_dict=None):
+    if not getattr(g, u'user', None):
+        g.user = ''
     context = {'model': model,
-               'user': c.user}
+               'user': g.user}
     if not data_dict:
         data_dict = {}
     try:
@@ -1418,7 +1422,8 @@ def get_display_timezone():
 
 
 @core_helper
-def render_datetime(datetime_, date_format=None, with_hours=False):
+def render_datetime(datetime_, date_format=None, with_hours=False,
+                    with_seconds=False):
     '''Render a datetime object or timestamp string as a localised date or
     in the requested format.
     If timestamp is badly formatted, then a blank string is returned.
@@ -1429,6 +1434,8 @@ def render_datetime(datetime_, date_format=None, with_hours=False):
     :type date_format: string
     :param with_hours: should the `hours:mins` be shown
     :type with_hours: bool
+    :param with_seconds: should the `hours:mins:seconds` be shown
+    :type with_seconds: bool
 
     :rtype: string
     '''
@@ -1459,7 +1466,8 @@ def render_datetime(datetime_, date_format=None, with_hours=False):
         return datetime_.strftime(date_format)
     # the localised date
     return formatters.localised_nice_date(datetime_, show_date=True,
-                                          with_hours=with_hours)
+                                          with_hours=with_hours,
+                                          with_seconds=with_seconds)
 
 
 @core_helper
@@ -1803,7 +1811,7 @@ def _create_url_with_params(params=None, controller=None, action=None,
     if not controller:
         controller = getattr(c, 'controller', False) or request.blueprint
     if not action:
-        action = getattr(c, 'action', False) or request.endpoint.split('.')[1]
+        action = getattr(c, 'action', False) or p.toolkit.get_endpoint()[1]
     if not extras:
         extras = {}
 
