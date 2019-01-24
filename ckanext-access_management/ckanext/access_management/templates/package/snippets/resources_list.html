@@ -1,0 +1,18 @@
+{#
+Renders a list of resources, provided that the user has the right to see them.
+#}
+{% ckan_extends %}
+
+{% block resource_list %}
+
+  {% set has_rights = h.check_access('resource_show', {'dataset_id': pkg.id}) %}
+
+  {% if has_rights %}
+    {{ super() }}
+  {% else %}
+
+    {% include 'package/snippets/restricted_resources_message.html' %}
+    
+  {% endif %}
+  
+{% endblock %}

@@ -39,25 +39,6 @@ def only_admin(context, data_dict=None):
 def everyone(context, data_dict=None):
     return {'success': True}
 
-# #def resource_read_wrapper(context, data_dict):
-# def resource_read_wrapper(id, resource_id):    
-#     '''
-#     Wrapper function to ensure a user has the right to view a resource before
-#     letting him/her view its presentational page.
-#     '''
-#     context = {'model': model, 'session': model.Session,
-#                'user': c.user, 'auth_user_obj': c.userobj}
-#     try:
-#         logic.check_access('resource_show', context, {'id': resource_id})
-#     except logic.NotAuthorized:
-#         base.abort(403, _('Unauthorized to access this resource.'))
-
-#     return _package_controller.resource_read(id, resource_id)
-#     # return h.redirect_to(controller='package', action='resource_read',
-#     #                      id=id, resource_id=resource_id)
-
-#     #return u'Hello World'
-
 def resource_read_patch(function):
     @wraps(function)
     def wrapper(*args, **kwargs):
@@ -77,11 +58,55 @@ def resource_read_patch(function):
         return function(*args, id=id, resource_id=resource_id)
     return wrapper
     
+def _modify_package_schema(schema):
+    schema.update({
+        'is_restricted': [toolkit.get_validator('ignore_missing'),
+                          toolkit.get_validator('boolean_validator'),
+                          toolkit.get_converter('convert_to_extras')],
+        'embargo_date' : [toolkit.get_validator('ignore_missing'),
+                          toolkit.get_validator('isodate'),
+                          toolkit.get_converter('convert_to_extras')]
+    })
     
-class CDSCAccessManagementPlugin(plugins.SingletonPlugin):
+    return schema
+
+
+class CDSCAccessManagementPlugin(plugins.SingletonPlugin, toolkit.DefaultDatasetForm):
     plugins.implements(plugins.IAuthFunctions)
     plugins.implements(plugins.IMiddleware)
+    plugins.implements(plugins.IConfigurer)
+    plugins.implements(plugins.IDatasetForm)
 
+    def create_package_schema(self):
+        schema = super(CDSCAccessManagementPlugin, self).create_package_schema()
+        schema = _modify_package_schema(schema)
+        
+    def update_package_schema(self):
+        schema = super(CDSCAccessManagementPlugin, self).update_package_schema()
+        schema = _modify_package_schema(schema)
+
+    def show_package_schema(self):
+        schema = super(CDSCAccessManagementPlugin, self).show_package_schema()
+        schema.update({
+        'is_restricted': [toolkit.get_converter('convert_to_extras'),
+                          toolkit.get_validator('boolean_validator'),
+                          toolkit.get_validator('ignore_missing')],
+        'embargo_date' : [toolkit.get_converter('convert_to_extras'),
+                          toolkit.get_validator('isodate'),
+                          toolkit.get_validator('ignore_missing')]})
+
+    def is_fallback(self):
+        # We consider this plugin to be the default handler for package types
+        return True
+
+    def package_types(self):
+        # This plugin does not handle any special package types, it just acts as
+        # a default.
+        return []
+        
+    def update_config(self, config):
+        toolkit.add_template_directory(config, 'templates')
+    
     def make_middleware(self, app, config):
 
         # ensure the patched view is actually served by pylons and not flask
@@ -106,12 +131,4 @@ class CDSCAccessManagementPlugin(plugins.SingletonPlugin):
                 'resource_show' : only_admin}
 
 
-    # def get_blueprint(self):
-    #     u'''Return a blueprint for views that need to be overridden.'''
-    #     blueprint = Blueprint(self.name, self.__module__)
-    #     blueprint.add_url_rule(u'/dataset/<id>/resource/<resource_id>',
-    #                            u'resource_read',
-    #                            resource_read_wrapper)
-    #     return blueprint
-    
     
