@@ -80,20 +80,23 @@ class CDSCAccessManagementPlugin(plugins.SingletonPlugin, toolkit.DefaultDataset
     def create_package_schema(self):
         schema = super(CDSCAccessManagementPlugin, self).create_package_schema()
         schema = _modify_package_schema(schema)
+        return schema
         
     def update_package_schema(self):
         schema = super(CDSCAccessManagementPlugin, self).update_package_schema()
         schema = _modify_package_schema(schema)
-
+        return schema
+        
     def show_package_schema(self):
         schema = super(CDSCAccessManagementPlugin, self).show_package_schema()
         schema.update({
-        'is_restricted': [toolkit.get_converter('convert_to_extras'),
+        'is_restricted': [toolkit.get_converter('convert_from_extras'),
                           toolkit.get_validator('boolean_validator'),
                           toolkit.get_validator('ignore_missing')],
-        'embargo_date' : [toolkit.get_converter('convert_to_extras'),
+        'embargo_date' : [toolkit.get_converter('convert_from_extras'),
                           toolkit.get_validator('isodate'),
                           toolkit.get_validator('ignore_missing')]})
+        return schema
 
     def is_fallback(self):
         # We consider this plugin to be the default handler for package types

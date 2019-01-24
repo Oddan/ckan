@@ -2,9 +2,18 @@
 
 {% block package_basic_fields_custom %}
 
-  {{ form.input('is_restricted', label=_('Is restricted'), id='is_restricted',
+  {{ form.checkbox('is_restricted', label=_('Is restricted'), id='is_restricted',
   placeholder=_('is restricted'), value=data.is_restricted, error = errors.is_restricted, classes=['control-medium'])}}
+  
+  {# {{ form.input('is_restricted', label=_('Is restricted'), id='is_restricted', #}
+  {# placeholder=_('is restricted'), value=data.is_restricted, error = errors.is_restricted, classes=['control-medium'])}} #}
 
   {{ form.input('embargo_date', label=_('Embargo date'), id='embargo_date',
   placeholder=_('embargo date'), value=data.embargo_date, error = errors.embargo_date, classes=['control-medium'])}}
-  {% endblock %}
+{% endblock %}
+
+
+{% block package_metadata_fields_visibility %}
+  {# we do not want to use the 'visibility' flag - all datasets should be flagged #}
+  {# 'public' here, so that metadata will be visible to everyone #}
+{% endblock %}
