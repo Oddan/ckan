@@ -1,3 +1,4 @@
+from sqlalchemy import orm, types, Column, Table, ForeignKey
 from flask import Blueprint
 import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
@@ -12,6 +13,7 @@ import ckan.controllers.package
 from ckan.common import _, c, request 
 
 from functools import wraps
+
 
 import pdb
 
@@ -70,6 +72,17 @@ def _modify_package_schema(schema):
     
     return schema
 
+def ensure_special_access_table_present():
+    table_name = 'special_access_rights'
+    if not table_name  in model.meta.metadata.tables.keys():
+        rights_table = Table(table_name, model.meta.metadata,
+                             Column('id', types.UnicodeText, primary_key=True, default=model.types.make_uuid),
+                             Column('user_id', types.UnicodeText, ForeignKey('user.id')))
+        class SpecialAccessRights(model.domain_object.DomainObject):
+            pass
+        model.meta.mapper(SpecialAccessRights, rights_table,
+                          properties={ 'user': orm.relation(model.user.User)})
+    pdb.set_trace()
 
 class CDSCAccessManagementPlugin(plugins.SingletonPlugin, toolkit.DefaultDatasetForm):
     plugins.implements(plugins.IAuthFunctions)
@@ -108,6 +121,9 @@ class CDSCAccessManagementPlugin(plugins.SingletonPlugin, toolkit.DefaultDataset
         return []
         
     def update_config(self, config):
+        pdb.set_trace()
+        ensure_special_access_table_present()
+        
         toolkit.add_template_directory(config, 'templates')
     
     def make_middleware(self, app, config):
