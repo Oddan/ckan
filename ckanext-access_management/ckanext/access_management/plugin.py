@@ -1,11 +1,13 @@
-from sqlalchemy import orm, types, Column, Table, ForeignKey
+from sqlalchemy import orm, types, Column, Table, ForeignKey, MetaData
 from flask import Blueprint
+import warnings
 import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
 import ckan.lib.helpers as h
 import ckan.lib.base as base
 import ckan.model as model
 import ckan.logic as logic
+import ckan.exceptions as exceptions
 
 from ckan.controllers.package import PackageController
 import ckan.controllers.package
@@ -18,6 +20,16 @@ from functools import wraps
 import pdb
 
 _package_controller = PackageController()
+
+rights_table_name = 'special_access_rights'
+rights_table = Table(rights_table_name, model.meta.metadata,
+                     Column('id', types.UnicodeText, primary_key=True, default=model.types.make_uuid),
+                     Column('user_id', types.UnicodeText, ForeignKey('user.id')))
+
+class SpecialAccessRights(model.domain_object.DomainObject):
+    pass
+model.meta.mapper(SpecialAccessRights, rights_table,
+                  properties={ 'user': orm.relation(model.user.User)})
 
 @toolkit.auth_allow_anonymous_access
 def deny(context, data_dict=None):
@@ -73,15 +85,24 @@ def _modify_package_schema(schema):
     return schema
 
 def ensure_special_access_table_present():
-    table_name = 'special_access_rights'
-    if not table_name  in model.meta.metadata.tables.keys():
-        rights_table = Table(table_name, model.meta.metadata,
-                             Column('id', types.UnicodeText, primary_key=True, default=model.types.make_uuid),
-                             Column('user_id', types.UnicodeText, ForeignKey('user.id')))
-        class SpecialAccessRights(model.domain_object.DomainObject):
-            pass
-        model.meta.mapper(SpecialAccessRights, rights_table,
-                          properties={ 'user': orm.relation(model.user.User)})
+    tmp_metadata = MetaData(model.meta.metadata.bind)
+    with warnings.catch_warnings():
+        warnings.filterwarnings('ignore', '.*(reflection|tsvector).*')
+        tmp_metadata.reflect()
+
+    pdb.set_trace()
+    if not rights_table_name in tmp_metadata.tables.keys():
+        raise exceptions.CkanConfigurationException(
+            '''Database not properly set up.
+
+            The special user rights table needs to be included in the database.
+            In order to create it, copy the file migration/XXX_add_special_rights_table.py
+            to the ckan/migration/versions folder and substitute XXX by the new revision number. 
+            
+            Then run paster db upgrade.
+            '''
+            )
+    
     pdb.set_trace()
 
 class CDSCAccessManagementPlugin(plugins.SingletonPlugin, toolkit.DefaultDatasetForm):
@@ -121,7 +142,6 @@ class CDSCAccessManagementPlugin(plugins.SingletonPlugin, toolkit.DefaultDataset
         return []
         
     def update_config(self, config):
-        pdb.set_trace()
         ensure_special_access_table_present()
         
         toolkit.add_template_directory(config, 'templates')
