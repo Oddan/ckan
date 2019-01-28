@@ -15,9 +15,10 @@
             <section class="module-content">
 
                 {% for dataset in h.simple_frontpage_datasets_list() %}
-                    <a href="{{ h.url_for('dataset.read', id=dataset.name) }}"><h3>{{ dataset.title }}</h3></a>
+                    {#<a href="{{ h.url_for('dataset.read', id=dataset.name) }}"><h3>{{ dataset.title }}</h3></a> {# use this line if flask provides the routing #}
+                    <a href="{{ h.url_for(controller='package', action='read', id=dataset.name) }}"><h3>{{ dataset.title }}</h3></a> {# use this line for Pylon #}
                         
-                        {#<h3>{{ dataset}}</h3>  use this line to see what attributes dataset has #}
+                        {#<h3>{{ dataset}}</h3> {#use this line to see what attributes dataset has #}
                         
                     {% if dataset.notes %}
                         <p>
