@@ -2,48 +2,41 @@
 
 {# Modifies the links in the top-menu bars displayed in all pages of the website #}
 
-{# TODO: remove the menu that appears on the left-hand side of the navigation bar. I am not sure where that is coming from. #}
 
-{% block header_wrapper %}
+{# The code below removes the "dashboard" and "settings" links from the top-bar (masthead),
+leaving only the user name (linked to user profile) and log-out button #}
 
-    {{ super() }}
-
-    {# The code below removes the "dashboard" and "settings" links from the top-bar (masthead),
-    leaving only the user name (linked to user profile) and log-out button #}
-
-    {% block header_account_logged %}
-        {% if c.userobj.sysadmin %}
+{% block header_account_logged %}
+    {% if c.userobj.sysadmin %}
+    <li>
+    <a href="{{ h.url_for(controller='admin', action='index') }}" title="{{ _('Sysadmin settings') }}">
+        <i class="fa fa-gavel" aria-hidden="true"></i>
+        <span class="text">{{ _('Admin') }}</span>
+    </a>
+    </li>
+    {% endif %}
+    <li>
+    <a href="{{ h.url_for('user.read', id=c.userobj.name) }}" class="image" title="{{ _('View profile') }}">
+            {{ h.gravatar((c.userobj.email_hash if c and c.userobj else ''), size=22) }}
+            <span class="username">{{ c.userobj.display_name }}</span>
+            </a>
+    </li>
+    {% block header_account_log_out_link %}
         <li>
-        <a href="{{ h.url_for(controller='admin', action='index') }}" title="{{ _('Sysadmin settings') }}">
-            <i class="fa fa-gavel" aria-hidden="true"></i>
-            <span class="text">{{ _('Admin') }}</span>
+        <a href="{{ h.url_for('/user/_logout') }}" title="{{ _('Log out') }}">
+            <i class="fa fa-sign-out" aria-hidden="true"></i>
+            <span class="text">{{ _('Log out') }}</span>
         </a>
         </li>
-        {% endif %}
-        <li>
-        <a href="{{ h.url_for('user.read', id=c.userobj.name) }}" class="image" title="{{ _('View profile') }}">
-                {{ h.gravatar((c.userobj.email_hash if c and c.userobj else ''), size=22) }}
-                <span class="username">{{ c.userobj.display_name }}</span>
-                </a>
-        </li>
-        {% block header_account_log_out_link %}
-            <li>
-            <a href="{{ h.url_for('/user/_logout') }}" title="{{ _('Log out') }}">
-                <i class="fa fa-sign-out" aria-hidden="true"></i>
-                <span class="text">{{ _('Log out') }}</span>
-            </a>
-            </li>
-        {% endblock %}
     {% endblock %}
-
-    {# The code below removes the "Groups" and "About" buttons from the main navigation bar menu,
-    leaving only "Datasets" and "Organizations" #}
-    {% block header_site_navigation_tabs %}
-		{{ h.build_nav_main(
-		    ('dataset.search', _('Datasets')),
-            ('organization.index', _('Organizations')),
-            ('group.index', _('Groups')) ) }}
-	{% endblock %}
+{% endblock %}
 
 
+{# The code below removes the "Groups" and "About" buttons from the main navigation bar menu,
+leaving only "Datasets" and "Organizations" #}
+
+{% block header_site_navigation_tabs %}
+    {{ h.build_nav_main(
+        ('search', _('Datasets')),
+        ('organizations_index', _('Organizations')) ) }}
 {% endblock %}
