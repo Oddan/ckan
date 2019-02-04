@@ -13,7 +13,7 @@
         xhttp.onreadystatechange = function() {
           if (this.readyState == 4) {
             if (this.status == 200) {elem.innerHTML = this.responseText;}
-            if (this.status == 400) {elem.innerHTML = "Page not found."}
+            if (this.status == 404) {elem.innerHTML = "This dataset does not have a description yet. Please check back soon."}
             /* remove the attribute and call the function once more */
             elem.removeAttribute("custom-include-html");
             includeHTML();
