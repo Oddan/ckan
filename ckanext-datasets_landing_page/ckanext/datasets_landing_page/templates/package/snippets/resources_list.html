@@ -16,12 +16,17 @@ Example:
         <ul class="{% block resource_list_class %}resource-list{% endblock %}">
           {% block resource_list_inner %}
             {% set can_edit = h.check_access('package_update', {'id':pkg.id }) %}
-            <form>
-                <ol>
+            <form action="/multiple_download" method="POST">
+  
               {% for resource in resources %}
-                  <li><input type="checkbox" name="{{ loop.index }}" value="{{ resource.name }}">{% snippet 'package/snippets/resource_item.html', pkg=pkg, res=resource, can_edit=can_edit %}</li>
+                  <input type="checkbox" name="{{ loop.index }}" value="{{ resource.name }}">{% snippet 'package/snippets/resource_item.html', pkg=pkg, res=resource, can_edit=can_edit %}<br>
               {% endfor %}
-              </ol>
+              
+                {#<input type="checkbox" name="first" value="pippo">I want pippo<br>
+                <input type="checkbox" name="second" value="pluto">I want pluto<br>
+                <input type="checkbox" name="third" value="paperino">I want paperino<br>#}
+              
+              
               <br><br>
               <input type="submit">
             </form>
@@ -36,6 +41,6 @@ Example:
             <p class="empty">{{ _('This dataset has no data') }}</p>
         {% endif %}
       {% endif %}
-      {% endblock %}
-  </section>
+    {% endblock %}
+</section>
   
