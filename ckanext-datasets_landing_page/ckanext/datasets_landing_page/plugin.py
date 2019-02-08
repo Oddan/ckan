@@ -1,6 +1,9 @@
 import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
-from flask import Blueprint, request
+from flask import send_file, Blueprint, request
+import zipfile
+import io
+import requests
 
 import pdb
 
@@ -10,10 +13,16 @@ def user_download_dataset(context, data_dict=None):
 
 def download_multiple_resources():
     if request.method == "POST":
-        files = " ".join(request.form.values()) # concatenate all the requested filenames
-    
-    pdb.set_trace()
-    return ('', 204)
+
+        memory_file = io.BytesIO()
+        with zipfile.ZipFile(memory_file, mode='w', compression=zipfile.ZIP_STORED) as zf:
+            for res in request.form.values():
+                #pdb.set_trace()
+                f = requests.get(res)
+                zf.writestr('download.txt', f.content)
+        memory_file.seek(0) # return to beginning of file <----------- is this needed??
+        
+    return send_file(memory_file, mimetype='application/zip', as_attachment = True, attachment_filename= 'download.zip')
 
 
 
@@ -37,7 +46,9 @@ class Datasets_Landing_PagePlugin(plugins.SingletonPlugin):
         return {'user_download_dataset': user_download_dataset}
 
 
+
     # IBlueprint
+
     def get_blueprint(self):
         u'''Return a Flask Blueprint object to be registered by the app.'''
 

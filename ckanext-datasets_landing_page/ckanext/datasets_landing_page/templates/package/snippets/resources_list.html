@@ -19,7 +19,8 @@ Example:
             <form action="/multiple_download" method="POST">
   
               {% for resource in resources %}
-                  <input type="checkbox" name="{{ loop.index }}" value="{{ resource.name }}">{% snippet 'package/snippets/resource_item.html', pkg=pkg, res=resource, can_edit=can_edit %}<br>
+                {{ resource }}
+                  <input type="checkbox" name="{{ loop.index }}" value="{{ resource.url }}">{% snippet 'package/snippets/resource_item.html', pkg=pkg, res=resource, can_edit=can_edit %}<br>
               {% endfor %}
               
                 {#<input type="checkbox" name="first" value="pippo">I want pippo<br>
