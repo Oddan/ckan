@@ -30,7 +30,8 @@ rights_table = Table(rights_table_name, model.meta.metadata,
 class SpecialAccessRights(model.domain_object.DomainObject):
     pass
 model.meta.mapper(SpecialAccessRights, rights_table,
-                  properties={ 'user': orm.relation(model.user.User)})
+                  properties={ 'user': orm.relation(model.user.User),
+                               'package' : orm.relation(model.package.Package)})
 
 @toolkit.auth_allow_anonymous_access
 def deny(context, data_dict=None):
@@ -92,7 +93,9 @@ def ensure_special_access_table_present():
         tmp_metadata.reflect()
 
     pdb.set_trace()
-    if not rights_table_name in tmp_metadata.tables.keys():
+    if ((not rights_table_name in tmp_metadata.tables.keys()) or
+        (tmp_metadata.tables[rights_table_name].c.keys() !=
+         model.meta.metadata.tables[rights_table_name].c.keys())):
         raise exceptions.CkanConfigurationException(
             '''Database not properly set up.
 
