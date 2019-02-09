@@ -24,7 +24,8 @@ _package_controller = PackageController()
 rights_table_name = 'special_access_rights'
 rights_table = Table(rights_table_name, model.meta.metadata,
                      Column('id', types.UnicodeText, primary_key=True, default=model.types.make_uuid),
-                     Column('user_id', types.UnicodeText, ForeignKey('user.id')))
+                     Column('user_id', types.UnicodeText, ForeignKey('user.id')),
+                     Column('package_id', types.UnicodeText, ForeignKey('package.id')))
 
 class SpecialAccessRights(model.domain_object.DomainObject):
     pass
@@ -111,6 +112,46 @@ class CDSCAccessManagementPlugin(plugins.SingletonPlugin, toolkit.DefaultDataset
     plugins.implements(plugins.IConfigurer)
     plugins.implements(plugins.IDatasetForm)
 
+    # ============================== IAuthFunctions ==============================
+    
+    def get_auth_functions(self):
+        return {'package_update': only_admin,
+                'package_create': only_admin,
+                'package_delete': only_admin,
+                'package_show'  : everyone,
+                'resource_view_list': everyone,
+                'resource_show' : only_admin}
+
+    # ================================ IMiddleware ================================
+    
+    def make_middleware(self, app, config):
+
+        # ensure the patched view is actually served by pylons and not flask
+        if not toolkit.check_ckan_version('2.8.2', '2.8.2'):
+            raise toolkit.CkanVersionException
+
+        # wrap the 'package' controller in a function that checks access to
+        # resources (which is not necessarily the same in our case as the access
+        # to the dataset information itself).
+        if app.app_name == 'pylons_app':
+            ctrl = app.find_controller('package')
+            ctrl.resource_read = resource_read_patch(ctrl.resource_read)
+        else:
+            assert app.app_name == 'flask_app'
+        return app
+
+    def make_error_log_middleware(self, app, config):
+        return app
+
+    # ================================ IConfigurer ================================
+    
+    def update_config(self, config):
+        #ensure_special_access_table_present()
+        
+        toolkit.add_template_directory(config, 'templates')
+    
+    # =============================== IDatasetForm ===============================
+    
     def create_package_schema(self):
         schema = super(CDSCAccessManagementPlugin, self).create_package_schema()
         schema = _modify_package_schema(schema)
@@ -141,33 +182,5 @@ class CDSCAccessManagementPlugin(plugins.SingletonPlugin, toolkit.DefaultDataset
         # a default.
         return []
         
-    def update_config(self, config):
-        ensure_special_access_table_present()
-        
-        toolkit.add_template_directory(config, 'templates')
-    
-    def make_middleware(self, app, config):
-
-        # ensure the patched view is actually served by pylons and not flask
-        if not toolkit.check_ckan_version('2.8.2', '2.8.2'):
-            raise toolkit.CkanVersionException
-        if app.app_name == 'pylons_app':
-            ctrl = app.find_controller('package')
-            ctrl.resource_read = resource_read_patch(ctrl.resource_read)
-        else:
-            assert app.app_name == 'flask_app'
-        return app
-
-    def make_error_log_middleware(self, app,config):
-        return app
-    
-    def get_auth_functions(self):
-        return {'package_update': only_admin,
-                'package_create': only_admin,
-                'package_delete': only_admin,
-                'package_show'  : everyone,
-                'resource_view_list': everyone,
-                'resource_show' : only_admin}
-
 
     
