@@ -30,8 +30,14 @@ rights_table = Table(rights_table_name, model.meta.metadata,
 class SpecialAccessRights(model.domain_object.DomainObject):
     pass
 model.meta.mapper(SpecialAccessRights, rights_table,
-                  properties={ 'user': orm.relation(model.user.User),
-                               'package' : orm.relation(model.package.Package)})
+            properties={ 'user': orm.relation(model.user.User,
+                                        backref=orm.backref('special_access_rights',
+                                                            cascade='all, delete, delete-orphan')),
+                         'package' : orm.relation(model.package.Package,
+                                        backref=orm.backref('special_access_rights',
+                                                            cascade='all, delete, delete-orphan'))})
+
+orm.configure_mappers() # this will update 'User' and 'Package' with the new relations
 
 @toolkit.auth_allow_anonymous_access
 def deny(context, data_dict=None):
@@ -92,7 +98,7 @@ def ensure_special_access_table_present():
         warnings.filterwarnings('ignore', '.*(reflection|tsvector).*')
         tmp_metadata.reflect()
 
-    pdb.set_trace()
+    #pdb.set_trace()
     if ((not rights_table_name in tmp_metadata.tables.keys()) or
         (tmp_metadata.tables[rights_table_name].c.keys() !=
          model.meta.metadata.tables[rights_table_name].c.keys())):
@@ -149,7 +155,7 @@ class CDSCAccessManagementPlugin(plugins.SingletonPlugin, toolkit.DefaultDataset
     # ================================ IConfigurer ================================
     
     def update_config(self, config):
-        #ensure_special_access_table_present()
+        ensure_special_access_table_present()
         
         toolkit.add_template_directory(config, 'templates')
     
