@@ -4,6 +4,8 @@ from flask import send_file, Blueprint, request
 import zipfile
 import io
 import requests
+from ckan.common import c
+import ckan.model as model
 
 import pdb
 
@@ -16,10 +18,16 @@ def download_multiple_resources():
 
         memory_file = io.BytesIO()
         with zipfile.ZipFile(memory_file, mode='w', compression=zipfile.ZIP_STORED) as zf:
-            for res in request.form.values():
+            for res_name in request.form:
                 #pdb.set_trace()
-                f = requests.get(res)
-                zf.writestr('download.txt', f.content)
+                #res = res.encode('utf-8')
+                f = requests.get(request.form[res_name], allow_redirects=True, headers={'Authorization': c.userobj.apikey}) # OBS: The function c is from Pylons. How to substitute with h?
+                print(' ')
+                print repr(res_name)
+                print(f.status_code)
+                print(' ')
+                #pdb.set_trace()
+                zf.writestr(res_name, f.content)
         memory_file.seek(0) # return to beginning of file <----------- is this needed??
         
     return send_file(memory_file, mimetype='application/zip', as_attachment = True, attachment_filename= 'download.zip')
