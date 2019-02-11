@@ -22,13 +22,24 @@ import pdb
 _package_controller = PackageController()
 
 rights_table_name = 'special_access_rights'
+access_restriction_table_name = 'access_restriction'
 rights_table = Table(rights_table_name, model.meta.metadata,
                      Column('id', types.UnicodeText, primary_key=True, default=model.types.make_uuid),
                      Column('user_id', types.UnicodeText, ForeignKey('user.id')),
                      Column('package_id', types.UnicodeText, ForeignKey('package.id')))
 
+access_restriction_table = Table(access_restriction_table_name, model.meta.metadata,
+                        Column('id', types.UnicodeText, primary_key=True, default=model.types.make_uuid),
+                        Column('package_id', types.UnicodeText, ForeignKey('package.id'),
+                               unique=True, nullable=False),
+                        Column('restricted', types.Boolean, default=False),
+                        Column('embargo_date', types.DateTime, default=None))
+
 class SpecialAccessRights(model.domain_object.DomainObject):
     pass
+class AccessRestriction(model.domain_object.DomainObject):
+    pass
+
 model.meta.mapper(SpecialAccessRights, rights_table,
             properties={ 'user': orm.relation(model.user.User,
                                         backref=orm.backref('special_access_rights',
@@ -36,8 +47,13 @@ model.meta.mapper(SpecialAccessRights, rights_table,
                          'package' : orm.relation(model.package.Package,
                                         backref=orm.backref('special_access_rights',
                                                             cascade='all, delete, delete-orphan'))})
+model.meta.mapper(AccessRestriction, access_restriction_table,
+                  properties={ 'package' : orm.relation(model.package.Package,
+                                                        backref=orm.backref('access_restriction',
+                                                                            uselist=False))})
 
 orm.configure_mappers() # this will update 'User' and 'Package' with the new relations
+# nb: call session.refresh(object) on an object if you want to update its backrefs after a deletion.
 
 @toolkit.auth_allow_anonymous_access
 def deny(context, data_dict=None):
@@ -113,7 +129,7 @@ def ensure_special_access_table_present():
             '''
             )
     
-    pdb.set_trace()
+    #pdb.set_trace()
 
 class CDSCAccessManagementPlugin(plugins.SingletonPlugin, toolkit.DefaultDatasetForm):
     plugins.implements(plugins.IAuthFunctions)
@@ -191,5 +207,6 @@ class CDSCAccessManagementPlugin(plugins.SingletonPlugin, toolkit.DefaultDataset
         # a default.
         return []
         
-
+    def setup_template_variables(self, context, data_dict):
+        implement_me
     
