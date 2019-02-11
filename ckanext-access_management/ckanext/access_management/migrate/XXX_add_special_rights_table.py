@@ -3,6 +3,7 @@
 from sqlalchemy import *
 from migrate import *
 import uuid
+import warnings
 import pdb
 
 meta = MetaData()
@@ -27,8 +28,10 @@ access_restriction_table = Table(
 def upgrade(migrate_engine):
 
     meta.bind = migrate_engine
-    user_table = Table('user', meta, autoload=True)
-    package_table = Table('package', meta, autoload=True)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", category=wqlalchemy.exc.SAWarning)
+        user_table = Table('user', meta, autoload=True)
+        package_table = Table('package', meta, autoload=True)
 
     rights_table.create()
     access_restriction_table.create()

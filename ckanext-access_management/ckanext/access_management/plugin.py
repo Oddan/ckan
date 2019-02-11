@@ -207,6 +207,6 @@ class CDSCAccessManagementPlugin(plugins.SingletonPlugin, toolkit.DefaultDataset
         # a default.
         return []
         
-    def setup_template_variables(self, context, data_dict):
-        implement_me
+    # def setup_template_variables(self, context, data_dict):
+    #     implement_me
     
