@@ -9,6 +9,23 @@ Example:
   {% snippet "package/snippets/resources_list.html", pkg=pkg, resources=pkg.resources %}
 
 #}
+
+{# Need to fix the css for the resources list since we put them in a checkbox form.
+  The reason why we do it here is that modifying the general css file will result in problems
+  in other pages where the checkbox form is not present #}
+
+<style>
+  .resource-item .description {
+    position: relative;
+    left:78px;
+  }
+
+  .resource-item:hover {
+    background:none
+  }
+</style>
+
+
 <section id="dataset-resources" class="resources">
     <h3>{{ _('Data and Resources') }}</h3>
     {% block resource_list %}

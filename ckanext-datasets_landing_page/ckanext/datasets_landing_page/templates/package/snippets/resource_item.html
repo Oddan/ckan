@@ -2,6 +2,22 @@
 {% set url = h.url_for(controller='package', action=url_action, id=pkg.name, resource_id=res.id) %}
 
 {# this was originally in a li #}
+
+{% if url_is_edit %}
+  <style>
+    .resource-item .description {
+      position: relative;
+      left:60px;
+    }
+  
+    .resource-item:hover {
+      background:none
+    }
+  </style>
+
+  <div>
+  {% endif %}
+
 <span class="resource-item" data-id="{{ res.id }}">
   {% block resource_item_title %}
   <a class="heading" href="{{ url }}" title="{{ res.name or res.description }}">
@@ -16,4 +32,8 @@
       {% endif %}
     </p>
   {% endblock %}
-</span>
+  </span>
+
+{% if url_is_edit %}
+  </div>
+{% endif %}
