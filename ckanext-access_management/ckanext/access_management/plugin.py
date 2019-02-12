@@ -67,15 +67,35 @@ def accept(context, data_dict=None):
 @toolkit.auth_allow_anonymous_access
 def only_admin(context, data_dict=None):
 
-    if context.get('user') == 'admin':
+    if context['auth_user_obj'].sysadmin:
         return {'success': True}
 
     return {'success': False,
-            'msg': 'Operation only allowed for admin'}
+            'msg': 'Operation only allowed for sysadmin'}
 
 @toolkit.auth_allow_anonymous_access
 def everyone(context, data_dict=None):
     return {'success': True}
+
+@toolkit.auth_allow_anonymous_access
+def check_restrictions(context, data_dict=None):
+    try:
+        # check if sysadmin (sysadmin has access to everything)
+        # check if dataset is embargoed (only sysadmin has access)
+        # check if dataset is restricted (only sysadmin and authorized users have access)
+
+        # if dataset is neither restricted nor embargoed, everyone has access
+        dataset_id = data_dict['dataset_id']
+        
+        pass
+    except:
+        return {'success' : False,
+                'msg' : "Error in 'check_restrictions' authorization function."}
+    
+    pdb.set_trace()
+    return {'success': True}
+    
+
 
 def resource_read_patch(function):
     @wraps(function)
@@ -131,12 +151,23 @@ def ensure_special_access_table_present():
     
     #pdb.set_trace()
 
+# def isodate_string(key, data, errors, context):
+#     pdb.set_trace()
+#     result = toolkit.get_validator('isodate')(data[key], context)
+#     return str(result.date())
+    
 class CDSCAccessManagementPlugin(plugins.SingletonPlugin, toolkit.DefaultDatasetForm):
+    #plugins.implements(plugins.IValidators)
     plugins.implements(plugins.IAuthFunctions)
     plugins.implements(plugins.IMiddleware)
     plugins.implements(plugins.IConfigurer)
     plugins.implements(plugins.IDatasetForm)
 
+
+    # ================================ IValidators ================================
+    # def get_validators(self):
+    #     return {'isodate_string': isodate_string}
+    
     # ============================== IAuthFunctions ==============================
     
     def get_auth_functions(self):
@@ -145,7 +176,7 @@ class CDSCAccessManagementPlugin(plugins.SingletonPlugin, toolkit.DefaultDataset
                 'package_delete': only_admin,
                 'package_show'  : everyone,
                 'resource_view_list': everyone,
-                'resource_show' : only_admin}
+                'resource_show' : check_restrictions}
 
     # ================================ IMiddleware ================================
     
@@ -171,8 +202,7 @@ class CDSCAccessManagementPlugin(plugins.SingletonPlugin, toolkit.DefaultDataset
     # ================================ IConfigurer ================================
     
     def update_config(self, config):
-        ensure_special_access_table_present()
-        
+        #ensure_special_access_table_present()
         toolkit.add_template_directory(config, 'templates')
     
     # =============================== IDatasetForm ===============================
@@ -191,10 +221,11 @@ class CDSCAccessManagementPlugin(plugins.SingletonPlugin, toolkit.DefaultDataset
         schema = super(CDSCAccessManagementPlugin, self).show_package_schema()
         schema.update({
         'is_restricted': [toolkit.get_converter('convert_from_extras'),
-                          toolkit.get_validator('boolean_validator'),
-                          toolkit.get_validator('ignore_missing')],
+                          toolkit.get_validator('boolean_validator')],
+                          #toolkit.get_validator('ignore_missing')],
         'embargo_date' : [toolkit.get_converter('convert_from_extras'),
                           toolkit.get_validator('isodate'),
+                          #toolkit.get_validator('isodate_string'),
                           toolkit.get_validator('ignore_missing')]})
         return schema
 
