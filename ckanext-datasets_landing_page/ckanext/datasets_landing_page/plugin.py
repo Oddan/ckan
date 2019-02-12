@@ -1,6 +1,6 @@
 import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
-from flask import send_file, Blueprint, request
+from flask import send_file, Blueprint, request, render_template
 import zipfile
 import io
 import requests
@@ -14,6 +14,7 @@ def user_download_dataset(context, data_dict=None):
     return {'success': False, 'msg': 'You are not authorized to download the dataset.'}
 
 def download_multiple_resources():
+    access = True
     if request.method == "POST":
 
         memory_file = io.BytesIO()
@@ -27,6 +28,8 @@ def download_multiple_resources():
                 print(f.status_code)
                 print(' ')
                 #pdb.set_trace()
+                if f.status_code == 404:
+                    return render_template(u"package/download_denied.html")
                 zf.writestr(res_name, f.content)
         memory_file.seek(0) # return to beginning of file <----------- is this needed??
         
