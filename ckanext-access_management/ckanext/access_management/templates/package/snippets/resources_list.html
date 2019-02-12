@@ -5,13 +5,20 @@ Renders a list of resources, provided that the user has the right to see them.
 
 {% block resource_list %}
 
-  {% set has_rights = h.check_access('resource_show', {'dataset_id': pkg.id}) %}
+{# Below, we should really use 'resource_view_list' instead of 'resource_show' for checking access, but due to what looks like a bug in the controllers.package.read() function, 'resource_view_list' causes an error if it is more restrictive than package_show #}
+  {% set has_rights = h.check_access('resource_show', {'package_id': pkg.id}) %}
 
   {% if has_rights %}
     {{ super() }}
   {% else %}
 
-    {% include 'package/snippets/restricted_resources_message.html' %}
+    {% set embargo_date = h.check_embargoed(pkg.id) %}
+
+    {% if embargo_date %}
+      {% include 'package/snippets/embargoed_package_message.html' %}
+    {% else %}
+      {% include 'package/snippets/restricted_resources_message.html' %}
+    {% endif %}
     
   {% endif %}
   

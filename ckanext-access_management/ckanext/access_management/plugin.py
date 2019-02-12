@@ -8,6 +8,7 @@ import ckan.lib.base as base
 import ckan.model as model
 import ckan.logic as logic
 import ckan.exceptions as exceptions
+import datetime 
 
 from ckan.controllers.package import PackageController
 import ckan.controllers.package
@@ -64,12 +65,16 @@ def deny(context, data_dict=None):
 def accept(context, data_dict=None):
     return {'success': True}
 
+def is_sysadmin(context):
+    user_obj = context.get('auth_user_obj', None)
+    if user_obj and user_obj.sysadmin:
+        return True
+    return False
+
 @toolkit.auth_allow_anonymous_access
 def only_admin(context, data_dict=None):
-
-    if context['auth_user_obj'].sysadmin:
+    if is_sysadmin(context):
         return {'success': True}
-
     return {'success': False,
             'msg': 'Operation only allowed for sysadmin'}
 
@@ -77,25 +82,69 @@ def only_admin(context, data_dict=None):
 def everyone(context, data_dict=None):
     return {'success': True}
 
+
+def check_embargoed(package_id):
+    context = {} # since packages are always visible, context does not matter here
+    #pdb.set_trace()
+    pkg_info = toolkit.get_action('package_show')(context, {'id': package_id})
+    embargo_date =  pkg_info.get('embargo_date', None)
+    if embargo_date and embargo_date.date() > datetime.date.today():
+        return embargo_date
+    return None
+
 @toolkit.auth_allow_anonymous_access
-def check_restrictions(context, data_dict=None):
-    try:
-        # check if sysadmin (sysadmin has access to everything)
-        # check if dataset is embargoed (only sysadmin has access)
-        # check if dataset is restricted (only sysadmin and authorized users have access)
+def check_resource_restrictions(context, data_dict=None):
 
-        # if dataset is neither restricted nor embargoed, everyone has access
-        dataset_id = data_dict['dataset_id']
+    # if the resource's package ID was given directly (e.g. from the
+    # 'resources_list.html' snippet), use it directly
+    package_id = data_dict.get('package_id', None)
+
+    # if package_id was not provided, use the resource id to determine what the
+    # package_id is
+    if package_id is None:
+        package_id = context['model'].Resource.get(data_dict['id']).package_id
         
-        pass
-    except:
-        return {'success' : False,
-                'msg' : "Error in 'check_restrictions' authorization function."}
-    
-    pdb.set_trace()
-    return {'success': True}
-    
+    return check_package_restrictions(context, {'package_id' : package_id})
 
+@toolkit.auth_allow_anonymous_access
+def check_package_restrictions(context, data_dict=None):
+
+    if "package_id" not in data_dict.keys():
+        raise exceptions.CkanException('no package id')
+    if data_dict is None:
+        raise exceptions.CkanException('no data_dict')
+
+    # check if logged in (if not, then package resources will not be available)
+    if context.get('auth_user_obj', None) is None:
+        return {'success' : False,
+                'msg' : "Dataset resources not available to anonymous users."}
+    
+    # check if sysadmin (sysadmin has access to everything)
+    if is_sysadmin(context):
+        return {'success' : True}
+
+    # check if dataset is embargoed (only sysadmin has access)
+    package_id = data_dict['package_id']
+    pkg_info = toolkit.get_action('package_show')(context, {'id': package_id})
+    embargo_date = check_embargoed(package_id)
+    if embargo_date:
+        return {'success' : False,
+                'msg' : "Dataset is under embargo and is scheduled "
+                "to be released on: {date}".format(date=embargo_date.date())}
+    
+    # check if dataset is restricted (only sysadmin and authorized users have access)
+    if pkg_info.get('is_restricted', False):
+        return {'success' : False,
+                'msg' : "Dataset has restricted access."}
+    
+    # if dataset is neither restricted nor embargoed, everyone has access
+    return {'success' : True}
+
+# except:
+#         pdb.set_trace()
+#         return {'success' : False,
+#                 'msg' : "Error in 'check_resource_restrictions' authorization function."}
+    
 
 def resource_read_patch(function):
     @wraps(function)
@@ -158,12 +207,17 @@ def ensure_special_access_table_present():
     
 class CDSCAccessManagementPlugin(plugins.SingletonPlugin, toolkit.DefaultDatasetForm):
     #plugins.implements(plugins.IValidators)
+    plugins.implements(plugins.ITemplateHelpers)
     plugins.implements(plugins.IAuthFunctions)
     plugins.implements(plugins.IMiddleware)
     plugins.implements(plugins.IConfigurer)
     plugins.implements(plugins.IDatasetForm)
 
 
+    # ============================= ITemplateHelpers =============================
+    def get_helpers(self):
+        return {'check_embargoed' : check_embargoed}
+    
     # ================================ IValidators ================================
     # def get_validators(self):
     #     return {'isodate_string': isodate_string}
@@ -176,7 +230,7 @@ class CDSCAccessManagementPlugin(plugins.SingletonPlugin, toolkit.DefaultDataset
                 'package_delete': only_admin,
                 'package_show'  : everyone,
                 'resource_view_list': everyone,
-                'resource_show' : check_restrictions}
+                'resource_show' : check_resource_restrictions}
 
     # ================================ IMiddleware ================================
     
