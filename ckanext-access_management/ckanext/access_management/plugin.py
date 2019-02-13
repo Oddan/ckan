@@ -140,11 +140,6 @@ def check_package_restrictions(context, data_dict=None):
     # if dataset is neither restricted nor embargoed, everyone has access
     return {'success' : True}
 
-# except:
-#         pdb.set_trace()
-#         return {'success' : False,
-#                 'msg' : "Error in 'check_resource_restrictions' authorization function."}
-    
 
 def resource_read_patch(function):
     @wraps(function)
@@ -197,14 +192,7 @@ def ensure_special_access_table_present():
             Then run paster db upgrade.
             '''
             )
-    
-    #pdb.set_trace()
 
-# def isodate_string(key, data, errors, context):
-#     pdb.set_trace()
-#     result = toolkit.get_validator('isodate')(data[key], context)
-#     return str(result.date())
-    
 class CDSCAccessManagementPlugin(plugins.SingletonPlugin, toolkit.DefaultDatasetForm):
     #plugins.implements(plugins.IValidators)
     plugins.implements(plugins.ITemplateHelpers)
