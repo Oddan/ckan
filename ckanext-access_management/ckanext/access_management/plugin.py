@@ -17,6 +17,7 @@ from ckan.common import _, c, request
 
 from functools import wraps
 
+from pylons import c as pylons_c
 
 import pdb
 
@@ -194,8 +195,11 @@ def ensure_special_access_table_present():
             )
 
 def grant_rights():
-    
-    return base.render('package/grant_rights.html', c={'pkg_dict' : {}})
+
+    # allow use of jinja2 template written for pylons
+    #c = {'pkg_dict': {}}
+    pdb.set_trace()
+    return base.render('package/grant_rights.html', {'c' : pylons_c})
     
 class CDSCAccessManagementPlugin(plugins.SingletonPlugin, toolkit.DefaultDatasetForm):
     #plugins.implements(plugins.IValidators)
