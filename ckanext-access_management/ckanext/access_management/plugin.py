@@ -1,5 +1,5 @@
 from sqlalchemy import orm, types, Column, Table, ForeignKey, MetaData
-from flask import Blueprint
+from flask import Blueprint, render_template, render_template_string
 import warnings
 import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
@@ -193,8 +193,13 @@ def ensure_special_access_table_present():
             '''
             )
 
+def grant_rights():
+    
+    return base.render('package/grant_rights.html', c={'pkg_dict' : {}})
+    
 class CDSCAccessManagementPlugin(plugins.SingletonPlugin, toolkit.DefaultDatasetForm):
     #plugins.implements(plugins.IValidators)
+    plugins.implements(plugins.IBlueprint)
     plugins.implements(plugins.ITemplateHelpers)
     plugins.implements(plugins.IAuthFunctions)
     plugins.implements(plugins.IMiddleware)
@@ -202,6 +207,14 @@ class CDSCAccessManagementPlugin(plugins.SingletonPlugin, toolkit.DefaultDataset
     plugins.implements(plugins.IDatasetForm)
 
 
+    # ================================ IBlueprint ================================
+
+    def get_blueprint(self):
+        blueprint = Blueprint(self.name, self.__module__)
+        blueprint.template_folder = u'templates'
+        blueprint.add_url_rule(u'/grant_rights', u'grant_rights', grant_rights)
+        return blueprint
+    
     # ============================= ITemplateHelpers =============================
     def get_helpers(self):
         return {'check_embargoed' : check_embargoed}
