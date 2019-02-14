@@ -1,5 +1,12 @@
 {% extends 'package/edit_base.html' %}
 
 {% block primary_content_inner %}
+
+<div class="list-group pre-scrollable">
+  {% for user in c.usernames %}
+  <a href="#" class="list-group-item list-group-item-action"> {{user }} </a>
+  {% endfor %}
+</div>
+
 Hello world!
 {% endblock %}

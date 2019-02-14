@@ -1,5 +1,6 @@
 from sqlalchemy import orm, types, Column, Table, ForeignKey, MetaData
 from flask import Blueprint, render_template, render_template_string
+from logic import NotFound, NotAuthorized, check_access
 import warnings
 import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
@@ -17,7 +18,7 @@ from ckan.common import _, c, request
 
 from functools import wraps
 
-from pylons import c as pylons_c
+#from pylons import c as pylons_c
 
 import pdb
 
@@ -194,12 +195,27 @@ def ensure_special_access_table_present():
             '''
             )
 
-def grant_rights():
+def grant_rights(id):
 
-    # allow use of jinja2 template written for pylons
-    #c = {'pkg_dict': {}}
-    pdb.set_trace()
-    return base.render('package/grant_rights.html', {'c' : pylons_c})
+    context = {'model' : model, 'session' : model.Session,
+               'user': c.user, 'for_view' : True, 'auth_user_obj' : c.userobj}
+    #pdb.set_trace()
+    try:
+        check_access('package_update', context, {'id' : id, 'include_tracking': True})
+    except NotFound:
+        base.abort(404, _('Dataset not found'))
+    except NotAuthorized:
+        base.abort(403, _('User %r not authorized to edit %s') % (c.user, id))
+    
+    try:
+        c.pkg_dict = toolkit.get_action('package_show')(context, {'id' : id})
+    except (NotFound, NotAuthorized):
+        abort(404, _('Dataset not found'))
+
+    c.usernames = [u.name for u in model.User.all()]
+        
+    return base.render('package/grant_rights.html')
+    #return base.render('package/grant_rights.html', {'c' : pylons_c})
     
 class CDSCAccessManagementPlugin(plugins.SingletonPlugin, toolkit.DefaultDatasetForm):
     #plugins.implements(plugins.IValidators)
@@ -216,7 +232,7 @@ class CDSCAccessManagementPlugin(plugins.SingletonPlugin, toolkit.DefaultDataset
     def get_blueprint(self):
         blueprint = Blueprint(self.name, self.__module__)
         blueprint.template_folder = u'templates'
-        blueprint.add_url_rule(u'/grant_rights', u'grant_rights', grant_rights)
+        blueprint.add_url_rule(u'/grant_rights/<id>', u'grant_rights', grant_rights)
         return blueprint
     
     # ============================= ITemplateHelpers =============================
