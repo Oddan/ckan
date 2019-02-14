@@ -1,12 +1,29 @@
 {% extends 'package/edit_base.html' %}
+{% import 'macros/form.html' as form %}
 
 {% block primary_content_inner %}
 
+<form id="grant-rights" class="dataset-form" method="post" action="google.com" data-module="basic-form">
+
 <div class="list-group pre-scrollable">
   {% for user in c.usernames %}
-  <a href="#" class="list-group-item list-group-item-action"> {{user }} </a>
+  <li class="list-group-item">
+    {{ form.checkbox('has_access', label=_(user), id='field-%s' % user,
+    placeholder=_('has_access'), value=True, checked=False, classes=['checkbox'])}}
+  </li>
+  
   {% endfor %}
 </div>
 
-Hello world!
+<div class="form-actions">
+<button class="btn btn-primary"
+        name="save"
+        value="grant-rights-complete"
+        type="submit">
+  Save
+</button>
+</div>
+
+</form>
 {% endblock %}
+
