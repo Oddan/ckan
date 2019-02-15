@@ -31,16 +31,7 @@ rights_table = Table(rights_table_name, model.meta.metadata,
                      Column('user_id', types.UnicodeText, ForeignKey('user.id')),
                      Column('package_id', types.UnicodeText, ForeignKey('package.id')))
 
-access_restriction_table = Table(access_restriction_table_name, model.meta.metadata,
-                        Column('id', types.UnicodeText, primary_key=True, default=model.types.make_uuid),
-                        Column('package_id', types.UnicodeText, ForeignKey('package.id'),
-                               unique=True, nullable=False),
-                        Column('restricted', types.Boolean, default=False),
-                        Column('embargo_date', types.DateTime, default=None))
-
 class SpecialAccessRights(model.domain_object.DomainObject):
-    pass
-class AccessRestriction(model.domain_object.DomainObject):
     pass
 
 model.meta.mapper(SpecialAccessRights, rights_table,
@@ -50,10 +41,6 @@ model.meta.mapper(SpecialAccessRights, rights_table,
                          'package' : orm.relation(model.package.Package,
                                         backref=orm.backref('special_access_rights',
                                                             cascade='all, delete, delete-orphan'))})
-model.meta.mapper(AccessRestriction, access_restriction_table,
-                  properties={ 'package' : orm.relation(model.package.Package,
-                                                        backref=orm.backref('access_restriction',
-                                                                            uselist=False))})
 
 orm.configure_mappers() # this will update 'User' and 'Package' with the new relations
 # nb: call session.refresh(object) on an object if you want to update its backrefs after a deletion.
@@ -87,7 +74,6 @@ def everyone(context, data_dict=None):
 
 def check_embargoed(package_id):
     context = {} # since packages are always visible, context does not matter here
-    #pdb.set_trace()
     pkg_info = toolkit.get_action('package_show')(context, {'id': package_id})
     embargo_date =  pkg_info.get('embargo_date', None)
     if embargo_date and embargo_date.date() > datetime.date.today():
@@ -108,6 +94,13 @@ def check_resource_restrictions(context, data_dict=None):
         
     return check_package_restrictions(context, {'package_id' : package_id})
 
+def has_special_rights(user_id, package_id):
+    session = model.Session()
+    entries = session.query(SpecialAccessRights).\
+              filter(SpecialAccessRights.user_id == user_id).\
+              filter(SpecialAccessRights.package_id == package_id).all()
+    return bool(len(entries) > 0)
+    
 @toolkit.auth_allow_anonymous_access
 def check_package_restrictions(context, data_dict=None):
 
@@ -136,6 +129,9 @@ def check_package_restrictions(context, data_dict=None):
     
     # check if dataset is restricted (only sysadmin and authorized users have access)
     if pkg_info.get('is_restricted', False):
+        user_id = context['auth_user_obj'].id
+        if has_special_rights(user_id, package_id):
+            return {'success' : True}
         return {'success' : False,
                 'msg' : "Dataset has restricted access."}
     
@@ -195,27 +191,69 @@ def ensure_special_access_table_present():
             '''
             )
 
+def _grant_user_rights(users, dataset_id):
+
+    #pdb.set_trace()
+    for u in users:
+        user_key = model.User.get(u).id
+        data_key = model.Package.get(dataset_id).id
+        rights = SpecialAccessRights(user_id=user_key, package_id=data_key)
+        rights.save()
+
+def _revoke_user_rights(users, dataset_id):
+
+    session = model.Session()
+    for u in users:
+        user_key = model.User.get(u).id
+        data_key = model.Package.get(dataset_id).id
+
+        # there should normally be 0 or 1 entry
+        entries = session.query(SpecialAccessRights).\
+                  filter(SpecialAccessRights.user_id == user_key).\
+                  filter(SpecialAccessRights.package_id == data_key).all()
+        #pdb.set_trace()
+        for e in entries:
+            e.delete()
+    session.commit()
+    
 def grant_rights(id):
 
     context = {'model' : model, 'session' : model.Session,
                'user': c.user, 'for_view' : True, 'auth_user_obj' : c.userobj}
     #pdb.set_trace()
+    # Verify that the dataset exists and that the use has the right to modify it
     try:
         check_access('package_update', context, {'id' : id, 'include_tracking': True})
     except NotFound:
         base.abort(404, _('Dataset not found'))
     except NotAuthorized:
         base.abort(403, _('User %r not authorized to edit %s') % (c.user, id))
-    
     try:
         c.pkg_dict = toolkit.get_action('package_show')(context, {'id' : id})
     except (NotFound, NotAuthorized):
         abort(404, _('Dataset not found'))
 
-    c.usernames = [u.name for u in model.User.all()]
+    # Check if we are dealing with a change request
+    if request.method == 'POST':
+        users =  request.form.getlist('selected')
+        if request.form['post-button'] == 'grant-rights':
+            _grant_user_rights(users, id)
+        elif request.form['post-button'] == 'revoke-rights':
+            _revoke_user_rights(users, id)
+
+    session = model.Session()
+    data_key = model.Package.get(id).id
+
+    rights_users_ids =  session.query(model.User.id).\
+                        filter(model.User.id == SpecialAccessRights.user_id).\
+                        filter(SpecialAccessRights.package_id == data_key).all()
+    rights_users = session.query(model.User.name).filter(model.User.id.in_(rights_users_ids)).all()
+    other_users = session.query(model.User.name).filter(~model.User.id.in_(rights_users_ids)).all()
+    c.rights_users = [e[0] for e in rights_users]
+    c.other_users =  [e[0] for e in other_users]
         
     return base.render('package/grant_rights.html')
-    #return base.render('package/grant_rights.html', {'c' : pylons_c})
+
     
 class CDSCAccessManagementPlugin(plugins.SingletonPlugin, toolkit.DefaultDatasetForm):
     #plugins.implements(plugins.IValidators)
@@ -230,9 +268,9 @@ class CDSCAccessManagementPlugin(plugins.SingletonPlugin, toolkit.DefaultDataset
     # ================================ IBlueprint ================================
 
     def get_blueprint(self):
-        blueprint = Blueprint(self.name, self.__module__)
+        blueprint = Blueprint(self.name, self.__module__,)
         blueprint.template_folder = u'templates'
-        blueprint.add_url_rule(u'/grant_rights/<id>', u'grant_rights', grant_rights)
+        blueprint.add_url_rule(u'/grant_rights/<id>', u'grant_rights', grant_rights, methods=['GET', 'POST'])
         return blueprint
     
     # ============================= ITemplateHelpers =============================
@@ -312,7 +350,4 @@ class CDSCAccessManagementPlugin(plugins.SingletonPlugin, toolkit.DefaultDataset
         # This plugin does not handle any special package types, it just acts as
         # a default.
         return []
-        
-    # def setup_template_variables(self, context, data_dict):
-    #     implement_me
     
