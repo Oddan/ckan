@@ -7,7 +7,6 @@ import requests
 from ckan.common import c
 import ckan.model as model
 
-import pdb
 
 '''
 This plugin does the following:
