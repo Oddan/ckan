@@ -11,22 +11,7 @@ Example:
 #}
 
 
-
-{# Need to fix the css for the resources list since we put them in a checkbox form.
-  The reason why we do it here is that modifying the general css file will result in problems
-  in other pages where the checkbox form is not present #}
-<style>
-  .resource-item .description {
-    position: relative;
-    left:78px;
-  }
-
-  .resource-item:hover {
-    background:none
-  }
-</style>
-
-
+{# This file creates the checkbox form to select multiple resources for download #}
 
 <section id="dataset-resources" class="resources">
     <h3>{{ _('Data and Resources') }}</h3>
@@ -39,8 +24,10 @@ Example:
             <form action="/multiple_download" method="POST" onsubmit="return validate_form()">
   
               {% for resource in resources %}
-                  <input type="checkbox" name="{{ resource.name }}" value="{{ resource.url }}">{% snippet 'package/snippets/resource_item.html', pkg=pkg, res=resource, can_edit=can_edit %}<br>
+                  <input type="checkbox" name="{{ resource.name }}" value="{{ resource.url }}" id="resource">{% snippet 'package/snippets/resource_item.html', pkg=pkg, res=resource, can_edit=can_edit %}<br>
               {% endfor %}
+              <br>
+              <input type="checkbox" required> By clicking this I confirm that I have read and accepted this dataset's <a href="{{ pkg.license_url }}" rel="dc:rights">Licence Requirements</a>. (See also box in the sidebar)<br>
               
               <br>
               <input type="submit" value="Download resources">
@@ -61,11 +48,11 @@ Example:
 
 
 {# This script gets called when the form to download resources is submitted.
-  Checks that at least one resource has been selected before submitting the request,
+  It checks that at least one resource has been selected before submitting the request,
   and raises a warning otherwise. #}
 <script type="text/javascript">
   function validate_form(){
-    var checkboxes = document.querySelectorAll('input[type="checkbox"]')
+    var checkboxes = document.querySelectorAll('input[id="resource"]')
     var checkedOne = Array.prototype.slice.call(checkboxes).some(x => x.checked)
     if (checkedOne){
       return true

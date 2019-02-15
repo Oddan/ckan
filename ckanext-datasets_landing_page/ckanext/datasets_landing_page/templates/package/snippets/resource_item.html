@@ -2,6 +2,8 @@
 {% set url = h.url_for(controller='package', action=url_action, id=pkg.name, resource_id=res.id) %}
 
 
+{# This css style adapts the display of the resources depending if they are displayed in the
+  Dataset Landing Page or in the dataset-->manage-->resources page.#}
 {% if url_is_edit %}
   <style>
     .resource-item .description {
@@ -15,6 +17,19 @@
   </style>
 
   <div>
+
+  {% else %}
+    <style>
+      .resource-item .description {
+        position: relative;
+        left:78px;
+      }
+    
+      .resource-item:hover {
+        background:none
+      }
+    </style>
+
   {% endif %}
 
 <span class="resource-item" data-id="{{ res.id }}">
