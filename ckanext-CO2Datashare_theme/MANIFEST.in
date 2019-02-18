@@ -1,0 +1,4 @@
+include README.rst
+include LICENSE
+include requirements.txt
+recursive-include ckanext/CO2Datashare_theme *.html *.json *.js *.less *.css *.mo
