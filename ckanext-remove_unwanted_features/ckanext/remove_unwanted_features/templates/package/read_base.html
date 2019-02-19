@@ -1,0 +1,9 @@
+{% ckan_extends %}
+
+{{ super() }}
+
+
+{# REmoves the "groups" and "activity stream" tabs from the package view page #}
+{% block content_primary_nav %}
+  {{ h.build_nav_icon('dataset_read', _('Dataset'), id=pkg.name) }}
+{% endblock %}
