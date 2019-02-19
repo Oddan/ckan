@@ -5,7 +5,6 @@ import zipfile
 import io
 import requests
 from ckan.common import c
-import ckan.model as model
 
 
 '''
