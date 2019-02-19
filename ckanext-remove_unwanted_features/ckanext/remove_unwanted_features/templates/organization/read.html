@@ -8,7 +8,7 @@
   <div class="filters">
     <div>
       {% for facet in c.facet_titles %}
-        {% if facet != "groups" %}
+        {% if facet != "groups" and facet != "organization" %}
           {{ h.snippet('snippets/facet_list.html', title=c.facet_titles[facet], name=facet, extras={'id':c.group_dict.id}) }}
         {% endif %}
       {% endfor %}
