@@ -1,0 +1,4 @@
+include README.rst
+include LICENSE
+include requirements.txt
+recursive-include ckanext/remove_unwanted_features *.html *.json *.js *.less *.css *.mo

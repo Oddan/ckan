@@ -8,7 +8,7 @@ def user_update(context, data_dict=None):
     return {'success': False, 'msg': 'You are not authorized to update the user profile'}
 
 
-class Restrict_User_PermissionsPlugin(plugins.SingletonPlugin):
+class Remove_Unwanted_FeaturesPlugin(plugins.SingletonPlugin):
     plugins.implements(plugins.IConfigurer)
     plugins.implements(plugins.IAuthFunctions)
 
@@ -17,7 +17,10 @@ class Restrict_User_PermissionsPlugin(plugins.SingletonPlugin):
     def update_config(self, config_):
         toolkit.add_template_directory(config_, 'templates')
         toolkit.add_public_directory(config_, 'public')
-        toolkit.add_resource('fanstatic', 'restrict_user_permissions')
+        toolkit.add_resource('fanstatic', 'remove_unwanted_features')
+
+
+    # IAuthFunctions
 
     def get_auth_functions(self):
         return {'user_update': user_update}

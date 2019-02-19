@@ -8,7 +8,7 @@ nosetests --ckan \
           --nologcapture \
           --with-pylons=subdir/test.ini \
           --with-coverage \
-          --cover-package=ckanext.restrict_user_permissions \
+          --cover-package=ckanext.remove_unwanted_features \
           --cover-inclusive \
           --cover-erase \
           --cover-tests

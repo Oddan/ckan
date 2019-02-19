@@ -2,34 +2,34 @@
    these badges work. The necessary Travis and Coverage config files have been
    generated for you.
 
-.. image:: https://travis-ci.org//ckanext-restrict_user_permissions.svg?branch=master
-    :target: https://travis-ci.org//ckanext-restrict_user_permissions
+.. image:: https://travis-ci.org//ckanext-remove_unwanted_features.svg?branch=master
+    :target: https://travis-ci.org//ckanext-remove_unwanted_features
 
-.. image:: https://coveralls.io/repos//ckanext-restrict_user_permissions/badge.svg
-  :target: https://coveralls.io/r//ckanext-restrict_user_permissions
+.. image:: https://coveralls.io/repos//ckanext-remove_unwanted_features/badge.svg
+  :target: https://coveralls.io/r//ckanext-remove_unwanted_features
 
-.. image:: https://pypip.in/download/ckanext-restrict_user_permissions/badge.svg
-    :target: https://pypi.python.org/pypi//ckanext-restrict_user_permissions/
+.. image:: https://pypip.in/download/ckanext-remove_unwanted_features/badge.svg
+    :target: https://pypi.python.org/pypi//ckanext-remove_unwanted_features/
     :alt: Downloads
 
-.. image:: https://pypip.in/version/ckanext-restrict_user_permissions/badge.svg
-    :target: https://pypi.python.org/pypi/ckanext-restrict_user_permissions/
+.. image:: https://pypip.in/version/ckanext-remove_unwanted_features/badge.svg
+    :target: https://pypi.python.org/pypi/ckanext-remove_unwanted_features/
     :alt: Latest Version
 
-.. image:: https://pypip.in/py_versions/ckanext-restrict_user_permissions/badge.svg
-    :target: https://pypi.python.org/pypi/ckanext-restrict_user_permissions/
+.. image:: https://pypip.in/py_versions/ckanext-remove_unwanted_features/badge.svg
+    :target: https://pypi.python.org/pypi/ckanext-remove_unwanted_features/
     :alt: Supported Python versions
 
-.. image:: https://pypip.in/status/ckanext-restrict_user_permissions/badge.svg
-    :target: https://pypi.python.org/pypi/ckanext-restrict_user_permissions/
+.. image:: https://pypip.in/status/ckanext-remove_unwanted_features/badge.svg
+    :target: https://pypi.python.org/pypi/ckanext-remove_unwanted_features/
     :alt: Development Status
 
-.. image:: https://pypip.in/license/ckanext-restrict_user_permissions/badge.svg
-    :target: https://pypi.python.org/pypi/ckanext-restrict_user_permissions/
+.. image:: https://pypip.in/license/ckanext-remove_unwanted_features/badge.svg
+    :target: https://pypi.python.org/pypi/ckanext-remove_unwanted_features/
     :alt: License
 
 =============
-ckanext-restrict_user_permissions
+ckanext-remove_unwanted_features
 =============
 
 .. Put a description of your extension here:
@@ -53,17 +53,17 @@ Installation
    For example installing any non-Python dependencies or adding any required
    config settings.
 
-To install ckanext-restrict_user_permissions:
+To install ckanext-remove_unwanted_features:
 
 1. Activate your CKAN virtual environment, for example::
 
      . /usr/lib/ckan/default/bin/activate
 
-2. Install the ckanext-restrict_user_permissions Python package into your virtual environment::
+2. Install the ckanext-remove_unwanted_features Python package into your virtual environment::
 
-     pip install ckanext-restrict_user_permissions
+     pip install ckanext-remove_unwanted_features
 
-3. Add ``restrict_user_permissions`` to the ``ckan.plugins`` setting in your CKAN
+3. Add ``remove_unwanted_features`` to the ``ckan.plugins`` setting in your CKAN
    config file (by default the config file is located at
    ``/etc/ckan/default/production.ini``).
 
@@ -80,18 +80,18 @@ Document any optional config settings here. For example::
 
     # The minimum number of hours to wait before re-checking a resource
     # (optional, default: 24).
-    ckanext.restrict_user_permissions.some_setting = some_default_value
+    ckanext.remove_unwanted_features.some_setting = some_default_value
 
 
 ------------------------
 Development Installation
 ------------------------
 
-To install ckanext-restrict_user_permissions for development, activate your CKAN virtualenv and
+To install ckanext-remove_unwanted_features for development, activate your CKAN virtualenv and
 do::
 
-    git clone https://github.com//ckanext-restrict_user_permissions.git
-    cd ckanext-restrict_user_permissions
+    git clone https://github.com//ckanext-remove_unwanted_features.git
+    cd ckanext-remove_unwanted_features
     python setup.py develop
     pip install -r dev-requirements.txt
 
@@ -107,15 +107,15 @@ To run the tests, do::
 To run the tests and produce a coverage report, first make sure you have
 coverage installed in your virtualenv (``pip install coverage``) then run::
 
-    nosetests --nologcapture --with-pylons=test.ini --with-coverage --cover-package=ckanext.restrict_user_permissions --cover-inclusive --cover-erase --cover-tests
+    nosetests --nologcapture --with-pylons=test.ini --with-coverage --cover-package=ckanext.remove_unwanted_features --cover-inclusive --cover-erase --cover-tests
 
 
 ---------------------------------
-Registering ckanext-restrict_user_permissions on PyPI
+Registering ckanext-remove_unwanted_features on PyPI
 ---------------------------------
 
-ckanext-restrict_user_permissions should be availabe on PyPI as
-https://pypi.python.org/pypi/ckanext-restrict_user_permissions. If that link doesn't work, then
+ckanext-remove_unwanted_features should be availabe on PyPI as
+https://pypi.python.org/pypi/ckanext-remove_unwanted_features. If that link doesn't work, then
 you can register the project on PyPI for the first time by following these
 steps:
 
@@ -140,10 +140,10 @@ steps:
 
 
 ----------------------------------------
-Releasing a New Version of ckanext-restrict_user_permissions
+Releasing a New Version of ckanext-remove_unwanted_features
 ----------------------------------------
 
-ckanext-restrict_user_permissions is availabe on PyPI as https://pypi.python.org/pypi/ckanext-restrict_user_permissions.
+ckanext-remove_unwanted_features is availabe on PyPI as https://pypi.python.org/pypi/ckanext-remove_unwanted_features.
 To publish a new version to PyPI follow these steps:
 
 1. Update the version number in the ``setup.py`` file.

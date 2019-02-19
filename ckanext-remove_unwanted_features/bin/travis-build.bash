@@ -32,7 +32,7 @@ cd ckan
 paster db init -c test-core.ini
 cd -
 
-echo "Installing ckanext-restrict_user_permissions and its requirements..."
+echo "Installing ckanext-remove_unwanted_features and its requirements..."
 python setup.py develop
 pip install -r dev-requirements.txt
 
