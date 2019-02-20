@@ -11,6 +11,7 @@ from vdm.sqlalchemy.base import SQLAlchemySession
 from sqlalchemy import MetaData, __version__ as sqav, Table
 from sqlalchemy.util import OrderedDict
 
+import pdb
 import meta
 from meta import (
     Session,
@@ -257,13 +258,20 @@ class Repository(vdm.sqlalchemy.Repository):
 
         @param version: version to upgrade to (if None upgrade to latest)
         '''
+
         assert meta.engine.name in ('postgres', 'postgresql'), \
             'Database migration - only Postgresql engine supported (not %s).' \
                 % meta.engine.name
         import migrate.versioning.api as mig
         self.setup_migration_version_control()
         version_before = mig.db_version(self.metadata.bind, self.migrate_repository)
-        mig.upgrade(self.metadata.bind, self.migrate_repository, version=version)
+
+        # @@ temporary modification by Odd
+        if version and int(version) < version_before:
+            mig.downgrade(self.metadata.bind, self.migrate_repository, version=version)
+        else:
+            mig.upgrade(self.metadata.bind, self.migrate_repository, version=version)
+            
         version_after = mig.db_version(self.metadata.bind, self.migrate_repository)
         if version_after != version_before:
             log.info('CKAN database version upgraded: %s -> %s', version_before, version_after)

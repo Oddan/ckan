@@ -1,0 +1,57 @@
+{% extends 'package/edit_base.html' %}
+{% import 'macros/form.html' as form %}
+
+{% block primary_content_inner %}
+
+<form id="revoke-rights" class="dataset-form col-sm-6" method="post" action="" data-module="basic-form">
+<h2> Users with special  access</h2>
+<div class="list-group pre-scrollable">
+
+  {% if c.rights_users %}
+  {% for user in c.rights_users %}
+  <li class="list-group-item">
+    {{ form.checkbox('selected', label=_(user), id='field-%s' % user,
+    placeholder=_('selected'), value=user , checked=False, classes=['checkbox'])}}
+  </li>
+  {% endfor %}
+  <div class="form-actions">
+    <button class="btn btn-primary"
+            name="post-button"
+            value="revoke-rights"
+            type="submit">
+      Remove user(s)
+    </button>
+  </div>
+
+  {% else %}
+  <em>No special rights granted</em>
+  {% endif %}
+  
+</div>
+</form>
+
+<form id="grant-rights" class="dataset-form col-sm-6" method="post" action="" data-module="basic-form">
+<h2>Other users</h2>
+<div class="list-group pre-scrollable">
+  {% for user in c.other_users %}
+  <li class="list-group-item">
+    {{ form.checkbox('selected', label=_(user), id='field-%s' % user,
+    placeholder=_('selected'), value=user , checked=False, classes=['checkbox'])}}
+  </li>
+  
+  {% endfor %}
+</div>
+
+<div class="form-actions">
+<button class="btn btn-primary"
+        name="post-button"
+        value="grant-rights"
+        type="submit">
+  Add user(s)
+</button>
+</div>
+
+</form>
+
+{% endblock %}
+

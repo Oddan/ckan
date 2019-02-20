@@ -1,0 +1,17 @@
+{% ckan_extends %}
+
+{% block package_basic_fields_custom %}
+
+  {{ form.checkbox('is_restricted', label=_('Is restricted'), id='field-is_restricted',
+  placeholder=_('is restricted'), value=True, checked=data.is_restricted, error = errors.is_restricted, classes=['control-medium'])}}
+
+  {% set date = data.embargo_date.date() if data.embargo_date %}
+  
+  {{ form.input('embargo_date', label=_('Embargo date'), id='field-embargo_date', type='date', placeholder=_('embargo date'), value=date, error = errors.embargo_date, classes=['control-medium'], attrs={})}} 
+  
+{% endblock %}
+
+{% block package_metadata_fields_visibility %}
+  {# we do not want to use the 'visibility' flag - all datasets should be flagged #}
+  {# 'public' here, so that metadata will be visible to everyone #}
+{% endblock %}
