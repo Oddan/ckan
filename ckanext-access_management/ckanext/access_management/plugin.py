@@ -171,6 +171,7 @@ def _modify_package_schema(schema):
     return schema
 
 def ensure_special_access_table_present():
+    #pdb.set_trace()
     tmp_metadata = MetaData(model.meta.metadata.bind)
     with warnings.catch_warnings():
         warnings.filterwarnings('ignore', '.*(reflection|tsvector).*')
