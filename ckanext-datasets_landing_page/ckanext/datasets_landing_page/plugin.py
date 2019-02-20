@@ -25,6 +25,9 @@ def download_multiple_resources():
     access = True
     if request.method == "POST":
 
+        if not c.userobj:
+            return render_template(u"package/download_denied.html")
+
         memory_file = io.BytesIO()
         with zipfile.ZipFile(memory_file, mode='w', compression=zipfile.ZIP_STORED) as zf:
             for res_name in request.form:
