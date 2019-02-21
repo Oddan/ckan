@@ -7,3 +7,7 @@
 {% block content_primary_nav %}
   {{ h.build_nav_icon('dataset_read', _('Dataset'), id=pkg.name) }}
 {% endblock %}
+
+{# remove the "social" box from the sidebar when viewing a package page #}
+{% block package_social %}
+{% endblock %}
