@@ -1,0 +1,21 @@
+{% extends "page.html" %}
+
+{% block secondary %}
+{% endblock %}
+
+{% block primary %}
+
+    <div style="padding:50px" include-agreement="/agreements/{{agreement_name}}.html"></div>
+
+    {# calls the javascript function to load the right static .html file for the agreement.
+    The file is loaded from the path specified above #}
+    {% block custom_javascript %}
+    <script type="text/javascript">
+        {% include "include_agreement.js" %}
+        includeHTML();
+    </script>
+    {% endblock %}
+
+{% endblock %}
+
+
