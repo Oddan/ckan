@@ -1,0 +1,225 @@
+
+										        
+										        <div>
+	<p><img alt="" src="../datasets_custom_html/the_johansen_dataset/ImageVaultHandler.gif" width="76" height="76">&nbsp;&nbsp;<img style="float: right;" alt="" src="../datasets_custom_html/the_johansen_dataset/ImageVaultHandler.jpeg">&nbsp;&nbsp;&nbsp;</p>
+</div>
+									        </div>
+								        
+							        </div>							
+						        
+						        <div id="ContainerFromHeader">
+
+							        
+
+							        
+    						
+							        
+								        
+								        <table id="FullRegion" summary="Table for layout purposes." width="100%" cellspacing="0" cellpadding="0">
+									        <tbody><tr class="MainRow">
+                                                
+											        
+										        
+                                            
+										        
+											        <td id="MainArea">
+												        <div id="MainAreaDiv"><a id="content"></a>
+                                                            
+													            
+    <div id="voicearea" class="TextContent">
+        
+
+<div class="Ingress">
+    <div class="Ingress">
+	    <div class="Title">
+        
+	    <div class="Body">
+	        
+<div class="Ingress">
+    <div>
+	The Johansen formation is a candidate site for large-scale CO<sub>2</sub>
+ storage offshore the south-west coast of Norway. As part of the MatMoRA
+ project, we have developed a geological model based on available 
+seismic and well data. By publishing this model online, we seek to 
+provide different modeling groups with a real data set that can be used 
+for comparisons and to calibrate and understand the workings of 
+different computational tools.
+</div>
+</div>
+	    </div>
+    </div>
+    
+</div>
+
+        
+        <div class="rich-text-field">
+	<h3>Background</h3>
+<ul>
+<li>G.T. Eigestad, H. K. Dahle, B. Hellevang, F. Riis, W.T. Johansen, and E. Øian. <a href="https://www.sintef.no/upload/IKT/9011/SimOslo/MatMorA/papers/johansen_final_ver1.pdf">Geological modeling and simulation of CO<sub>2</sub> injection in the Johansen formation</a>.</li></ul>
+<h3>Geometry</h3>
+<h3>Sector models</h3>
+<p>The simulation grids are made available in corner-point format. This 
+format is an extension of the logical Cartesian grid format. <a href="https://www.sintef.no/project/MatMoRA/Johansen/joh2.png"></a>Due
+ to the vertical faulting of geological zones, the corners of grid cells
+ are in general not conforming from one grid block to the neighboring 
+grid block.<a href="https://www.sintef.no/project/MatMoRA/Johansen/joh2.png"><img alt="" src="../datasets_custom_html/the_johansen_dataset/joh2_1.jpg" vspace="10" hspace="10" border="30" align="right"></a></p>
+<p>The full-field model is discretized by a 149x189x16 grid. This grid 
+describes all zones and the entire lateral domain. The Johansen 
+formation is given by 3 layers.</p>
+<p>The sector models correspond to the south western parts of the 
+geological domain. They are discretized by a 100 × 100 lateral grid with
+ three different vertical resolutions of the Johansen formation:</p>
+<ol>
+<li>Sector5: 5 layers in Johansen, 100 x 100 x 11 [<a href="https://www.sintef.no/project/MatMoRA/Johansen/Sector5.zip">download zip file</a>]</li>
+<li>Sector10: 10 layers in Johansen, 100 x 100 x 16 [<a href="https://www.sintef.no/project/MatMoRA/Johansen/Sector10.zip">download zip file</a>]</li>
+<li>Sector15: 15 layers in Johansen, 100 x 100 x 21 [<a href="https://www.sintef.no/project/MatMoRA/Johansen/Sector15.zip">download zip file</a>]</li></ol>
+<p>A sector model with heterogeneous rock properties in the Johansen formation is also provided:</p>
+<ol>
+<li>NPD5: 5 layers in Johansen, 100x100x11 [<a href="https://www.sintef.no/project/MatMoRA/Johansen/NPD5.zip">download zip file</a>]</li></ol>
+<p>The shale (Dunlin) above Johansen is represented by 5 grid layers in 
+all sector models. Similarly, there is one shale layer below Johansen in
+ all sector models. The geometry files are offered in two formats: 
+either as Eclipse input files (&lt;modelname&gt;.grdecl) or as <a href="https://www.sintef.no/content/page1.aspx?id=120273">separate files for pillar coordinates, corner-point depths, and list of active cells</a>.</p>
+<h3>Full-field models</h3>
+<p>In addition to the four sector models, we also offer a full-field model</p>
+<ol>
+<li>FullField: 149 x 189 x 16 [<a href="https://www.sintef.no/project/MatMoRA/Johansen/Fullfield_files.zip">text files</a>] [<a href="https://www.sintef.no/project/MatMoRA/Johansen/FULLFIELD_Eclipse.zip">GRDECL file</a>] </li></ol>
+<p>The sector models all correspond to the <a href="https://www.sintef.no/project/MatMoRA/Johansen/Fullfield_with_Sector.png">same part of the full-field model</a>.</p>
+<h3>Petrophysical data</h3><a href="https://www.sintef.no/project/MatMoRA/Johansen/joh1.png"><img alt="" src="../datasets_custom_html/the_johansen_dataset/joh1_1.jpg" vspace="10" hspace="10" border="30" align="right"></a> 
+<p>The <em>porosity</em> of the grid is given with one non-negative value between 0 and 1 for each grid cell, including inactive cells. </p>
+<p>The x-direction <em>permeability</em> of the grid is given with one 
+non-negative value for each grid cell, including inactive cells. In this
+ data set the y-direction permeability is equal to the x-direction 
+permeability while the z-direction permeability is 1/10 of the 
+x-direction permeability. </p>
+<p>Data files can be extracted from the zip files:</p>
+<ul>
+<li>&lt;modelname&gt;_Porosity.txt</li>
+<li>&lt;modelname&gt;_Permeability.txt</li></ul>
+<h3>Remark</h3>
+<p>The Johansen formation has interbedded shale layers. The full field 
+model is based directly on the geomodel where these shales are 
+represented as pinched out, separate grid layers. In the heterogeneous 
+sector model, the Johansen formation is represented by five grid layers 
+with no pinch-outs. The permeability (and porosity) values are 
+interpolated/mapped from the geomodel. Consequently, a single layer of 
+Johansen in the sector model will consist of a combination of both shale
+ and sandstone properties. Hence, <a href="https://www.sintef.no/project/MatMoRA/Johansen/fig1_npd5.png">the permeability in layer 6</a> of the sector model is a combination of the permeabilities of <a href="https://www.sintef.no/project/MatMoRA/Johansen/fig2_ffsand.png">sandstone layer 9</a> and <a href="https://www.sintef.no/project/MatMoRA/Johansen/fig3_ffshale.png">shale layer 10</a> in the full field model.</p>
+<h3>Fault data</h3>
+<h3>Faults</h3>
+<p>A unique identifier (name) and location of each fault in the grid is 
+given. The data files contains the fault name followed by start and end 
+indices of grid cells along the fault and finally the grid cell face of 
+the fault; 'X+' indicates that the fault is located along the face 
+towards the next cell in increasing i-direction. Example: </p><pre>  % name    Istart Iend Jstart Jend Kstart Kend face
+     'FAULT3' 43     43   48     48   1      21   'X+'
+</pre><br>
+<p>Data files (extract from zip files): </p>
+<ul>
+<li>&lt;modelname&gt;_Faults.txt</li></ul>
+<h3>Transmissibility multipliers</h3>
+<p>Transmissibility multipliers are the same for all faults, 
+consequently we only give the single multiplier value together with the 
+fault cell face numbering. For the homogeneous permeability case, the 
+multiplier is 0.1.</p>
+<h3>Reservoir Conditions</h3>
+<p>The reservoir temperature is given as 94 degrees Celsius. The initial pressure is 313.1 bar at 3100 m true vertical depth.</p>
+<h3>Rock data</h3>
+<p>The rock compressibility is 4.35·10<sup>-5</sup> bar<sup>-1</sup> at a reference pressure of 1.0 bar.</p>
+<h3>Fluid data</h3>
+<p>Fluid data is given for an immiscible water-CO<sub>2</sub> system at isothermal conditions. PVT data is given for 94 degrees Celsius.</p>
+<h3>PVT data</h3>
+<p>The fluid system is an immiscible, two-phase system consisting of water- and CO<sub>2</sub>-phase.
+ The density and viscosity data for both phases are given as a function 
+of pressure in tabulated form. The isothermal properties for 94 ºC are 
+given for pressure ranging from 230 to 400 bar.</p>
+<p>Data files [<a href="https://www.sintef.no/project/MatMoRA/Johansen/PVT.zip">download zip file</a>]:&nbsp;&nbsp; </p>
+<ul>
+<li>PVT_CO2.txt</li>
+<li>PVT_Water.txt</li></ul>The data files contains three columns; 1) 
+pressure, 2) density and 3) viscosity. Pressure is given in bar, density
+ in kg/m3, and viscosity in cP. 
+<h3>Relative permeability</h3>
+<p>Three sets of relative permeability curves are provided for the two-phase water and CO<sub>2</sub> system. The relative permeability values are given as a function of the associated phase saturation in tabulated form.</p>
+<p>Data files [<a href="https://www.sintef.no/project/MatMoRA/Johansen/RelPerm.zip">download zip file</a>]: </p>
+<ul>
+<li>Original_RelPermWater.txt</li>
+<li>Original_RelPermCO2.txt</li>
+<li>Scaled_RelPermWater.txt</li>
+<li>Scaled_RelPermCO2.txt</li>
+<li>PrimDrain_RelPermWater.txt</li>
+<li>PrimDrain_RelPermCO2.txt</li></ul>
+<p>The data files contain two columns: 1) phase saturation and 2) phase 
+relative permeability. We refer to the accompanying paper for a 
+description of the differences in the relative permeability data sets.</p>
+<h3>Wells</h3>
+<p>Well positioning is given by cell indices used for each simulation 
+grid. The well path intersects the Johansen formation vertically and 
+traverses the midpoints of the grid cells.</p>
+<p>The rates are constant during the injection period and is set to 1.4 · 10<sup>4</sup> m<sup>3</sup>/day at reservoir conditions.</p>
+<p>The well data files contains the i-, and j-direction indices of the 
+vertical column of perforated cells, then the start and end k-direction 
+indices of the perforated interval.</p>
+<p>Data files (extract from zip files): </p>
+<ul>
+<li>&lt;modelname&gt;_Well.txt</li></ul>
+</div>
+    </div>
+    
+    <div id="addthis">
+        <!-- AddThis Button BEGIN -->
+        <div class="addthis_toolbox addthis_default_style addthis_32x32_style">
+            <a class="addthis_button_linkedin"></a>
+            <a class="addthis_button_twitter"></a>
+            <a class="addthis_button_facebook"></a>
+            <a class="addthis_button_google_plusone_share"></a>
+            <a class="addthis_button_email"></a>
+            <a class="addthis_button_compact"></a>
+            <a class="addthis_counter addthis_bubble_style"></a>
+        </div>
+        <script type="text/javascript">var addthis_config = { "data_track_addressbar": false };</script>
+        <script type="text/javascript" src="The%20Johansen%20Data%20Set_files/addthis_widget.js"></script>
+        <!-- AddThis Button END -->
+    </div>
+
+
+	<p class="metatext">
+		<span id="ctl00_htmlRegion_totalRegion_fullRegion_mainAndRightRegion_mainColumnClearRegion_mainColumnRegion_WriterInfo_ctl01_Label">Published </span><span id="ctl00_htmlRegion_totalRegion_fullRegion_mainAndRightRegion_mainColumnClearRegion_mainColumnRegion_WriterInfo_PublishedDate">March 31, 2009</span>
+	</p>
+
+
+    	
+
+                                                            
+												        </div>
+											        </td>
+                                                
+
+										        
+									        </tr>
+									        <tr>
+										        <td id="FooterArea">
+										        </td>
+									        </tr>
+								        </tbody></table>
+								        <div id="FooterDiv">
+									        <div>
+	<p><img src="../datasets_custom_html/the_johansen_dataset/ImageVaultHandler_002.gif" alt=""><br><strong><em>Project 178013 funded by the Climit programme</em></strong></p>
+</div>
+								        </div>
+							        
+						        </div>
+					        </div>
+					        </div>
+				        
+			        </div>
+                
+<div>
+
+	<input type="hidden" name="__VIEWSTATEGENERATOR" id="__VIEWSTATEGENERATOR" value="D7C842DC">
+</div></form>
+            </div>
+	        
+	    
+    
+</body></html>
