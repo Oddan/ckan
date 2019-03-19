@@ -25,11 +25,11 @@
 
   {% block static_description_page %}
 
-    {% for extra in pkg.extras %}
-      {% if extra["key"] == "custom_html_desc" %}
-        <div custom-include-html="{{ extra["value"] }}"></div>
-      {% endif %}
-    {% endfor %}
+    <div custom-include-html="/datasets_custom_html/{{pkg.name}}/{{pkg.name}}.html"></div>
+    <br>
+    /datasets_custom_html/{{pkg.name}}/{{pkg.name}}.html
+    <br>
+
   {% endblock %}
 
 

@@ -1,37 +1,22 @@
 {% set url_action = 'resource_edit' if url_is_edit and can_edit else 'resource_read' %}
 {% set url = h.url_for(controller='package', action=url_action, id=pkg.name, resource_id=res.id) %}
 
+{# remove the backgroundwhen hovering a resource #}
+<style>
+  .resource-item:hover{background:none}
+</style>
 
-{# This css style adapts the display of the resources depending if they are displayed in the
-  Dataset Landing Page or in the dataset-->manage-->resources page.#}
-{% if url_is_edit %}
-  <style>
-    .resource-item .description {
-      position: relative;
-      left:60px;
-    }
-  
-    .resource-item:hover {
-      background:none
+{# if we are in the normal dataser-->view page, adjust the css to align with the checkbox #}
+{% if not url_is_edit %}
+  <style>  
+    .resource-item{
+      display:inline-block;
+      vertical-align:middle;
     }
   </style>
+{% endif %}
 
-  <div>
-
-  {% else %}
-    <style>
-      .resource-item .description {
-        position: relative;
-        left:78px;
-      }
-    
-      .resource-item:hover {
-        background:none
-      }
-    </style>
-  {% endif %}
-
-<span class="resource-item" data-id="{{ res.id }}">
+<div class="resource-item" data-id="{{ res.id }}">
   {% block resource_item_title %}
   <a class="heading" href="{{ url }}" title="{{ res.name or res.description }}">
     {{ h.resource_display_name(res) | truncate(50) }}<span class="format-label" property="dc:format" data-format="{{ res.format.lower() or 'data' }}">{{ h.get_translated(res, 'format') }}</span>
@@ -45,8 +30,14 @@
       {% endif %}
     </p>
   {% endblock %}
-  </span>
-
-{% if url_is_edit %}
-  </div>
+</div>
+{% block resource_item_explore %}
+{% if can_edit and not url_is_edit %}
+<div style="vertical-align:middle; float:right">
+  <a href="{{ url }}" class="btn btn-primary dropdown-toggle" >
+    <i class="fa fa-share"></i>
+    {{ _('View Details') }}
+  </a>
+</div>
 {% endif %}
+{% endblock %}
