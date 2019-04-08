@@ -3,7 +3,7 @@ import ckan.plugins.toolkit as toolkit
 from ckan import model
 from ckan.model import meta, Session
 from ckan.model import types as _types
-from sqlalchemy import types, Table, Column
+from sqlalchemy import types, Table, Column, ForeignKey, orm
 
 
 import pdb
@@ -30,7 +30,7 @@ def setup_model():
     #prepare_dataset_component_table()
     prepare_data_format_table()
     prepare_person_table()
-    #prepare_organization_table()
+    prepare_organization_table()
 
 
 def prepare_person_table():
@@ -61,6 +61,7 @@ def prepare_organization_table():
     if organization_additional_info_table is None:
         organization_additional_info_table = Table(
             'organization_additional_info', meta.metadata,
+            Column('id', types.UnicodeText, primary_key=True, default=_types.make_uuid),
             Column('group_id', types.UnicodeText, ForeignKey('group.id')),
             Column('homepage', types.UnicodeText),
             Column('contact_id', types.UnicodeText, ForeignKey('person.id'))
@@ -68,12 +69,12 @@ def prepare_organization_table():
 
     meta.mapper(
         OrganizationAdditionalInfo, organization_additional_info_table,
-        properties('contact' : orm.relation(Person,
-                                            backref.orm.backref('spokesperson')),
+        properties = {'contact' : orm.relation(Person,
+                                            backref=orm.backref('spokesperson')),
                    'group' : orm.relation(model.group.Group,
                                           backref=orm.backref('extras',
                                                 uselist=False,
-                                                cascade='all, delete, delete-orphan')))
+                                                cascade='all, delete, delete-orphan'))}
     )
 
     ensure_table_created(organization_additional_info_table)
