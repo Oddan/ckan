@@ -1,0 +1,35 @@
+{% extends "page.html" %}
+
+{# {% set pkg = c.pkg_dict or pkg_dict %} #}
+
+{% block subtitle %}{{ _('Metadata editor') }}{% endblock %}
+
+{% block head_extras -%}
+  {{ super() }}
+{% endblock -%}
+
+{% block content_action %}
+  {# <em>Content action</em> #}
+{% endblock %}
+
+{% block content_primary_nav %} 
+  {{ h.build_nav_icon('edit_dataformat', _('DataFormat')) }}  
+  {{ h.build_nav_icon('edit_license', _('License')) }}   
+  {{ h.build_nav_icon('edit_publication', _('Publication')) }}   
+{% endblock %} 
+
+{% block primary_content_inner %}
+{% endblock %}
+
+{% block secondary_content %}
+
+  {% snippet "snippets/metadata_helper.html" %}
+
+  {% block secondary_help_content %}{% endblock %}
+  
+{% endblock %}
+
+{# c.pkg #}
+{# c.pkg_dict #}
+{# c.current_package_id #}
+b

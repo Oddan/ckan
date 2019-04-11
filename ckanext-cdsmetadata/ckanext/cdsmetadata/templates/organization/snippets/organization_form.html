@@ -25,7 +25,7 @@
     {# {% call form.input_block("contact_person", "Contact person (username)", is_required=True) %} #}
       <input id="contact_person" type="text" name="contact_person" placeholder="Contact person" 
              value="{{ data.contact_person }}"  class="control-medium" data-module="autocomplete" 
-             data-module-source="/api/co2datashare/autocomplete_filtered?org_id=tewt&q=?"> 
+             data-module-source="/api/co2datashare/autocomplete_filtered?org_id={{data.name}}&q=?"> 
     {# {% endcall %}  #}
     
     {{ form.image_upload(data, errors, is_upload_enabled=h.uploads_enabled(), is_url=is_url, is_upload=is_upload) }}
