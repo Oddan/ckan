@@ -1,5 +1,24 @@
 {% extends "edit_metadata.html" %}
+{% set name = g.cur_item['name'] or "" %}
+{% set description = g.cur_item['description'] or "" %}
+{% set license_url = g.cur_item['license_url'] or "" %}
 
-{% block primary_content_inner %} 
-<H1>EDIT LICENSE</H1>
-{% endblock %}
+{% block dataformat_subheading %}
+  <h2>Edit Licenses</h2> 
+{% endblock %} 
+
+{% block metadata_form_fields %}
+  
+  {{ form.input('name', id='field-name', label=_('Name'), value=name, error=errors.name,
+  classes=['control-full'], is_required=true) }}
+  
+  {{ form.markdown('description', id='field-description', label=_('Description'), value=description,
+  placeholder='Consider including links to open processing software',
+  error=errors.description, classes=['control-full'], is_required=true) }}
+
+  {{ form.input('license_url', id='field-license-url', label=_('License URL'),
+  value=license_url, error=errors.license_url, classes=['control-full']) }}
+  
+{% endblock %} 
+
+

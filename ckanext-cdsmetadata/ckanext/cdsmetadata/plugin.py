@@ -22,7 +22,8 @@ TITLE_MAX_L = 100
 reference_dataset_table = None
 dataset_component_table = None
 data_format_table = None
-organization_additional_info_table = None
+license_table = None
+#organization_additional_info_table = None
 user_extra_table = None
 
 
@@ -32,7 +33,6 @@ class UserExtra(model.domain_object.DomainObject):
         self.last_name = last_name
         self.user_id = user_id
 
-
 class DataFormat(model.domain_object.DomainObject):
     def __init__(self, name, is_open, description):
         self.name = name
@@ -40,7 +40,10 @@ class DataFormat(model.domain_object.DomainObject):
         self.description = description
 
 class License(model.domain_object.DomainObject):
-    pass
+    def __init__(self, name, description, license_url):
+        self.name = name
+        self.description = description
+        self.license_url = license_url
 
 class Publication(model.domain_object.DomainObject):
     pass
@@ -55,9 +58,27 @@ def setup_model():
     #prepare_dataset_component_table()
     prepare_data_format_table()
     prepare_user_extra_table()
+    prepare_license_table()
     #prepare_organization_table()
 
+def prepare_license_table():
 
+    global license_table
+
+    if license_table is None:
+        license_table = Table(
+            'license', meta.metadata,
+            Column('id', UnicodeText, primary_key=True, default=make_uuid),
+            Column('name', Unicode(TITLE_MAX_L), nullable=False, unique=True),
+            Column('description', UnicodeText),
+            Column('license_url', UnicodeText)
+        )
+
+        meta.mapper(License, license_table)
+
+    # create table
+    ensure_table_created(license_table)
+    
 def prepare_data_format_table():
 
     global data_format_table
@@ -253,6 +274,19 @@ def check_edit_metadata():
         abort(403, _('Not authorized to see this page.'))
    
 
+def _license_create(context, data_dict):
+    toolkit.check_access('edit_metadata', context, data_dict)
+
+    new_license = License(data_dict['name'],
+                          data_dict['description'],
+                          data_dict['license_url'])
+    try:
+        new_license.save()
+        context['session'].commit()
+    except:
+        context['session'].rollback()
+
+        
 def _data_format_create(context, data_dict):
     toolkit.check_access('edit_metadata', context, data_dict)
 
@@ -266,7 +300,21 @@ def _data_format_create(context, data_dict):
         # @@ should we issue a warning
         context['session'].rollback()
 
+def _license_update(context, data_dict):
+    toolkit.check_access('edit_metadata', context, data_dict)
+    lic = context['session'].query(License).get(data_dict['id'])
+    if lic is None:
+        raise toolkit.ObjectNotFound
 
+    lic.name = data_dict['name']
+    lic.description = data_dict['description']
+    lic.license_url = data_dict['license_url']
+    try:
+        lic.save()
+        context['session'].commit()
+    except:
+        context['session'].rollback()
+        
 def _data_format_update(context, data_dict):
     toolkit.check_access('edit_metadata', context, data_dict)
 
@@ -284,6 +332,17 @@ def _data_format_update(context, data_dict):
         # @@ should we issue a warning
         context['session'].rollback()
 
+def _license_delete(context, data_dict):
+    toolkit.check_access('edit_metadata', context, data_dict)
+    lic = context['session'].query(License).get(data_dict['id'])
+    if lic is None:
+        raise toolkit.ObjectNotFound
+    try:
+        lic.delete()
+        context['session'].commit()
+    except:
+        context['session'].rollback()
+        
 def _data_format_delete(context, data_dict):
     toolkit.check_access('edit_metadata', context, data_dict)
     df = context['session'].query(DataFormat).get(data_dict['id'])
@@ -295,8 +354,17 @@ def _data_format_delete(context, data_dict):
         context['session'].commit()
     except:
         context['session'].rollback()
-    
 
+def _license_show(context, data_dict):
+    toolkit.check_access('edit_metadata', context, data_dict)
+    lic = context['session'].query(License).get(data_dict['id'])
+    if lic is None:
+        raise toolkit.ObjectNotFound
+
+    return {'name': lic.name,
+            'description': lic.description,
+            'license_url': lic.license_url}
+    
 def _data_format_show(context, data_dict):
     toolkit.check_access('edit_metadata', context, data_dict)
 
@@ -308,13 +376,14 @@ def _data_format_show(context, data_dict):
             'is_open': df.is_open,
             'description': df.description}
 
-def edit_dataformat():
+
+def _edit_dataformat():
     return _edit_metadata(DataFormat, "edit_dataformat")
 
-def edit_license():
+def _edit_license():
     return _edit_metadata(License, "edit_license")
 
-def edit_publication():
+def _edit_publication():
     return _edit_metadata(Publication,"edit_publication")
 
 def _update_fun(mclass):
@@ -431,13 +500,13 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
         blueprint.add_url_rule('/api/co2datashare/autocomplete_filtered',
                                view_func=autocomplete_filtered)
         blueprint.add_url_rule('/metadata/dataformat',
-                               view_func=edit_dataformat,
+                               view_func=_edit_dataformat,
                                methods=['GET', 'POST'])
         blueprint.add_url_rule('/metadata/license',
-                               view_func=edit_license,
+                               view_func=_edit_license,
                                methods=['GET', 'POST'])
         blueprint.add_url_rule('/metadata/publication',
-                               view_func=edit_publication,
+                               view_func=_edit_publication,
                                methods=['GET', 'POST'])
         return blueprint
 
@@ -459,6 +528,11 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
         result['dataformat_show'] = _data_format_show
         result['dataformat_delete'] = _data_format_delete
 
+        result['license_create'] = _license_create
+        result['license_update'] = _license_update
+        result['license_show'] = _license_show
+        result['license_delete'] = _license_delete
+        
         return result
 
     # =============================== IConfigurable ===========================
