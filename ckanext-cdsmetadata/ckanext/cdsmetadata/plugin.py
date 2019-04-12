@@ -23,6 +23,7 @@ reference_dataset_table = None
 dataset_component_table = None
 data_format_table = None
 license_table = None
+publication_table = None
 #organization_additional_info_table = None
 user_extra_table = None
 
@@ -46,7 +47,10 @@ class License(model.domain_object.DomainObject):
         self.license_url = license_url
 
 class Publication(model.domain_object.DomainObject):
-    pass
+    def __init__(self, name, citation, doi):
+        self.name = name
+        self.citation = citation
+        self.doi = doi
 
 class OrganizationAdditionalInfo(model.domain_object.DomainObject):
     pass
@@ -59,8 +63,26 @@ def setup_model():
     prepare_data_format_table()
     prepare_user_extra_table()
     prepare_license_table()
+    prepare_publication_table()
     #prepare_organization_table()
 
+def prepare_publication_table():
+
+    global publication_table
+
+    if publication_table is None:
+        publication_table = Table(
+            'publication', meta.metadata,
+            Column('id', UnicodeText, primary_key=True, default=make_uuid),
+            Column('name', Unicode(TITLE_MAX_L), nullable=False, unique=True),
+            Column('citation', UnicodeText),
+            Column('doi', Unicode(TITLE_MAX_L), unique=True)
+        )
+        meta.mapper(Publication, publication_table)
+
+        # create table
+        ensure_table_created(publication_table)
+    
 def prepare_license_table():
 
     global license_table
@@ -286,6 +308,18 @@ def _license_create(context, data_dict):
     except:
         context['session'].rollback()
 
+def _publication_create(context, data_dict):
+    toolkit.check_access('edit_metadata', context, data_dict)
+
+    new_publication = Publication(data_dict['name'],
+                                  data_dict['citation'],
+                                  data_dict['doi'])
+    try:
+        new_publication.save()
+        context['session'].commit()
+    except:
+        context['session'].rollback()
+
         
 def _data_format_create(context, data_dict):
     toolkit.check_access('edit_metadata', context, data_dict)
@@ -300,6 +334,21 @@ def _data_format_create(context, data_dict):
         # @@ should we issue a warning
         context['session'].rollback()
 
+def _publication_update(context, data_dict):
+    toolkit.check_access('edit_metadata', context, data_dict)
+    pub = context['session'].query(Publication).get(data_dict['id'])
+    if pub is None:
+        raise toolkit.ObjectNotFound
+
+    pub.name = data_dict['name']
+    pub.citation = data_dict['citation']
+    pub.doi = data_dict['doi']
+    try:
+        pub.save()
+        context['session'].commit()
+    except:
+        context['session'].rollback()
+        
 def _license_update(context, data_dict):
     toolkit.check_access('edit_metadata', context, data_dict)
     lic = context['session'].query(License).get(data_dict['id'])
@@ -332,6 +381,17 @@ def _data_format_update(context, data_dict):
         # @@ should we issue a warning
         context['session'].rollback()
 
+def _publication_delete(context, data_dict):
+    toolkit.check_access('edit_metadata', context, data_dict)
+    pub = context['session'].query(Publication).get(data_dict['id'])
+    if pub is None:
+        raise toolkit.ObjectNotFound
+    try:
+        pub.delete()
+        context['session'].commit()
+    except:
+        context['session'].rollback()
+        
 def _license_delete(context, data_dict):
     toolkit.check_access('edit_metadata', context, data_dict)
     lic = context['session'].query(License).get(data_dict['id'])
@@ -355,6 +415,16 @@ def _data_format_delete(context, data_dict):
     except:
         context['session'].rollback()
 
+def _publication_show(context, data_dict):
+    toolkit.check_access('edit_metadata', context, data_dict)
+    pub = context['session'].query(Publication).get(data_dict['id'])
+    if pub is None:
+        raise toolkit.ObjectNotFound
+
+    return {'name': pub.name,
+            'citation': pub.citation,
+            'doi': pub.doi}
+    
 def _license_show(context, data_dict):
     toolkit.check_access('edit_metadata', context, data_dict)
     lic = context['session'].query(License).get(data_dict['id'])
@@ -532,6 +602,11 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
         result['license_update'] = _license_update
         result['license_show'] = _license_show
         result['license_delete'] = _license_delete
+
+        result['publication_create'] = _publication_create
+        result['publication_update'] = _publication_update
+        result['publication_show'] = _publication_show
+        result['publication_delete'] = _publication_delete
         
         return result
 
