@@ -39,6 +39,11 @@ class DataFormat(model.domain_object.DomainObject):
         self.is_open = is_open
         self.description = description
 
+class License(model.domain_object.DomainObject):
+    pass
+
+class Publication(model.domain_object.DomainObject):
+    pass
 
 class OrganizationAdditionalInfo(model.domain_object.DomainObject):
     pass
@@ -107,7 +112,6 @@ def prepare_reference_dataset_table():
 
     # create table
     #ensure_table_created(reference_dataset_table)
-
 
 def ensure_table_created(table):
     if not table.exists():
@@ -247,9 +251,7 @@ def check_edit_metadata():
         toolkit.check_access('edit_metadata', context)
     except logic.NotAuthorized:
         abort(403, _('Not authorized to see this page.'))
-
-    return render("edit_metadata.html")
-
+   
 
 def _data_format_create(context, data_dict):
     toolkit.check_access('edit_metadata', context, data_dict)
@@ -257,72 +259,135 @@ def _data_format_create(context, data_dict):
     new_dataformat = DataFormat(data_dict['name'],
                                 data_dict['is_open'],
                                 data_dict['description'])
-    new_dataformat.save()
+    try:
+        new_dataformat.save()
+        context['session'].commit()
+    except:
+        # @@ should we issue a warning
+        context['session'].rollback()
 
 
 def _data_format_update(context, data_dict):
     toolkit.check_access('edit_metadata', context, data_dict)
 
-    df = context['session'].query(DataFormat).get(data_dict['dformat_id'])
+    df = context['session'].query(DataFormat).get(data_dict['id'])
     if df is None:
         raise toolkit.ObjectNotFound
 
     df.name = data_dict['name']
     df.is_open = data_dict['is_open']
     df.description = data_dict['description']
-    df.save()
+    try:
+        df.save()
+        context['session'].commit()
+    except:
+        # @@ should we issue a warning
+        context['session'].rollback()
 
+def _data_format_delete(context, data_dict):
+    toolkit.check_access('edit_metadata', context, data_dict)
+    df = context['session'].query(DataFormat).get(data_dict['id'])
+    if df is None:
+        raise toolkit.ObjectNotFound
+    #context['session'].delete(df)
+    try:
+        df.delete()
+        context['session'].commit()
+    except:
+        context['session'].rollback()
+    
 
 def _data_format_show(context, data_dict):
     toolkit.check_access('edit_metadata', context, data_dict)
 
-    df = context['session'].query(DataFormat).get(data_dict['dformat_id'])
+    df = context['session'].query(DataFormat).get(data_dict['id'])
     if df is None:
         raise toolkit.ObjectNotFound
-
+    
     return {'name': df.name,
             'is_open': df.is_open,
             'description': df.description}
 
-
 def edit_dataformat():
+    return _edit_metadata(DataFormat, "edit_dataformat")
+
+def edit_license():
+    return _edit_metadata(License, "edit_license")
+
+def edit_publication():
+    return _edit_metadata(Publication,"edit_publication")
+
+def _update_fun(mclass):
+    return {DataFormat: 'dataformat_update',
+            License: 'license_update',
+            Publication: 'publication_update'}[mclass]
+
+def _create_fun(mclass):
+    return {DataFormat: 'dataformat_create',
+            License: 'license_create',
+            Publication: 'publication_create'}[mclass]
+
+def _delete_fun(mclass):
+    return {DataFormat: 'dataformat_delete',
+            License: 'license_delete',
+            Publication: 'publication_delete'}[mclass]
+
+def _show_fun(mclass):
+    return {DataFormat: 'dataformat_show',
+            License: 'license_show',
+            Publication: 'publication_show'}[mclass]
+
+def _extract_metadata_form_data(form, mclass):
+
+    data_dict = {}
+    for key in form.keys():
+        if key == 'save':
+            data_dict['id'] = form[key]
+            continue
+        data_dict[key] = form[key]
+
+    # class-specific extractions
+    if mclass == DataFormat:
+        data_dict['is_open'] = 'is_open' in form.keys()
+
+    return data_dict
+
+
+def _edit_metadata(mclass, template_name):
     check_edit_metadata()  # check authorization
 
     context = {'model': model, 'session': model.Session,
                'user': g.user, 'auth_user_obj': g.userobj}
 
-    if request.method == 'POST' and 'save' in request.form:
-
-        data_dict = {'name': request.form['name'],
-                     'description': request.form['description'],
-                     'is_open': 'is-open' in request.form,
-                     'dformat_id': request.form['save']}
-        if data_dict['dformat_id']:
-            toolkit.get_action('dataformat_update')(context, data_dict)
-        else:
-            toolkit.get_action('dataformat_create')(context, data_dict)
+    if request.method == 'POST':
+        if 'save' in request.form:
+            data_dict = _extract_metadata_form_data(request.form, mclass)
+            if data_dict['id']:
+                toolkit.get_action(_update_fun(mclass))(context, data_dict)
+            else:
+                toolkit.get_action(_create_fun(mclass))(context, data_dict)
+        elif 'delete' in request.params:
+            # due to a quirk in the JavaScript handing of "confirm-action", the
+            # returned form will be empty.  The dataset id will however still be
+            # available from the url.  We therefore use request.params rather
+            # than request.form here.
+            id = request.params['id']
+            toolkit.get_action(_delete_fun(mclass))(context, {'id': id})
+            return toolkit.redirect_to(request.base_url)
 
     g.pkg_dict = request.params
     g.cur_item = None
-    if 'id' in request.params:
-        dataformat_show = toolkit.get_action('dataformat_show')
-        g.cur_item = dataformat_show(context,
-                                     {'dformat_id': request.params['id']})
+    g.template_name = template_name
+    id = request.params.get('id', None)
+    if id:
+        show_fun = toolkit.get_action(_show_fun(mclass))
+        g.cur_item = show_fun(context, {'id': id})
 
-    g.items = [(df.id, df.name)
-               for df in context['session'].query(DataFormat).all()]
+    g.items = sorted([(x.id, x.name) for x in context['session'].query(mclass).all()],
+                     key=lambda tup: tup[1].lower())
 
-    return render("edit_dataformat.html")
-
-
-def edit_license():
-    check_edit_metadata()  # check authorization
-    return render("edit_license.html")
-
-
-def edit_publication():
-    check_edit_metadata()  # check authorization
-    return render("edit_publication.html")
+    return render(template_name + '.html')
+    
 
 class CdsmetadataPlugin(plugins.SingletonPlugin,
                         toolkit.DefaultOrganizationForm):
@@ -392,6 +457,7 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
         result['dataformat_create'] = _data_format_create
         result['dataformat_update'] = _data_format_update
         result['dataformat_show'] = _data_format_show
+        result['dataformat_delete'] = _data_format_delete
 
         return result
 
