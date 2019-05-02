@@ -21,10 +21,10 @@ sed 's/^debug =.*$/debug = true/' /etc/ckan/production.ini | \
 sed 's/^ckan.site_url =.*$/ckan.site_url = http:\/\/localhost:5000/'  > /etc/ckan/production.ini.2
 
 # setup sysadmin
-cd $CKAN_VENV/src/ckan
-ckan-paster user add admin email=admin@localhost name=admin password=$CKAN_ADMIN_PASSWORD -c /etc/ckan/production.ini
-ckan-paster sysadmin add admin -c /etc/ckan/production.ini
-cd -
+# cd $CKAN_VENV/src/ckan
+# ckan-paster user add admin email=admin@localhost name=admin password=$CKAN_ADMIN_PASSWORD -c /etc/ckan/production.ini
+# ckan-paster sysadmin add admin -c /etc/ckan/production.ini
+# cd -
 
 # setting up database
 ckan-paster --plugin=ckan db init -c "${CKAN_CONFIG}/production.ini"
