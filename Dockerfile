@@ -91,7 +91,7 @@ RUN rm tmp3
 RUN /etc/init.d/ssh restart
 # change password of 'root', needed when using ssh
 # (@@ should really rely on ssh keys here, but had trouble making it work)
-RUN echo 'root:screencast' | chpasswd
+#RUN echo 'root:screencast' | chpasswd
 
 # install emacs and ipython
 RUN apt-get install -q -y ipython
