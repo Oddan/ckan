@@ -1,0 +1,15 @@
+{% ckan_extends %}
+
+
+{% block package_basic_fields_custom %}
+  <label class="control-label"> {{_("Contact person")}}</label>
+  <input id="contact_person" type="text" name="contact_person" placeholder="Contact person" 
+         value="{{ data.contact_person }}"  class="control-medium" data-module="autocomplete" 
+         {{is_disabled}} data-module-source="/api/2/util/user/autocomplete?q=?">
+{% endblock %}
+
+{% block package_basic_fields_license %}
+{% endblock %}
+
+{% block package_metadata_fields_visibility %}
+{% endblock %}

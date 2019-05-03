@@ -1,5 +1,5 @@
 import ckan.plugins as plugins
-import ckan.plugins.toolkit as toolkit
+import ckan.plugins.toolkit as tk
 from flask import Blueprint
 from ckan import model
 from ckan.model import meta, Session
@@ -167,7 +167,7 @@ def ensure_table_created(table):
 
 def _user_modif_wrapper(action_name):
 
-    action = toolkit.get_action(action_name)
+    action = tk.get_action(action_name)
 
     def _wrapper(context, data_dict):
 
@@ -201,7 +201,7 @@ def _user_modif_wrapper(action_name):
 
 def _user_show_wrapper():
 
-    action = toolkit.get_action('user_show')
+    action = tk.get_action('user_show')
 
     def _wrapper(context, data_dict):
 
@@ -245,12 +245,12 @@ def autocomplete_filtered():
         data_dict = {u'q': q, u'limit': limit}
 
         # get list with matching user names
-        user_list = toolkit.get_action(u'user_autocomplete')(context,
+        user_list = tk.get_action(u'user_autocomplete')(context,
                                                              data_dict)
 
         # narrow down to list of users who are actual members
         if org_id:
-            member_list = toolkit.get_action('member_list')(
+            member_list = tk.get_action('member_list')(
                 {'model': model}, {'id': org_id})
             member_ids = [x[0] for x in member_list]
             user_list = [u for u in user_list if u['id'] in member_ids]
@@ -260,8 +260,9 @@ def autocomplete_filtered():
 
 def contact_person_validator(value, context):
 
+    #pdb.set_trace()
     org_id = context['group'].id
-    member_list = toolkit.get_action('member_list')(
+    member_list = tk.get_action('member_list')(
         {'model': model}, {'id': org_id})
     member_ids = [x[0] for x in member_list]
 
@@ -291,13 +292,13 @@ def check_edit_metadata():
     try:
         context = {'model': model, 'user': g.user,
                    'auth_user_obj': g.userobj}
-        toolkit.check_access('edit_metadata', context)
+        tk.check_access('edit_metadata', context)
     except logic.NotAuthorized:
         abort(403, _('Not authorized to see this page.'))
    
 
 def _license_create(context, data_dict):
-    toolkit.check_access('edit_metadata', context, data_dict)
+    tk.check_access('edit_metadata', context, data_dict)
 
     new_license = License(data_dict['name'],
                           data_dict['description'],
@@ -309,7 +310,7 @@ def _license_create(context, data_dict):
         context['session'].rollback()
 
 def _publication_create(context, data_dict):
-    toolkit.check_access('edit_metadata', context, data_dict)
+    tk.check_access('edit_metadata', context, data_dict)
 
     new_publication = Publication(data_dict['name'],
                                   data_dict['citation'],
@@ -322,7 +323,7 @@ def _publication_create(context, data_dict):
 
         
 def _data_format_create(context, data_dict):
-    toolkit.check_access('edit_metadata', context, data_dict)
+    tk.check_access('edit_metadata', context, data_dict)
 
     new_dataformat = DataFormat(data_dict['name'],
                                 data_dict['is_open'],
@@ -335,10 +336,10 @@ def _data_format_create(context, data_dict):
         context['session'].rollback()
 
 def _publication_update(context, data_dict):
-    toolkit.check_access('edit_metadata', context, data_dict)
+    tk.check_access('edit_metadata', context, data_dict)
     pub = context['session'].query(Publication).get(data_dict['id'])
     if pub is None:
-        raise toolkit.ObjectNotFound
+        raise tk.ObjectNotFound
 
     pub.name = data_dict['name']
     pub.citation = data_dict['citation']
@@ -350,10 +351,10 @@ def _publication_update(context, data_dict):
         context['session'].rollback()
         
 def _license_update(context, data_dict):
-    toolkit.check_access('edit_metadata', context, data_dict)
+    tk.check_access('edit_metadata', context, data_dict)
     lic = context['session'].query(License).get(data_dict['id'])
     if lic is None:
-        raise toolkit.ObjectNotFound
+        raise tk.ObjectNotFound
 
     lic.name = data_dict['name']
     lic.description = data_dict['description']
@@ -365,11 +366,11 @@ def _license_update(context, data_dict):
         context['session'].rollback()
         
 def _data_format_update(context, data_dict):
-    toolkit.check_access('edit_metadata', context, data_dict)
+    tk.check_access('edit_metadata', context, data_dict)
 
     df = context['session'].query(DataFormat).get(data_dict['id'])
     if df is None:
-        raise toolkit.ObjectNotFound
+        raise tk.ObjectNotFound
 
     df.name = data_dict['name']
     df.is_open = data_dict['is_open']
@@ -382,10 +383,10 @@ def _data_format_update(context, data_dict):
         context['session'].rollback()
 
 def _publication_delete(context, data_dict):
-    toolkit.check_access('edit_metadata', context, data_dict)
+    tk.check_access('edit_metadata', context, data_dict)
     pub = context['session'].query(Publication).get(data_dict['id'])
     if pub is None:
-        raise toolkit.ObjectNotFound
+        raise tk.ObjectNotFound
     try:
         pub.delete()
         context['session'].commit()
@@ -393,10 +394,10 @@ def _publication_delete(context, data_dict):
         context['session'].rollback()
         
 def _license_delete(context, data_dict):
-    toolkit.check_access('edit_metadata', context, data_dict)
+    tk.check_access('edit_metadata', context, data_dict)
     lic = context['session'].query(License).get(data_dict['id'])
     if lic is None:
-        raise toolkit.ObjectNotFound
+        raise tk.ObjectNotFound
     try:
         lic.delete()
         context['session'].commit()
@@ -404,10 +405,10 @@ def _license_delete(context, data_dict):
         context['session'].rollback()
         
 def _data_format_delete(context, data_dict):
-    toolkit.check_access('edit_metadata', context, data_dict)
+    tk.check_access('edit_metadata', context, data_dict)
     df = context['session'].query(DataFormat).get(data_dict['id'])
     if df is None:
-        raise toolkit.ObjectNotFound
+        raise tk.ObjectNotFound
     #context['session'].delete(df)
     try:
         df.delete()
@@ -416,31 +417,31 @@ def _data_format_delete(context, data_dict):
         context['session'].rollback()
 
 def _publication_show(context, data_dict):
-    toolkit.check_access('edit_metadata', context, data_dict)
+    tk.check_access('edit_metadata', context, data_dict)
     pub = context['session'].query(Publication).get(data_dict['id'])
     if pub is None:
-        raise toolkit.ObjectNotFound
+        raise tk.ObjectNotFound
 
     return {'name': pub.name,
             'citation': pub.citation,
             'doi': pub.doi}
     
 def _license_show(context, data_dict):
-    toolkit.check_access('edit_metadata', context, data_dict)
+    tk.check_access('edit_metadata', context, data_dict)
     lic = context['session'].query(License).get(data_dict['id'])
     if lic is None:
-        raise toolkit.ObjectNotFound
+        raise tk.ObjectNotFound
 
     return {'name': lic.name,
             'description': lic.description,
             'license_url': lic.license_url}
     
 def _data_format_show(context, data_dict):
-    toolkit.check_access('edit_metadata', context, data_dict)
+    tk.check_access('edit_metadata', context, data_dict)
 
     df = context['session'].query(DataFormat).get(data_dict['id'])
     if df is None:
-        raise toolkit.ObjectNotFound
+        raise tk.ObjectNotFound
     
     return {'name': df.name,
             'is_open': df.is_open,
@@ -502,34 +503,34 @@ def _edit_metadata(mclass, template_name):
         if 'save' in request.form:
             data_dict = _extract_metadata_form_data(request.form, mclass)
             if data_dict['id']:
-                toolkit.get_action(_update_fun(mclass))(context, data_dict)
+                tk.get_action(_update_fun(mclass))(context, data_dict)
             else:
-                toolkit.get_action(_create_fun(mclass))(context, data_dict)
+                tk.get_action(_create_fun(mclass))(context, data_dict)
         elif 'delete' in request.params:
             # due to a quirk in the JavaScript handing of "confirm-action", the
             # returned form will be empty.  The dataset id will however still be
             # available from the url.  We therefore use request.params rather
             # than request.form here.
             id = request.params['id']
-            toolkit.get_action(_delete_fun(mclass))(context, {'id': id})
-            return toolkit.redirect_to(request.base_url)
+            tk.get_action(_delete_fun(mclass))(context, {'id': id})
+            return tk.redirect_to(request.base_url)
 
     g.pkg_dict = request.params
     g.cur_item = None
     g.template_name = template_name
     id = request.params.get('id', None)
     if id:
-        show_fun = toolkit.get_action(_show_fun(mclass))
+        show_fun = tk.get_action(_show_fun(mclass))
         g.cur_item = show_fun(context, {'id': id})
 
     g.items = sorted([(x.id, x.name) for x in context['session'].query(mclass).all()],
                      key=lambda tup: tup[1].lower())
 
     return render(template_name + '.html')
-    
+
 
 class CdsmetadataPlugin(plugins.SingletonPlugin,
-                        toolkit.DefaultOrganizationForm):
+                        tk.DefaultOrganizationForm):
     plugins.implements(plugins.IConfigurer)
     plugins.implements(plugins.IConfigurable)
     plugins.implements(plugins.IGroupForm)
@@ -618,10 +619,10 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
 
     def update_config(self, config_):
 
-        toolkit.add_template_directory(config_, 'templates')
+        tk.add_template_directory(config_, 'templates')
 
-        # toolkit.add_public_directory(config_, 'public')
-        # toolkit.add_resource('fanstatic', 'cdsmetadata')
+        # tk.add_public_directory(config_, 'public')
+        # tk.add_resource('fanstatic', 'cdsmetadata')
 
     # ================================ IGroupForm =============================
     is_organization = True
@@ -642,13 +643,13 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
 
         schema = super(CdsmetadataPlugin, self).form_to_db_schema()
         schema.update({'homepageURL': [
-                            toolkit.get_validator('ignore_missing'),
-                            toolkit.get_converter('convert_to_extras')
+                            tk.get_validator('ignore_missing'),
+                            tk.get_converter('convert_to_extras')
                                       ]})
         schema.update({'contact_person':
-                       [toolkit.get_validator('ignore_missing'),
-                        toolkit.get_validator('valid_contact_person'),
-                        toolkit.get_converter('convert_to_extras')]})
+                       [tk.get_validator('ignore_missing'),
+                        tk.get_validator('valid_contact_person'),
+                        tk.get_converter('convert_to_extras')]})
 
         return schema
 
@@ -656,12 +657,12 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
         schema = self._default_show_group_schema()
 
         schema.update({'homepageURL': [
-            toolkit.get_converter('convert_from_extras'),
-            toolkit.get_validator('ignore_missing')
+            tk.get_converter('convert_from_extras'),
+            tk.get_validator('ignore_missing')
         ]})
         schema.update({'contact_person': [
-            toolkit.get_converter('convert_from_extras'),
-            toolkit.get_validator('ignore_missing')]})
+            tk.get_converter('convert_from_extras'),
+            tk.get_validator('ignore_missing')]})
         return schema
 
     def _default_show_group_schema(self):
@@ -672,38 +673,10 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
         schema['created'] = []
         schema['display_name'] = []
         # schema['extras'] = {'__extras': [keep_extras]}  # has to be removed, or extras won't work
-        schema['package_count'] = [toolkit.get_validator('ignore_missing')]
-        schema['packages'] = {'__extras': [toolkit.get_validator('keep_extras')]}
+        schema['package_count'] = [tk.get_validator('ignore_missing')]
+        schema['packages'] = {'__extras': [tk.get_validator('keep_extras')]}
         schema['revision_id'] = []
         schema['state'] = []
-        schema['users'] = {'__extras': [toolkit.get_validator('keep_extras')]}
+        schema['users'] = {'__extras': [tk.get_validator('keep_extras')]}
 
         return schema
-
-    # def check_data_dict(self, data_dict):
-    #     pdb.set_trace()
-    #     pass
-
-    # def new_template(self):
-    #     pass
-
-    # def index_template(self):
-    #     pass
-
-    # def read_template(self):
-    #     pass
-
-    # def history_template(self):
-    #     pass
-
-    # def edit_template(self):
-    #     pass
-
-    # def group_form(self):
-    #     pass
-
-    # def setup_template_variables(self, context, data_dict):
-    #     pass
-
-    # def validate(self, context, data_dict, schema, action):
-    #     pass

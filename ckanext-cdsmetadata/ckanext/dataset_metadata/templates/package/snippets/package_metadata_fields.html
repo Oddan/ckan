@@ -1,0 +1,27 @@
+{% ckan_extends %}
+
+{% set ptype = data['project_type'] or h.project_types()[0] %}
+
+{% block package_metadata_fields_url %}
+{% endblock %}
+
+{% block package_metadata_fields_version %}
+{% endblock %}
+
+{% block package_metadata_author %}
+{% endblock %}
+
+{% block package_metadata_fields_maintainer %}
+{% endblock %}
+
+{% block package_metadata_fields_custom %}
+
+  {{ form.select('project_type', id='field-project_type', label=_('Project Type'), options=h.project_types(), selected=ptype, is_required=True) }}
+  
+  <p>types are: </p>
+  {% for type in h.project_types() %}
+    <p>{{type}}</p>
+  {% endfor %}
+  
+{% endblock %}
+
