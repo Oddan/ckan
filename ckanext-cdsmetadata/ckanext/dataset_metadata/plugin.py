@@ -54,7 +54,11 @@ class DatasetMetadataPlugin(plugins.SingletonPlugin,
                                tk.get_validator('user_id_or_name_exists'),
                                tk.get_converter('convert_to_extras')],
             'project_type': [tk.get_validator('project_type_validator'),
-                             tk.get_converter('convert_to_extras')]
+                             tk.get_converter('convert_to_extras')],
+            'start_date_covered': [tk.get_validator('isodate'),
+                                   tk.get_converter('convert_to_extras')],
+            'end_date_covered': [tk.get_validator('isodate'),
+                                 tk.get_converter('convert_to_extras')]
         })
         return schema
 
@@ -78,6 +82,10 @@ class DatasetMetadataPlugin(plugins.SingletonPlugin,
                                tk.get_validator('ignore_missing'),
                                tk.get_validator('user_id_or_name_exists')],
             'project_type': [tk.get_converter('convert_from_extras'),
-                             tk.get_validator('project_type_validator')]
+                             tk.get_validator('project_type_validator')],
+            'start_date_covered': [tk.get_converter('convert_from_extras'),
+                                   tk.get_validator('isodate')],
+            'end_date_covered': [tk.get_converter('convert_from_extras'),
+                                 tk.get_validator('isodate')]
         })
         return schema
