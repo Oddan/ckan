@@ -22,12 +22,25 @@ def project_type_validator(value, context):
     return value
 
 
+def allow_empty_user(value, context):
+    if not value:
+        return value  # allow empty values
+    return tk.get_validator('user_id_or_name_exists')(value, context)
+
 class DatasetMetadataPlugin(plugins.SingletonPlugin,
                             tk.DefaultDatasetForm):
     plugins.implements(plugins.IDatasetForm)
     plugins.implements(plugins.IConfigurer)
     plugins.implements(plugins.IValidators)
     plugins.implements(plugins.ITemplateHelpers)
+    plugins.implements(plugins.IPackageController, inherit=True)
+
+    # ============================ IPackageController =========================
+    def after_create(self, context, pkg_dict):
+        #pdb.set_trace()
+        pass
+    
+    
 
     # ============================= ITemplateHelpers ==========================
     def get_helpers(self):
@@ -35,7 +48,9 @@ class DatasetMetadataPlugin(plugins.SingletonPlugin,
 
     # ================================ IValidators ============================
     def get_validators(self):
-        return {'project_type_validator': project_type_validator}
+        return {'project_type_validator': project_type_validator,
+                'user_id_or_name_exists_allow_empty': allow_empty_user}
+
 
     # ================================ IConfigurer ============================
 
@@ -51,7 +66,7 @@ class DatasetMetadataPlugin(plugins.SingletonPlugin,
     def _modify_package_schema(self, schema):
         schema.update({
             'contact_person': [tk.get_validator('ignore_missing'),
-                               tk.get_validator('user_id_or_name_exists'),
+                               tk.get_validator('user_id_or_name_exists_allow_empty'),
                                tk.get_converter('convert_to_extras')],
             'project_type': [tk.get_validator('project_type_validator'),
                              tk.get_converter('convert_to_extras')],
@@ -80,7 +95,7 @@ class DatasetMetadataPlugin(plugins.SingletonPlugin,
         schema.update({
             'contact_person': [tk.get_converter('convert_from_extras'),
                                tk.get_validator('ignore_missing'),
-                               tk.get_validator('user_id_or_name_exists')],
+                               tk.get_validator('user_id_or_name_exists_allow_empty')],
             'project_type': [tk.get_converter('convert_from_extras'),
                              tk.get_validator('project_type_validator')],
             'start_date_covered': [tk.get_converter('convert_from_extras'),
