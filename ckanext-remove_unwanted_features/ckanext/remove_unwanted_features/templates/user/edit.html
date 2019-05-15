@@ -1,0 +1,24 @@
+{% ckan_extends %}
+
+{% block primary_content_inner %}
+
+  {{ form | safe }}
+  
+  {# Add option for a user to unregister #}
+
+  {% if g.userobj.id == user_dict['id'] and h.check_access('user_delete', {'id': user_dict['id']}) %}
+    <a class="btn btn-danger pull-left"
+       href="{{ h.url_for('remove_unwanted_features.logout_and_delete') }}"
+       data-module="confirm-action"
+       data-module-content="{{ _('Are you sure you want to unregister?') }}">
+       {% block delete_button_text %}
+         {{ _('Delete me') }}
+       {% endblock delete_button_text %}
+    </a>        
+  {% endif %}
+  
+  {# {% if data.id == g.userobj.id and h.check_access('user_delete', {'id': data.id}) %} #}
+  {#   <p> I can delete myself! </p> #}
+  {# {% endif %}   #}
+  
+{% endblock %}
