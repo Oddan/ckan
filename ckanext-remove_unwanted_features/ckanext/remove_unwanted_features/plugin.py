@@ -5,7 +5,7 @@ import ckan.logic as logic
 import ckan.lib.base as base
 import ckan.model as model
 import re
-from ckan.common import g, _, request
+from ckan.common import g, _, request, is_flask_request
 from flask import Blueprint
 from pylons.controllers.util import redirect as pylons_redirect
 from pylons.controllers.util import abort as pylons_abort
@@ -63,20 +63,57 @@ def logout_and_delete():
     return response
 
 
-def _check_if_override(rule_str, args):
+# Format for overrides: (include_sysadmin, regex, redirect, redirect args) If
+# redirect is missing, it means access should simply be blocked.  For pages
+# served by Pylons, there are additional two fields stating the name of the
+# _action_ and the _controller_ involved.  These are necessary since orders
+# matters in the Pylons routing table (e.g. 'dataset/new' is chosen over
+# 'dataset/action'), meaning that a simple regex is not always enough to
+# uniquely determine what page/resource refers to.
 
-    # Format for overrides: (include_sysadmin, regex, redirect, redirect args)
-    # If redirect is missing, it means a simple block.
+# NB: To get a list of all routepaths in pylons, you can use the following
+# command:  [a.routepath for a in ckan.common.config['routes.map'].matchlist]
+_rc = re.compile
 
-    overrides = {(False, u'^/user/$', None, None),
-                 (True, u'^/user/<id>', u'/user/edit/{0}', ('id',))}
+_flask_overrides = {
+    (False, _rc(u'^/user/$'), None, None),
+    (True, _rc(u'^/user/<id>'), u'/user/edit/{0}', ('id',))
+}
+_pylons_overrides = {
+    (True, _rc(u'^/dataset(/[^/]*)?(/.*)?$'), None, None, 'list', 'package')
+}
+
+
+def _check_if_override():
+
+    if is_flask_request():
+        rule_str = request.url_rule.rule
+        args = request.view_args
+        overrides = _flask_overrides
+    else:
+        rule_str = request.urlargs.current()
+        args = request.urlvars
+        overrides = _pylons_overrides
+        pdb.set_trace()
 
     sysadmin = g.userobj and g.userobj.sysadmin
 
     for elem in overrides:
         if elem[0] or not sysadmin:
-            if re.search(elem[1], rule_str):
+            if elem[1].match(rule_str):
+
+                # do not override if pylons has assigned a different
+                # action/controller to this particular url
+                if not is_flask_request() and len(elem) > 4:
+                    if args['action'] and elem[4] != args['action']:
+                        # do not override if specified action does not match
+                        continue
+                    elif args['controller'] and elem[5] != args['controller']:
+                        # do not override if specified controller does not match
+                        continue
+
                 # we should override this rule
+
                 if elem[2] is None:
                     # block this rule
                     return -1
@@ -85,11 +122,6 @@ def _check_if_override(rule_str, args):
                     argvals = (args[a] for a in elem[3])
                     redir = elem[2].format(*argvals)
                     return redir
-
-    # if rule_str == u'/user/' and not sysadmin:
-    #     return -1  # abort
-    # elif rule_str == u'/user/<id>':
-    #     return u'/user/edit/' + args['id']
 
 
 class Remove_Unwanted_FeaturesPlugin(plugins.SingletonPlugin):
@@ -112,15 +144,12 @@ class Remove_Unwanted_FeaturesPlugin(plugins.SingletonPlugin):
 
     # IMiddleware
 
-    def _flask_routing_override(self):
+    def _routing_override(self):
 
-        rule_str = request.url_rule.rule
-        args = request.view_args
-
-        action = _check_if_override(rule_str, args)
+        action = _check_if_override()
         if action:
             if action == -1:  # abort
-                flask_abort(404, "Not found")
+                base.abort(404, "Not found")
             else:
                 return h.redirect_to(action)
         pass
@@ -128,34 +157,33 @@ class Remove_Unwanted_FeaturesPlugin(plugins.SingletonPlugin):
     def _pylons_override_before(self, controller):
 
         super_fun = controller.__before__
-        
+
         def _before(slf, action, **params):
             super_fun(slf, action, **params)
             #pdb.set_trace()
-            #pylons_redirect("http://google.com")
-            #pdb.set_trace()
+            self._routing_override()
 
         return _before
 
     def make_middleware(self, app, config):
-        #pdb.set_trace()
+
         if app.app_name == 'pylons_app':
-            #pdb.set_trace()
-            base.BaseController.__before__ = self._pylons_override_before(base.BaseController)
+
+            base.BaseController.__before__ = \
+                self._pylons_override_before(base.BaseController)
             self.pylons_app = app
         else:
             # add override (will come in addition to overrides already in
             # place)
-            app.before_request(self._flask_routing_override)
+            app.before_request(self._routing_override)
             self.flask_app = app
 
         return app
-    
+
     # IBlueprint
 
     def get_blueprint(self):
 
-        #pdb.set_trace()
         blueprint = Blueprint(self.name, self.__module__)
 
         # only use POST method (not GET) method below to avoid accidental user
@@ -164,7 +192,7 @@ class Remove_Unwanted_FeaturesPlugin(plugins.SingletonPlugin):
                                logout_and_delete, methods=['POST'])
 
         # rules to override existing rules, in order to remove functionality
-        #blueprint.add_url_rule(u'/user', u'user_overrride', self._user_override)
-        
-        return blueprint
+        # blueprint.add_url_rule(u'/user', u'user_overrride',
+        # self._user_override)
 
+        return blueprint
