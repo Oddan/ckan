@@ -86,7 +86,11 @@ _flask_overrides = {
 _pylons_overrides = {
     (True, _rc(u'^/dataset(/[^/]*)?(/.*)?$'), None, None, 'list', 'package'),
     (True, _rc(u'^/group/?$'), None, None),
-    (True, _rc(u'^/groups/?$'), None, None)
+    (True, _rc(u'^/groups/?$'), None, None),
+    (True, _rc(u'^/dataset/followers/.*'), None, None),
+    (True, _rc(u'^/dataset/activity/.*'), None, None),
+    (True, _rc(u'^/dataset/groups/.*'), None, None),
+    (True, _rc(u'^/revision.*'), None, None)
 }
 
 
