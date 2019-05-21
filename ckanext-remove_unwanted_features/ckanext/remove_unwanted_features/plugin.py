@@ -76,11 +76,17 @@ def logout_and_delete():
 _rc = re.compile
 
 _flask_overrides = {
-    (False, _rc(u'^/user/$'), None, None),
+    (True, _rc(u'^/dashboard/?.*$'), u'/', None),
+    (True, _rc(u'^/feeds/?.*$'), None, None),
+    (True, _rc(u'^/hello/?$'), u'/', None),
+    (False, _rc(u'^/user/?$'), u'/user/edit/', None),
+    (True, _rc(u'^/user/activity/.*'), None, None),
     (True, _rc(u'^/user/<id>'), u'/user/edit/{0}', ('id',))
 }
 _pylons_overrides = {
-    (True, _rc(u'^/dataset(/[^/]*)?(/.*)?$'), None, None, 'list', 'package')
+    (True, _rc(u'^/dataset(/[^/]*)?(/.*)?$'), None, None, 'list', 'package'),
+    (True, _rc(u'^/group/?$'), None, None),
+    (True, _rc(u'^/groups/?$'), None, None)
 }
 
 
@@ -94,7 +100,6 @@ def _check_if_override():
         rule_str = request.urlargs.current()
         args = request.urlvars
         overrides = _pylons_overrides
-        pdb.set_trace()
 
     sysadmin = g.userobj and g.userobj.sysadmin
 
@@ -109,7 +114,7 @@ def _check_if_override():
                         # do not override if specified action does not match
                         continue
                     elif args['controller'] and elem[5] != args['controller']:
-                        # do not override if specified controller does not match
+                        # do not override if specified controller doesn't match
                         continue
 
                 # we should override this rule
@@ -119,9 +124,17 @@ def _check_if_override():
                     return -1
                 else:
                     # redirect this rule
-                    argvals = (args[a] for a in elem[3])
-                    redir = elem[2].format(*argvals)
+                    try:
+                        argvals = ()
+                        if elem[3]:
+                            argvals = (args[a] for a in elem[3])
+                        redir = elem[2].format(*argvals)
+                    except TypeError:
+                        # something went wrong (likely a missing argument).  In
+                        # this case, redirect to front page
+                        redir = '/'
                     return redir
+
 
 
 class Remove_Unwanted_FeaturesPlugin(plugins.SingletonPlugin):
