@@ -24,12 +24,14 @@
 
 
   {% block static_description_page %}
-
+    
     <div custom-include-html="/datasets_custom_html/{{pkg.name}}/{{pkg.name}}.html"></div>
 
   {% endblock %}
 
+    <p> {{pkg.name }} </p>
 
+    
   {% block package_tags %}
     {% snippet "package/snippets/tags.html", tags=pkg.tags %}
   {% endblock %}
@@ -40,9 +42,9 @@
   {% endblock %}
 
 
-  {% block package_resources %}
-    {% snippet "package/snippets/resources_list.html", pkg=pkg, resources=pkg.resources %}
-  {% endblock %}
+  {# {% block package_resources %} #}
+  {#   {% snippet "package/snippets/resources_list.html", pkg=pkg, resources=pkg.resources %} #}
+  {# {% endblock %} #}
   
   {# call the javascript function to load the right static .html file for the description.
     The file is loaded from CKAN public folder and rendered in the 'static_description_page' block above. #}
@@ -54,3 +56,7 @@
   {% endblock %}
 
 {% endblock %}
+
+{# {% block package_info %} #}
+
+{# {% endblock %} #}

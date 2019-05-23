@@ -14,7 +14,7 @@ Example:
 {# This file creates the checkbox form to select multiple resources for download #}
 
 <section id="dataset-resources" class="resources">
-    <h3>{{ _('Data and Resources') }}</h3>
+    <h3>{{ _('Download dataset parts') }}</h3>
     <br>
     {% block resource_list %}
       {% if resources %}
@@ -27,10 +27,10 @@ Example:
                   <input type="checkbox" name="{{ resource.name }}" value="{{ resource.url }}" id="resource">{% snippet 'package/snippets/resource_item.html', pkg=pkg, res=resource, can_edit=can_edit %}<br>
               {% endfor %}
               <br>
-              <input type="checkbox" required> By clicking this I confirm that I have read and accepted this dataset's <a href="{{ pkg.license_url }}" rel="dc:rights">Licence Requirements</a>. (See also box in the sidebar)<br>
+              <input type="checkbox" required> By clicking this I confirm that I have read and accepted this dataset's <a href="{{ pkg.license_url }}" rel="dc:rights">Licence Requirements</a>.<br>
               
               <br>
-              <input type="submit" value="Download resources">
+              <input type="submit" value="Download selected components">
             </form>
           {% endblock %}
         </ul>

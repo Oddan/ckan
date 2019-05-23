@@ -5,7 +5,8 @@ import zipfile
 import io
 import requests
 from ckan.common import c
-
+from os.path import basename
+import pdb
 
 '''
 This plugin does the following:
@@ -24,17 +25,18 @@ This plugin does the following:
 def download_multiple_resources():
     access = True
     if request.method == "POST":
-
+        
         if not c.userobj:
             return render_template(u"package/download_denied.html")
 
         memory_file = io.BytesIO()
         with zipfile.ZipFile(memory_file, mode='w', compression=zipfile.ZIP_STORED) as zf:
             for res_name in request.form:
+                #pdb.set_trace()
                 f = requests.get(request.form[res_name], allow_redirects=True, headers={'Authorization': c.userobj.apikey}) # OBS: The function c is from Pylons. How to substitute with h?
                 if f.status_code == 404:
                     return render_template(u"package/download_denied.html")
-                zf.writestr(res_name, f.content)
+                zf.writestr(basename(request.form[res_name]), f.content)
 
         memory_file.seek(0)
         
