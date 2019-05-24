@@ -163,6 +163,7 @@ def ensure_table_created(table):
         except Exception:
             # remove possibly incorrectly created table
             Session.execute('DROP TABLE ' + table.fullname)
+            Session.commit()
 
 
 def _user_modif_wrapper(action_name):
