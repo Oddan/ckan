@@ -16,11 +16,11 @@
   </style>
 {% endif %}
 
-<div class="resource-item" data-id="{{ res.id }}">
+<div class="resource-item" data-id="{{ res.id }}" style="white-space: normal;">
   {% block resource_item_title %}
   <a class="heading" href="{{ url }}" title="{{ res.name or res.description }}">
     {{ h.resource_display_name(res) | truncate(25) }}
-    <span class="format-label" property="dc:format" data-format="{{ res.format.lower() or 'data' }}"> 
+    <span class="format-label" property="" data-format="{{ res.format.lower() or 'data' }}"> 
       {{ h.get_translated(res, 'format') }} 
     </span> 
     {# {{ h.popular('views', res.tracking_summary.total, min=10) }} #}
@@ -31,7 +31,7 @@
     {% set size_entry = h.format_resource_items( [("size", res['size'])] ) %}
     <p class="description"> Size: {{size_entry[0][1]}}</p>
     {# show description #}
-    <p class="description">
+    <p class="description" style="width: auto">
       {% if res.description %}
         {{ h.markdown_extract(h.get_translated(res, 'description'), extract_length=80) }}
       {% endif %}
