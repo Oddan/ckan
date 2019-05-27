@@ -75,27 +75,38 @@ def logout_and_delete():
 # command:  [a.routepath for a in ckan.common.config['routes.map'].matchlist]
 _rc = re.compile
 
-_flask_overrides = {
+_flask_overrides = [
     (True, _rc(u'^/dashboard/?.*$'), u'/', None),
     (True, _rc(u'^/feeds/?.*$'), None, None),
     (True, _rc(u'^/hello/?$'), u'/', None),
     (False, _rc(u'^/user/?$'), u'/user/edit/', None),
     (True, _rc(u'^/user/activity/.*'), None, None),
-    (True, _rc(u'^/user/<id>'), u'/user/edit/{0}', ('id',))
-}
-_pylons_overrides = {
+    (True, _rc(u'^/user/<id>'), u'/user/edit/{0}', ('id',)),
+    (True, _rc(u'^/user/register'), u'/registration_closed', None),
+    (False, _rc(u'^/api(/.*)?/action/.*$'), None, None) # disable action API except for admin
+]
+_pylons_overrides = [
     (True, _rc(u'^/dataset(/[^/]*)?(/.*)?$'), None, None, 'list', 'package'),
     (True, _rc(u'^/group/?$'), None, None),
     (True, _rc(u'^/groups/?$'), None, None),
     (True, _rc(u'^/dataset/followers/.*'), None, None),
     (True, _rc(u'^/dataset/activity/.*'), None, None),
     (True, _rc(u'^/dataset/groups/.*'), None, None),
-    (True, _rc(u'^/revision.*'), None, None)
-}
+    (True, _rc(u'^/revision.*'), None, None),
+]
+
+
+def registration_closed_message():
+    message = 'Registration currently limited to test users.  \
+    If you are interested in becoming a test user, please contact CO2 \
+    DataShare administrator.'
+    
+    return base.render(u'error_document_template.html',
+                       {'code': [], u'content': message})
 
 
 def _check_if_override():
-
+    #pdb.set_trace()
     if is_flask_request():
         rule_str = request.url_rule.rule
         args = request.view_args
@@ -211,5 +222,8 @@ class Remove_Unwanted_FeaturesPlugin(plugins.SingletonPlugin):
         # rules to override existing rules, in order to remove functionality
         # blueprint.add_url_rule(u'/user', u'user_overrride',
         # self._user_override)
+
+        blueprint.add_url_rule(u'/registration_closed', u'registration_closed',
+                               registration_closed_message)
 
         return blueprint
