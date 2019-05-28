@@ -208,6 +208,9 @@ class Remove_Unwanted_FeaturesPlugin(plugins.SingletonPlugin):
 
         return app
 
+    def make_error_log_middleware(self, app, config):
+        return app
+    
     # IBlueprint
 
     def get_blueprint(self):
