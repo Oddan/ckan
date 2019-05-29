@@ -1,7 +1,7 @@
 @media (min-width: 768px) {
     .hero {
       background: url("/base/images/background_tile_2.png");
-      background-size: 542px 542px;
-      background-repeat: repeat-x;
+      background-size: 600px 600px;
+      background-repeat: repeat-xy;
     }
   }
