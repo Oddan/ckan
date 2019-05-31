@@ -2,7 +2,7 @@
 FROM debian:jessie
 MAINTAINER Open Knowledge
 
-# Install required system packages
+# Install required system packages (as well as emacs, for convenience
 RUN apt-get -q -y update \
     && DEBIAN_FRONTEND=noninteractive apt-get -q -y upgrade \
     && apt-get -q -y install \
@@ -21,6 +21,9 @@ RUN apt-get -q -y update \
         git-core \
         vim \
         wget \
+        apache2 \
+        libapache2-mod-wsgi \
+        emacs \
     && apt-get -q clean \
     && rm -rf /var/lib/apt/lists/*
 
