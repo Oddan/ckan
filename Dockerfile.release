@@ -2,7 +2,7 @@
 FROM debian:jessie
 MAINTAINER Open Knowledge
 
-# Install required system packages (as well as emacs, for convenience
+# Install required system packages (as well as emacs, for convenience)
 RUN apt-get -q -y update \
     && DEBIAN_FRONTEND=noninteractive apt-get -q -y upgrade \
     && apt-get -q -y install \
@@ -32,6 +32,7 @@ ENV CKAN_HOME /usr/lib/ckan
 ENV CKAN_VENV $CKAN_HOME/venv
 ENV CKAN_CONFIG /etc/ckan
 ENV CKAN_STORAGE_PATH=/var/lib/ckan
+ENV PROTOTYPE_SCRIPT_PATH $CKAN_VENV/src/ckan/contrib/docker/scripts/prototype_edition
 
 # Build-time variables specified by docker-compose.yml / .env
 ARG CKAN_SITE_URL
@@ -56,10 +57,43 @@ RUN ckan-pip install -U pip && \
     chmod +x /ckan-entrypoint.sh && \
     chown -R ckan:ckan $CKAN_HOME $CKAN_VENV $CKAN_CONFIG $CKAN_STORAGE_PATH
 
+# copy in predefined settings for use with prototype, and activate site with Apache
+RUN cp -v $PROTOTYPE_SCRIPT_PATH/apache.wsgi $CKAN_CONFIG/apache.wsgi && \
+    cp -v $PROTOTYPE_SCRIPT_PATH/production.ini $CKAN_CONFIG/production.ini && \
+    cp -v $PROTOTYPE_SCRIPT_PATH/ckan_default.conf /etc/apache2/sites-available/ckan_default.conf && \
+    cp -v $PROTOTYPE_SCRIPT_PATH/ports.conf /etc/apache2/ports.conf && \
+    a2ensite ckan_default && \
+    a2dissite 000-default
+
+# activate all CO2DataShare plugins
+RUN . $CKAN_VENV/bin/activate && \
+    cd $CKAN_VENV/src/ckan/ckanext-user_registration && python setup.py develop && \
+    cd $CKAN_VENV/src/ckan/ckanext-simple_frontpage && python setup.py develop && \
+    cd $CKAN_VENV/src/ckan/ckanext-remove_unwanted_features && python setup.py develop && \
+    cd $CKAN_VENV/src/ckan/ckanext-datasets_landing_page && python setup.py develop && \
+    cd $CKAN_VENV/src/ckan/ckanext-CO2Datashare_theme && python setup.py develop && \
+    cd $CKAN_VENV/src/ckan/ckanext-access_management && python setup.py develop
+
 ENTRYPOINT ["/ckan-entrypoint.sh"]
 
-USER ckan
-EXPOSE 5000
 
-cmd tail -f /dev/null
+EXPOSE 5000
+EXPOSE 8080
+
+ENV APACHE_RUN_USER www-data
+ENV APACHE_RUN_GROUP www-data
+ENV APACHE_LOG_DIR /var/log/apache2
+ENV APACHE_LOCK_DIR /var/run/apache2
+
+RUN chown -R www-data:www-data $APACHE_LOG_DIR
+RUN chown -R www-data:www-data $APACHE_LOCK_DIR
+RUN adduser ckan www-data
+run chmod -R g+w $APACHE_LOG_DIR && chmod -R g+w $APACHE_LOCK_DIR
+
+#run chown www-data:www-data $APACHE_PID_FILE
+
+USER ckan
+CMD apachectl -D FOREGROUND
+
+#cmd tail -f /dev/null
 #CMD ["ckan-paster","serve","/etc/ckan/production.ini"]

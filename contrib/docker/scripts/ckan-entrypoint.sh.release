@@ -36,7 +36,7 @@ set_environment () {
   export CKAN_MAX_UPLOAD_SIZE_MB=${CKAN_MAX_UPLOAD_SIZE_MB}
 }
 
-echo "A"
+
 write_config () {
     ckan-paster make-config --no-interactive ckan "$CONFIG"
 }
@@ -45,7 +45,7 @@ write_config () {
 if [ ! -e "$CONFIG" ]; then
   write_config
 fi
-echo "B"
+
 # Get or create CKAN_SQLALCHEMY_URL
 if [ -z "$CKAN_SQLALCHEMY_URL" ]; then
   abort "ERROR: no CKAN_SQLALCHEMY_URL specified in docker-compose.yml"
@@ -64,5 +64,9 @@ if [ -z "$CKAN_DATAPUSHER_URL" ]; then
 fi
 
 set_environment
+#pkexec --user www-data service apache2 start && service apache reload
+
 ckan-paster --plugin=ckan db init -c "${CKAN_CONFIG}/production.ini"
+ckan-paster --plugin=ckanext-access_management access_table ensure_tables_exists -c "${CKAN_CONFIG}/production.ini"
+
 exec "$@"
