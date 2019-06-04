@@ -1,0 +1,25 @@
+{% extends "edit_metadata.html" %} 
+{% set name = g.cur_item['name'] or "" %}
+{% set description = g.cur_item['description'] or "" %}
+{% set isopen = g.cur_item['is_open'] or False %}
+
+{% block dataformat_subheading %}
+  <h2>Edit Dataformats</h2> 
+{% endblock %} 
+
+
+{% block metadata_form_fields %}
+  
+  {{ form.input('name', id='field-name', label=_('Name'), value=name, error=errors.name,
+  classes=['control-full'], is_required=true) }}
+  
+  {{ form.checkbox('is_open', checked=isopen, label=_('Format is open (nonproprietary)'),
+  id='field-is-open', value=true, error=errors.is_open, 
+  classes=['control-small']) }}
+  
+  {{ form.markdown('description', id='field-description', label=_('Description'), value=description,
+  placeholder='Consider including links to open processing software',
+  error=errors.description, classes=['control-full'], is_required=true) }}
+  
+{% endblock %} 
+

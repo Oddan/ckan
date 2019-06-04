@@ -1,3 +1,5 @@
+"use strict";
+
 
   function includeHTML() {
     var z, i, elem, file, xhttp;
@@ -26,3 +28,5 @@
       }
     }
   };
+
+includeHTML();

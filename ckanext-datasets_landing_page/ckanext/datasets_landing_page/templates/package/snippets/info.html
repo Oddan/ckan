@@ -1,0 +1,13 @@
+
+{% block download_menu %}
+  <section class="module module-narrow">
+    <div class="module context-info">
+      <div class="module-content">
+        {% snippet "package/snippets/resources_list.html",
+        pkg=pkg, resources=pkg.resources %}
+      </div>
+    </div>
+  </section>
+{% endblock %}
+  
+

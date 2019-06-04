@@ -1,11 +1,14 @@
 import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
 from flask import send_file, Blueprint, request, render_template
+import ckan.lib.helpers as h
 import zipfile
 import io
 import requests
-from ckan.common import c
-
+from ckan.common import c, request 
+from os.path import basename
+import ckan.model as model
+import pdb
 
 '''
 This plugin does the following:
@@ -20,28 +23,37 @@ This plugin does the following:
       The user must accept the dataset's licence to be able to download the files.
 '''
 
+def package_id_of_resource(resource_id):
+    return model.Resource.get(resource_id).package_id
 
 def download_multiple_resources():
     access = True
     if request.method == "POST":
 
-        if not c.userobj:
-            return render_template(u"package/download_denied.html")
-
         memory_file = io.BytesIO()
         with zipfile.ZipFile(memory_file, mode='w', compression=zipfile.ZIP_STORED) as zf:
-            for res_name in request.form:
-                f = requests.get(request.form[res_name], allow_redirects=True, headers={'Authorization': c.userobj.apikey}) # OBS: The function c is from Pylons. How to substitute with h?
+            for res_id in request.form.values():
+                
+                # @@ this should be reviewed if Flask takes over as the controller for resource downloads
+                url = h.url_for(controller='package', action='resource_download',
+                                id = package_id_of_resource(res_id),
+                                resource_id=res_id, qualified=True)
+                
+                f = requests.get(url,
+                                 allow_redirects=True,
+                                 headers = {'Cookie': request.headers['cookie']})
+                
                 if f.status_code == 404:
                     return render_template(u"package/download_denied.html")
-                zf.writestr(res_name, f.content)
+                filename = basename(model.Resource.get(res_id).url)
+                zf.writestr(filename, f.content)
 
         memory_file.seek(0)
         
-    return send_file(memory_file, mimetype='application/zip', as_attachment = True, attachment_filename= 'download.zip')
-
-
-
+    return send_file(memory_file,
+                     mimetype='application/zip',
+                     as_attachment = True,
+                     attachment_filename= 'download.zip')
 
 
 class Datasets_Landing_PagePlugin(plugins.SingletonPlugin):

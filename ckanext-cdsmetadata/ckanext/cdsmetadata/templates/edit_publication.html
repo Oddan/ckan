@@ -1,0 +1,24 @@
+{% extends "edit_metadata.html" %}
+{% set name = g.cur_item['name'] or "" %}
+{% set citation = g.cur_item['citation'] or "" %}
+{% set doi = g.cur_item['doi'] or "" %}
+
+{% block dataformat_subheading %}
+  <h2>Edit Publications</h2> 
+{% endblock %} 
+
+{% block metadata_form_fields %}
+  
+  {{ form.input('name', id='field-name', label=_('Name'), value=name, error=errors.name,
+  classes=['control-full'], is_required=true) }}
+  
+  {{ form.markdown('citation', id='field-citation', label=_('Citation'), value=citation,
+  placeholder='Use bibtex format',
+  error=errors.citation, classes=['control-full'], is_required=true) }}
+
+  {{ form.input('doi', id='field-doi', label=_('DOI'),
+  value=doi, error=errors.doi, classes=['control-full']) }}
+  
+{% endblock %} 
+
+
