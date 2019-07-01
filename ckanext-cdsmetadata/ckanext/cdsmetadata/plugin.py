@@ -564,7 +564,7 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
 
         return {'valid_contact_person': contact_person_validator}
 
-    # ============================= ITemplateHelpers ==========================
+    # ================================ IBlueprint =============================
 
     def get_blueprint(self):
         blueprint = Blueprint(self.name, self.__module__)
