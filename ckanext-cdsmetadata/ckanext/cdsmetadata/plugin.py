@@ -17,22 +17,35 @@ from ckan.lib.base import abort, render
 import pdb
 
 TITLE_MAX_L = 100
+NAME_MAX_L = 100
+EMAIL_MAX_L = 500
 
-
-reference_dataset_table = None
-dataset_component_table = None
 data_format_table = None
 license_table = None
 publication_table = None
-#organization_additional_info_table = None
-user_extra_table = None
+person_table = None
+user_extra_table = None # @@ remove
+
+affiliation_association_table = None  # associate Person with Organization
 
 
+class Person(model.domain_object.DomainObject):
+    def __init__(self, first_name, last_name, email):
+        self.first_name = first_name
+        self.last_name = last_name
+        self.email = email
+
+    @property
+    def name(self):
+        return self.last_name + ", " + self.first_name
+
+# @@ remove
 class UserExtra(model.domain_object.DomainObject):
     def __init__(self, first_name, last_name, user_id):
         self.first_name = first_name
         self.last_name = last_name
         self.user_id = user_id
+
 
 class DataFormat(model.domain_object.DomainObject):
     def __init__(self, name, is_open, description):
@@ -40,11 +53,13 @@ class DataFormat(model.domain_object.DomainObject):
         self.is_open = is_open
         self.description = description
 
+
 class License(model.domain_object.DomainObject):
     def __init__(self, name, description, license_url):
         self.name = name
         self.description = description
         self.license_url = license_url
+
 
 class Publication(model.domain_object.DomainObject):
     def __init__(self, name, citation, doi):
@@ -52,19 +67,55 @@ class Publication(model.domain_object.DomainObject):
         self.citation = citation
         self.doi = doi
 
-class OrganizationAdditionalInfo(model.domain_object.DomainObject):
-    pass
-
 
 def setup_model():
 
-    #prepare_reference_dataset_table()
-    #prepare_dataset_component_table()
     prepare_data_format_table()
     prepare_user_extra_table()
     prepare_license_table()
     prepare_publication_table()
-    #prepare_organization_table()
+    prepare_person_table()
+
+    # association tables
+    prepare_affiliation_association_table()
+
+
+def prepare_affiliation_association_table():
+
+    global affiliation_association_table
+
+    if affiliation_association_table is None:
+        affiliation_association_table = Table(
+            Column('person_id', UnicodeText, ForeignKey('person.id')),
+            Column('org_id', UnicodeText, ForeignKey('group.id'))
+        )
+
+
+def prepare_person_table():
+
+    global person_table
+
+    if person_table is None:
+        person_table = Table(
+            'person', meta.metadata,
+            Column('id', UnicodeText, primary_key=True, default=make_uuid),
+            Column('first_name', Unicode(NAME_MAX_L)),
+            Column('last_name', Unicode(NAME_MAX_L), nullable=False),
+            Column('email',  Unicode(EMAIL_MAX_L))
+        )
+        meta.mapper(
+            Person, person_table,
+            properties={'affiliation':
+                        orm.relation(model.group.Group,
+                                     secondary=affiliation_association_table,
+                                     backref=orm.backref(
+                                         'people',
+                                         cascade='save-update, merge'))}
+        )
+
+        # create table
+        ensure_table_created(person_table)
+
 
 def prepare_publication_table():
 
@@ -82,7 +133,8 @@ def prepare_publication_table():
 
         # create table
         ensure_table_created(publication_table)
-    
+
+
 def prepare_license_table():
 
     global license_table
@@ -100,7 +152,8 @@ def prepare_license_table():
 
     # create table
     ensure_table_created(license_table)
-    
+
+
 def prepare_data_format_table():
 
     global data_format_table
@@ -120,6 +173,7 @@ def prepare_data_format_table():
     ensure_table_created(data_format_table)
 
 
+# @@ delete
 def prepare_user_extra_table():
 
     global user_extra_table
@@ -142,20 +196,6 @@ def prepare_user_extra_table():
     ensure_table_created(user_extra_table)
 
 
-def prepare_reference_dataset_table():
-
-    # setup table
-    global reference_dataset_table
-
-    # reference_dataset_table = Table(
-    #     'reference_dataset', meta.metadata,
-    #     Column('dill', types.UnicodeText, primary_key=True),
-    #     Column(...)
-    # )
-
-    # create table
-    #ensure_table_created(reference_dataset_table)
-
 def ensure_table_created(table):
     if not table.exists():
         try:
@@ -165,7 +205,7 @@ def ensure_table_created(table):
             Session.execute('DROP TABLE ' + table.fullname)
             Session.commit()
 
-
+# @@ this will have to change
 def _user_modif_wrapper(action_name):
 
     action = tk.get_action(action_name)
@@ -200,6 +240,7 @@ def _user_modif_wrapper(action_name):
     return _wrapper
 
 
+# @@ must change
 def _user_show_wrapper():
 
     action = tk.get_action('user_show')
@@ -217,6 +258,8 @@ def _user_show_wrapper():
     return _wrapper
 
 
+# @@ this function at present only used when listing members of an org.
+# Must be adapted to refer to a Person object rather than a CKAN User
 def _username_helper_fun(user, maxlength=0):
     if not isinstance(user, model.User):
         user_name = text_type(user)
@@ -233,6 +276,8 @@ def _username_helper_fun(user, maxlength=0):
     return result
 
 
+# @@ Used in organization form to facilitate designation of contact person.
+# Will have to change.
 def autocomplete_filtered():
 
     q = request.args.get(u'q', u'')
@@ -247,7 +292,7 @@ def autocomplete_filtered():
 
         # get list with matching user names
         user_list = tk.get_action(u'user_autocomplete')(context,
-                                                             data_dict)
+                                                        data_dict)
 
         # narrow down to list of users who are actual members
         if org_id:
@@ -259,9 +304,9 @@ def autocomplete_filtered():
     return api._finish_ok(user_list)
 
 
+# @@ This must change to refer to the new Person table, not to users
 def contact_person_validator(value, context):
 
-    #pdb.set_trace()
     org_id = context['group'].id
     member_list = tk.get_action('member_list')(
         {'model': model}, {'id': org_id})
@@ -296,7 +341,20 @@ def check_edit_metadata():
         tk.check_access('edit_metadata', context)
     except logic.NotAuthorized:
         abort(403, _('Not authorized to see this page.'))
-   
+
+
+def _person_create(context, data_dict):
+    tk.check_access('edit_metadata', context, data_dict)
+
+    new_person = Person(data_dict['first_name'],
+                        data_dict['last_name'],
+                        data_dict['email'])
+    try:
+        new_person.save()
+        context['session'].commit()
+    except:
+        context['session'].rollback()
+
 
 def _license_create(context, data_dict):
     tk.check_access('edit_metadata', context, data_dict)
@@ -335,6 +393,24 @@ def _data_format_create(context, data_dict):
     except:
         # @@ should we issue a warning
         context['session'].rollback()
+
+
+def _person_update(context, data_dict):
+    tk.check_access('edit_metadata', context, data_dict)
+    per = context['session'].query(Person).get(data_dict['id'])
+    if per is None:
+        raise tk.ObjectNotFound
+
+    per.first_name = data_dict('first_name')
+    per.last_name = data_dict('last_name')
+    per.email = data_dict('email')
+
+    try:
+        per.save()
+        context['session'].commit()
+    except:
+        context['session'].rollback()
+
 
 def _publication_update(context, data_dict):
     tk.check_access('edit_metadata', context, data_dict)
@@ -383,6 +459,19 @@ def _data_format_update(context, data_dict):
         # @@ should we issue a warning
         context['session'].rollback()
 
+
+def _person_delete(context, data_dict):
+    tk.check_access('edit_metadata', context, data_dict)
+    per = context['session'].query(Person).get(data_dict['id'])
+    if per is None:
+        raise tk.ObjectNotFound
+    try:
+        per.delete()
+        context['session'].commit()
+    except:
+        context['session'].rollback()
+
+
 def _publication_delete(context, data_dict):
     tk.check_access('edit_metadata', context, data_dict)
     pub = context['session'].query(Publication).get(data_dict['id'])
@@ -404,18 +493,31 @@ def _license_delete(context, data_dict):
         context['session'].commit()
     except:
         context['session'].rollback()
+
         
 def _data_format_delete(context, data_dict):
     tk.check_access('edit_metadata', context, data_dict)
     df = context['session'].query(DataFormat).get(data_dict['id'])
     if df is None:
         raise tk.ObjectNotFound
-    #context['session'].delete(df)
+    # context['session'].delete(df)
     try:
         df.delete()
         context['session'].commit()
     except:
         context['session'].rollback()
+
+
+def _person_show(context, data_dict):
+    tk.check_access('edit_metadata', context, data_dict)
+    per = context['session'].query(Person).get(data_dict['id'])
+    if per is None:
+        raise tk.ObjectNotFound
+
+    return {'first_name': per.first_name,
+            'last_name': per.last_name,
+            'email': per.email}
+
 
 def _publication_show(context, data_dict):
     tk.check_access('edit_metadata', context, data_dict)
@@ -426,7 +528,8 @@ def _publication_show(context, data_dict):
     return {'name': pub.name,
             'citation': pub.citation,
             'doi': pub.doi}
-    
+
+
 def _license_show(context, data_dict):
     tk.check_access('edit_metadata', context, data_dict)
     lic = context['session'].query(License).get(data_dict['id'])
@@ -436,45 +539,57 @@ def _license_show(context, data_dict):
     return {'name': lic.name,
             'description': lic.description,
             'license_url': lic.license_url}
-    
+
+
 def _data_format_show(context, data_dict):
     tk.check_access('edit_metadata', context, data_dict)
 
     df = context['session'].query(DataFormat).get(data_dict['id'])
     if df is None:
         raise tk.ObjectNotFound
-    
+
     return {'name': df.name,
             'is_open': df.is_open,
             'description': df.description}
 
 
+def _edit_person():
+    return _edit_metadata(Person, "edit_person")
+
+
 def _edit_dataformat():
     return _edit_metadata(DataFormat, "edit_dataformat")
+
 
 def _edit_license():
     return _edit_metadata(License, "edit_license")
 
+
 def _edit_publication():
-    return _edit_metadata(Publication,"edit_publication")
+    return _edit_metadata(Publication, "edit_publication")
+
 
 def _update_fun(mclass):
-    return {DataFormat: 'dataformat_update',
+    return {Person: 'person_update',
+            DataFormat: 'dataformat_update',
             License: 'license_update',
             Publication: 'publication_update'}[mclass]
 
 def _create_fun(mclass):
-    return {DataFormat: 'dataformat_create',
+    return {Person: 'person_create',
+            DataFormat: 'dataformat_create',
             License: 'license_create',
             Publication: 'publication_create'}[mclass]
 
 def _delete_fun(mclass):
-    return {DataFormat: 'dataformat_delete',
+    return {Person: 'person_delete',
+            DataFormat: 'dataformat_delete',
             License: 'license_delete',
             Publication: 'publication_delete'}[mclass]
 
 def _show_fun(mclass):
-    return {DataFormat: 'dataformat_show',
+    return {Person: 'person_show',
+            DataFormat: 'dataformat_show',
             License: 'license_show',
             Publication: 'publication_show'}[mclass]
 
@@ -550,6 +665,8 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
                     action='edit_license', controller='cdsmetadata')
         map.connect('edit_publication', '/metadata/publication',
                     action='edit_publication', controller='cdsmetadata')
+        map.connect('edit_person', '/metadata/person',
+                    action='edit_person', controller='cdsmetadata')
         return map
 
     def after_map(self, map):
@@ -580,10 +697,14 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
         blueprint.add_url_rule('/metadata/publication',
                                view_func=_edit_publication,
                                methods=['GET', 'POST'])
+        blueprint.add_url_rule('/metadata/person',
+                               view_func=_edit_person,
+                               methods=['GET', 'POST'])
         return blueprint
 
     # ============================= ITemplateHelpers ==========================
     def get_helpers(self):
+        # @@ currently only used when list
         return {'username': _username_helper_fun}
 
     # ================================= IActions ==============================
@@ -609,11 +730,17 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
         result['publication_update'] = _publication_update
         result['publication_show'] = _publication_show
         result['publication_delete'] = _publication_delete
-        
+
+        result['person_create'] = _person_create
+        result['person_update'] = _person_update
+        result['person_show'] = _person_show
+        result['person_delete'] = _person_delete
+
         return result
 
     # =============================== IConfigurable ===========================
     def configure(self, config):
+        # prepares all the necessary data tables
         setup_model()
 
     # ================================ IConfigurer ============================
@@ -640,6 +767,7 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
 
         pass
 
+    # @@ must change
     def form_to_db_schema(self):
 
         schema = super(CdsmetadataPlugin, self).form_to_db_schema()
@@ -654,6 +782,7 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
 
         return schema
 
+    # @@ must change
     def db_to_form_schema(self):
         schema = self._default_show_group_schema()
 

@@ -1,0 +1,25 @@
+{% extends "edit_metadata.html" %}
+{% set first_name = g.cur_item['first_name'] or "" %}
+{% set last_name = g.cur_item['last_name'] or "" %}
+{% set email = g.cur_item['email'] or "" %}
+
+{% block dataformat_subheading %}
+  <h2>Edit Person</h2> 
+{% endblock %} 
+
+{% block metadata_form_fields %}
+  
+  {{ form.input('first_name', id='field-first_name', label=_('First name'),
+     value=first_name, error=errors.first_name, classes=['control-full']) }} 
+
+  {{ form.input('last_name', id='field-last_name', label=_('Last name'),
+     value=last_name, error=errors.last_name, classes=['control-full'], is_required=true) }} 
+  
+  {{ form.input('email', label=_('Email'), id='field-email', type='email', value=email,
+     error=errors.email, placeholder=_('eg. joe@example.com'), classes=['control-medium'],
+     is_required=true) }}
+
+  
+{% endblock %} 
+
+
