@@ -2,6 +2,12 @@
 {% set first_name = g.cur_item['first_name'] or "" %}
 {% set last_name = g.cur_item['last_name'] or "" %}
 {% set email = g.cur_item['email'] or "" %}
+{% set affiliations = g.cur_item['affiliation'] or [] %}
+{# {% set num_affiliations = affiliations | length %} #}
+{# {% set first_affiliation = "<none>" %} #}
+{# {% if num_affiliations > 0 %} #}
+{#   {% set first_affiliation = affiliations[0] %} #}
+{# {% endif %}  #}
 
 {% block dataformat_subheading %}
   <h2>Edit Person</h2> 
@@ -19,7 +25,48 @@
      error=errors.email, placeholder=_('eg. joe@example.com'), classes=['control-medium'],
      is_required=true) }}
 
+  <b>Affiliation(s)</b>
+  {# list previous affiliations #}
+  <div id="affiliation-list">
+    {% for aff in affiliations %}
+      <li class="list-unstyled">  
+        <button class="btn" name="changeme" value="value" type="button"
+                onclick="this.remove()">
+                {{aff | upper}} <i>(click to remove)</i>
+        </button>
+      </li>
+    {% endfor %} 
+  </div>  
+  {# add possible new affiliation #}
+  <div>
+    <input id="new-affiliation" name="affiliation" placeholder={{_("New")}}
+           class="control-large" style="width: 80%" data-module="autocomplete"
+           data-module-source="/api/util/organization/autocomplete?q=?">
+           <button class="btn btn-primary pull-right" name="additem" value="value" type="button"
+                   onclick="
+                   var node = document.createElement('LI'); 
+                   var content = document.getElementById('new-affiliation').value;
+                   if (content) {
+                     var text = document.createTextNode(content); 
+                     node.appendChild(text); 
+                     document.getElementById('affiliation-list').appendChild(node);
+                     document.getElementById('new-affiliation').setAttribute('value', '');
+                   }">
+             Add
+           </button>
+  </div>
   
+         
+  <p>Number of affiliations: {{affiliations|length}}</p>
+
+  <b>Contact person for (organization)<b>
+      <br>
+      <b>Contact person for (dataset)<b>
+          <br>
+          <b>Contributor to (dataset)<b>
+              <br>
+              
 {% endblock %} 
+
 
 

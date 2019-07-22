@@ -70,6 +70,7 @@ class Publication(model.domain_object.DomainObject):
 
 def setup_model():
 
+    # object tables
     prepare_data_format_table()
     prepare_user_extra_table()
     prepare_license_table()
@@ -83,16 +84,19 @@ def setup_model():
 def prepare_affiliation_association_table():
 
     global affiliation_association_table
-
     if affiliation_association_table is None:
         affiliation_association_table = Table(
+            'affiliation_association', meta.metadata,
+            Column('org_id', UnicodeText, ForeignKey('group.id')),
             Column('person_id', UnicodeText, ForeignKey('person.id')),
-            Column('org_id', UnicodeText, ForeignKey('group.id'))
         )
 
+        # create table
+        ensure_table_created(affiliation_association_table)
 
+    
 def prepare_person_table():
-
+    
     global person_table
 
     if person_table is None:
@@ -106,11 +110,11 @@ def prepare_person_table():
         meta.mapper(
             Person, person_table,
             properties={'affiliation':
-                        orm.relation(model.group.Group,
-                                     secondary=affiliation_association_table,
-                                     backref=orm.backref(
-                                         'people',
-                                         cascade='save-update, merge'))}
+                        orm.relationship(model.group.Group,
+                                         secondary=lambda: affiliation_association_table,
+                                         backref=orm.backref(
+                                             'people',
+                                             cascade='save-update, merge'))}
         )
 
         # create table
@@ -197,13 +201,15 @@ def prepare_user_extra_table():
 
 
 def ensure_table_created(table):
+
     if not table.exists():
         try:
             table.create()
-        except Exception:
+        except Exception as e:
             # remove possibly incorrectly created table
-            Session.execute('DROP TABLE ' + table.fullname)
-            Session.commit()
+            Session.rollback()
+            # Session.execute('DROP TABLE ' + table.fullname)
+            # Session.commit()
 
 # @@ this will have to change
 def _user_modif_wrapper(action_name):
@@ -343,12 +349,31 @@ def check_edit_metadata():
         abort(403, _('Not authorized to see this page.'))
 
 
+def _ensure_list(obj):
+    return obj if isinstance(obj, list) else [obj]
+
+
+def _list_orgs(session, names):
+    names = _ensure_list(names)
+    org_query = session.query(model.group.Group)
+    result = []
+    for n in names:
+        tmp = org_query.filter(model.group.Group.name == n.lower()).all()
+        if len(tmp) > 0:
+            assert(len(tmp) == 1) # names should be unique
+            result.append(tmp[0])
+
+    return result
+
+
 def _person_create(context, data_dict):
     tk.check_access('edit_metadata', context, data_dict)
 
     new_person = Person(data_dict['first_name'],
                         data_dict['last_name'],
                         data_dict['email'])
+    new_person.affiliation = _list_orgs(context['session'],
+                                        data_dict['affiliation'])
     try:
         new_person.save()
         context['session'].commit()
@@ -396,14 +421,17 @@ def _data_format_create(context, data_dict):
 
 
 def _person_update(context, data_dict):
+
     tk.check_access('edit_metadata', context, data_dict)
     per = context['session'].query(Person).get(data_dict['id'])
     if per is None:
         raise tk.ObjectNotFound
-
-    per.first_name = data_dict('first_name')
-    per.last_name = data_dict('last_name')
-    per.email = data_dict('email')
+    
+    per.first_name = data_dict['first_name']
+    per.last_name = data_dict['last_name']
+    per.email = data_dict['email']
+    per.affiliation = _list_orgs(context['session'],
+                                 data_dict['affiliation'])
 
     try:
         per.save()
@@ -413,6 +441,7 @@ def _person_update(context, data_dict):
 
 
 def _publication_update(context, data_dict):
+
     tk.check_access('edit_metadata', context, data_dict)
     pub = context['session'].query(Publication).get(data_dict['id'])
     if pub is None:
@@ -513,10 +542,11 @@ def _person_show(context, data_dict):
     per = context['session'].query(Person).get(data_dict['id'])
     if per is None:
         raise tk.ObjectNotFound
-
+    #pdb.set_trace()
     return {'first_name': per.first_name,
             'last_name': per.last_name,
-            'email': per.email}
+            'email': per.email,
+            'affiliation': [x.name for x in per.affiliation]}
 
 
 def _publication_show(context, data_dict):
