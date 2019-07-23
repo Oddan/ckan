@@ -353,16 +353,14 @@ def _ensure_list(obj):
     return obj if isinstance(obj, list) else [obj]
 
 
-def _list_orgs(session, names):
-    names = _ensure_list(names)
+def _list_orgs(session, org_ids):
+    org_ids = _ensure_list(org_ids)
     org_query = session.query(model.group.Group)
     result = []
-    for n in names:
-        tmp = org_query.filter(model.group.Group.name == n.lower()).all()
-        if len(tmp) > 0:
-            assert(len(tmp) == 1) # names should be unique
-            result.append(tmp[0])
-
+    for id in org_ids:
+        org = org_query.get(id)
+        if org:
+            result.append(org)
     return result
 
 
@@ -421,7 +419,7 @@ def _data_format_create(context, data_dict):
 
 
 def _person_update(context, data_dict):
-
+    
     tk.check_access('edit_metadata', context, data_dict)
     per = context['session'].query(Person).get(data_dict['id'])
     if per is None:
@@ -523,7 +521,7 @@ def _license_delete(context, data_dict):
     except:
         context['session'].rollback()
 
-        
+
 def _data_format_delete(context, data_dict):
     tk.check_access('edit_metadata', context, data_dict)
     df = context['session'].query(DataFormat).get(data_dict['id'])
@@ -546,7 +544,7 @@ def _person_show(context, data_dict):
     return {'first_name': per.first_name,
             'last_name': per.last_name,
             'email': per.email,
-            'affiliation': [x.name for x in per.affiliation]}
+            'affiliation': [(x.id, x.title) for x in per.affiliation]}
 
 
 def _publication_show(context, data_dict):
@@ -617,6 +615,34 @@ def _delete_fun(mclass):
             License: 'license_delete',
             Publication: 'publication_delete'}[mclass]
 
+
+def _orglist(person_data):
+    #pdb.set_trace()
+    orgs = model.Session.query(model.group.Group).all()
+    orglist = [{'value': x.id, 'text': x.title, 'selected': False} for x in orgs]
+
+    # prepare list where all current affiliations are selected
+    afflist = [] if person_data is None else [x[0] for x in person_data['affiliation']]
+    orglist_aff = orglist
+
+    for o in orglist:
+        if o['value'] in afflist:
+            o['selected'] = True
+
+    return {'orglist_aff': orglist}
+
+    # return {'first_name': per.first_name,
+    #         'last_name': per.last_name,
+    #         'email': per.email,
+    #         'affiliation': [(x.id, x.title) for x in per.affiliation]}
+
+
+def _extra_info(mclass, data):
+    return {Person: _orglist(data),
+            DataFormat: None,
+            License: None,
+            Publication: None}[mclass]
+
 def _show_fun(mclass):
     return {Person: 'person_show',
             DataFormat: 'dataformat_show',
@@ -624,7 +650,6 @@ def _show_fun(mclass):
             Publication: 'publication_show'}[mclass]
 
 def _extract_metadata_form_data(form, mclass):
-
     data_dict = {}
     for key in form.keys():
         if key == 'save':
@@ -635,6 +660,8 @@ def _extract_metadata_form_data(form, mclass):
     # class-specific extractions
     if mclass == DataFormat:
         data_dict['is_open'] = 'is_open' in form.keys()
+    if mclass == Person:
+        data_dict['affiliation'] = form.getlist('affiliation')
 
     return data_dict
 
@@ -664,10 +691,13 @@ def _edit_metadata(mclass, template_name):
     g.pkg_dict = request.params
     g.cur_item = None
     g.template_name = template_name
+
     id = request.params.get('id', None)
     if id:
         show_fun = tk.get_action(_show_fun(mclass))
         g.cur_item = show_fun(context, {'id': id})
+
+    g.extra = _extra_info(mclass, g.cur_item)  # class-specific information 
 
     g.items = sorted([(x.id, x.name) for x in context['session'].query(mclass).all()],
                      key=lambda tup: tup[1].lower())
