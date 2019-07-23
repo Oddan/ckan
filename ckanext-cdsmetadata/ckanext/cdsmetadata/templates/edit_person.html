@@ -2,14 +2,21 @@
 {% set first_name = g.cur_item['first_name'] or "" %}
 {% set last_name = g.cur_item['last_name'] or "" %}
 {% set email = g.cur_item['email'] or "" %}
+
+{# Affiliation-related #}
 {% set affiliations = g.cur_item['affiliation'] or [] %}
 {% set orglist_aff = g.extra['orglist_aff'] %}
 
-{# {% set num_affiliations = affiliations | length %} #}
-{# {% set first_affiliation = "<none>" %} #}
-{# {% if num_affiliations > 0 %} #}
-{#   {% set first_affiliation = affiliations[0] %} #}
-{# {% endif %}  #}
+{# Contact person related (organization #}
+{% set contact_org = g.cur_item['contact_org'] or [] %}
+{% set orglist_contact = g.extra['orglist_contact'] %}
+
+
+{% block styles %}
+  {{ super() }}
+  {% resource "cdsmetadata/multiselect_extra.js" %}
+{% endblock %}
+
 
 {% block dataformat_subheading %}
   <h2>Edit Person</h2>
@@ -27,26 +34,15 @@
      error=errors.email, placeholder=_('eg. joe@example.com'), classes=['control-medium'],
      is_required=true) }}
 
-  <div onclick="var selector = document.getElementById('affiliation');
-                var selected = Array.prototype.filter.apply( 
-                selector.options, [ function(o) { return o.selected;}]); 
-                var aflist = document.getElementById('affiliation-list');
-                while(aflist.firstChild) {
-                  aflist.removeChild(aflist.firstChild);
-                }
-                var item, content; 
-                for (var i = 0; i < selected.length; i++) { 
-                  item = document.createElement('li'); 
-                  content = document.createTextNode(selected[i].text); 
-                  item.appendChild(content); 
-                  aflist.appendChild(item); 
-              }">
+  {# ============================ Input affiliations ============================ #}
+  
+  <div onclick="multiselect_synclist('affiliation', 'affiliation-list')">
        <i>(hold down CTRL for multiselect)</i>
     {{ formext.multiselect('affiliation', 
                            label=_('Update Affiliation(s)'), 
                            error=errors.affiliation, 
                            classes='control-large', 
-                           attrs={'multiple': 'true', 'style': 'width: 100%', 'selected':1}, 
+                           attrs={'multiple': 'true', 'style': 'width: 100%'}, 
                            options=orglist_aff) }}
   </div>
   <b>Currently chosen affiliations</b> 
@@ -55,9 +51,28 @@
     {% for aff in affiliations %}
       <li> {{ aff[1] }} </li>
     {% endfor %} 
+  </div>
+  <br><br>
+
+  {# ============================ Input "contact org" ============================ #}
+
+  <div onclick="multiselect_synclist('contact_org', 'contact_org-list')">
+       <i>(hold down CTRL for multiselect)</i>
+    {{ formext.multiselect('contact_org', 
+                           label=_('Update Organizational contact(s)'), 
+                           error=errors.contact_org, 
+                           classes='control-large', 
+                           attrs={'multiple': 'true', 'style': 'width: 100%'}, 
+                           options=orglist_contact) }}
+  </div>
+  <b>Currently chosen contact organization</b> 
+  <div id="contact_org-list">
+    {% for org in contact_org %}
+      <li> {{ org[1] }} </li>
+    {% endfor %} 
   </div>  
 
-
+  
   <b>Contact person for (organization)</b>
   <br>
   <b>Contact person for (dataset)</b>

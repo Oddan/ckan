@@ -14,6 +14,7 @@ from ckan.views import api
 from ckan.lib.navl.dictization_functions import Invalid
 from ckan.lib.base import abort, render
 
+import copy
 import pdb
 
 TITLE_MAX_L = 100
@@ -27,6 +28,7 @@ person_table = None
 user_extra_table = None # @@ remove
 
 affiliation_association_table = None  # associate Person with Organization
+contact_org_association_table = None  # associate contact Person with Organization
 
 
 class Person(model.domain_object.DomainObject):
@@ -79,6 +81,21 @@ def setup_model():
 
     # association tables
     prepare_affiliation_association_table()
+    prepare_contact_org_association_table()
+
+
+def prepare_contact_org_association_table():
+
+    global contact_org_association_table
+    if contact_org_association_table is None:
+        contact_org_association_table = Table(
+            'contact_org_association', meta.metadata,
+            Column('org_id', UnicodeText, ForeignKey('group.id')),
+            Column('person_id', UnicodeText, ForeignKey('person.id')),
+        )
+
+        # create table
+        ensure_table_created(contact_org_association_table)
 
 
 def prepare_affiliation_association_table():
@@ -94,9 +111,9 @@ def prepare_affiliation_association_table():
         # create table
         ensure_table_created(affiliation_association_table)
 
-    
+
 def prepare_person_table():
-    
+
     global person_table
 
     if person_table is None:
@@ -114,9 +131,13 @@ def prepare_person_table():
                                          secondary=lambda: affiliation_association_table,
                                          backref=orm.backref(
                                              'people',
-                                             cascade='save-update, merge'))}
-        )
-
+                                             cascade='save-update, merge')),
+                        'contact_org':
+                        orm.relationship(model.group.Group,
+                                         secondary=lambda: contact_org_association_table,
+                                         backref=orm.backref(
+                                             'contact_person',
+                                             cascade='save-update, merge'))})
         # create table
         ensure_table_created(person_table)
 
@@ -372,6 +393,8 @@ def _person_create(context, data_dict):
                         data_dict['email'])
     new_person.affiliation = _list_orgs(context['session'],
                                         data_dict['affiliation'])
+    new_person.contact_org = _list_orgs(context['session'],
+                                        data_dict['contact_org'])
     try:
         new_person.save()
         context['session'].commit()
@@ -430,6 +453,8 @@ def _person_update(context, data_dict):
     per.email = data_dict['email']
     per.affiliation = _list_orgs(context['session'],
                                  data_dict['affiliation'])
+    per.contact_org = _list_orgs(context['session'],
+                                 data_dict['contact_org'])
 
     try:
         per.save()
@@ -453,7 +478,8 @@ def _publication_update(context, data_dict):
         context['session'].commit()
     except:
         context['session'].rollback()
-        
+
+
 def _license_update(context, data_dict):
     tk.check_access('edit_metadata', context, data_dict)
     lic = context['session'].query(License).get(data_dict['id'])
@@ -468,7 +494,8 @@ def _license_update(context, data_dict):
         context['session'].commit()
     except:
         context['session'].rollback()
-        
+
+
 def _data_format_update(context, data_dict):
     tk.check_access('edit_metadata', context, data_dict)
 
@@ -488,6 +515,7 @@ def _data_format_update(context, data_dict):
 
 
 def _person_delete(context, data_dict):
+
     tk.check_access('edit_metadata', context, data_dict)
     per = context['session'].query(Person).get(data_dict['id'])
     if per is None:
@@ -540,11 +568,12 @@ def _person_show(context, data_dict):
     per = context['session'].query(Person).get(data_dict['id'])
     if per is None:
         raise tk.ObjectNotFound
-    #pdb.set_trace()
+
     return {'first_name': per.first_name,
             'last_name': per.last_name,
             'email': per.email,
-            'affiliation': [(x.id, x.title) for x in per.affiliation]}
+            'affiliation': [(x.id, x.title) for x in per.affiliation],
+            'contact_org': [(x.id, x.title) for x in per.contact_org]}
 
 
 def _publication_show(context, data_dict):
@@ -609,6 +638,7 @@ def _create_fun(mclass):
             License: 'license_create',
             Publication: 'publication_create'}[mclass]
 
+
 def _delete_fun(mclass):
     return {Person: 'person_delete',
             DataFormat: 'dataformat_delete',
@@ -617,37 +647,47 @@ def _delete_fun(mclass):
 
 
 def _orglist(person_data):
-    #pdb.set_trace()
+    
     orgs = model.Session.query(model.group.Group).all()
-    orglist = [{'value': x.id, 'text': x.title, 'selected': False} for x in orgs]
+    orglist = \
+        [{'value': x.id, 'text': x.title, 'selected': False} for x in orgs]
+    orglist.sort(key=lambda x: x['text'])
 
     # prepare list where all current affiliations are selected
-    afflist = [] if person_data is None else [x[0] for x in person_data['affiliation']]
-    orglist_aff = orglist
+    afflist = \
+        [] if person_data is None else [x[0] for x in person_data['affiliation']]
+    orglist_aff = copy.deepcopy(orglist) 
 
-    for o in orglist:
+    for o in orglist_aff:
         if o['value'] in afflist:
             o['selected'] = True
 
-    return {'orglist_aff': orglist}
+    # prepare list where all current contact organizations are listed
+    contact_list = \
+        [] if person_data is None else [x[0] for x in person_data['contact_org']]
+    orglist_contact = copy.deepcopy(orglist)
+    for o in orglist_contact:
+        if o['value'] in contact_list:
+            o['selected'] = True
 
-    # return {'first_name': per.first_name,
-    #         'last_name': per.last_name,
-    #         'email': per.email,
-    #         'affiliation': [(x.id, x.title) for x in per.affiliation]}
+    return {'orglist_aff': orglist_aff, 'orglist_contact': orglist_contact}
 
 
 def _extra_info(mclass, data):
-    return {Person: _orglist(data),
-            DataFormat: None,
-            License: None,
-            Publication: None}[mclass]
+    if mclass == Person:
+        return _orglist(data)
+    else:
+        return {DataFormat: None,
+                License: None,
+                Publication: None}[mclass]
+
 
 def _show_fun(mclass):
     return {Person: 'person_show',
             DataFormat: 'dataformat_show',
             License: 'license_show',
             Publication: 'publication_show'}[mclass]
+
 
 def _extract_metadata_form_data(form, mclass):
     data_dict = {}
@@ -662,6 +702,7 @@ def _extract_metadata_form_data(form, mclass):
         data_dict['is_open'] = 'is_open' in form.keys()
     if mclass == Person:
         data_dict['affiliation'] = form.getlist('affiliation')
+        data_dict['contact_org'] = form.getlist('contact_org')
 
     return data_dict
 
@@ -671,8 +712,9 @@ def _edit_metadata(mclass, template_name):
 
     context = {'model': model, 'session': model.Session,
                'user': g.user, 'auth_user_obj': g.userobj}
-
+    
     if request.method == 'POST':
+
         if 'save' in request.form:
             data_dict = _extract_metadata_form_data(request.form, mclass)
             if data_dict['id']:
@@ -697,10 +739,11 @@ def _edit_metadata(mclass, template_name):
         show_fun = tk.get_action(_show_fun(mclass))
         g.cur_item = show_fun(context, {'id': id})
 
-    g.extra = _extra_info(mclass, g.cur_item)  # class-specific information 
+    g.extra = _extra_info(mclass, g.cur_item)  # class-specific info
 
-    g.items = sorted([(x.id, x.name) for x in context['session'].query(mclass).all()],
-                     key=lambda tup: tup[1].lower())
+    g.items = \
+        sorted([(x.id, x.name) for x in context['session'].query(mclass).all()],
+               key=lambda tup: tup[1].lower())
 
     return render(template_name + '.html')
 
@@ -808,9 +851,8 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
     def update_config(self, config_):
 
         tk.add_template_directory(config_, 'templates')
-
+        tk.add_resource('fanstatic', 'cdsmetadata')
         # tk.add_public_directory(config_, 'public')
-        # tk.add_resource('fanstatic', 'cdsmetadata')
 
     # ================================ IGroupForm =============================
     is_organization = True
