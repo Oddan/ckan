@@ -25,7 +25,7 @@ data_format_table = None
 license_table = None
 publication_table = None
 person_table = None
-user_extra_table = None # @@ remove
+# user_extra_table = None # @@ remove
 organization_extra_table = None
 
 
@@ -85,7 +85,7 @@ def setup_model():
 
     # object tables
     prepare_data_format_table()
-    prepare_user_extra_table() # @@ remove
+    # prepare_user_extra_table() # @@ remove
     prepare_organization_extra_table()
     prepare_license_table()
     prepare_publication_table()
@@ -302,28 +302,28 @@ def prepare_organization_extra_table():
         # create table
         ensure_table_created(organization_extra_table)
 
-# @@ delete
-def prepare_user_extra_table():
+# # @@ delete
+# def prepare_user_extra_table():
 
-    global user_extra_table
-    if user_extra_table is None:
-        user_extra_table = Table(
-            'user_extra', meta.metadata,
-            Column('id', UnicodeText, primary_key=True, default=make_uuid),
-            Column('first_name', UnicodeText, nullable=False),
-            Column('last_name', UnicodeText, nullable=False),
-            Column('user_id', UnicodeText, ForeignKey('user.id'))
-        )
+#     global user_extra_table
+#     if user_extra_table is None:
+#         user_extra_table = Table(
+#             'user_extra', meta.metadata,
+#             Column('id', UnicodeText, primary_key=True, default=make_uuid),
+#             Column('first_name', UnicodeText, nullable=False),
+#             Column('last_name', UnicodeText, nullable=False),
+#             Column('user_id', UnicodeText, ForeignKey('user.id'))
+#         )
 
-        meta.mapper(UserExtra, user_extra_table,
-                    properties={'user':
-                                orm.relation(model.user.User,
-                                             backref=orm.backref(
-                                                 'extra',
-                                                 uselist=False,
-                                                 cascade='all, delete, delete-orphan'))})
+#         meta.mapper(UserExtra, user_extra_table,
+#                     properties={'user':
+#                                 orm.relation(model.user.User,
+#                                              backref=orm.backref(
+#                                                  'extra',
+#                                                  uselist=False,
+#                                                  cascade='all, delete, delete-orphan'))})
 
-    ensure_table_created(user_extra_table)
+#     ensure_table_created(user_extra_table)
 
 
 def ensure_table_created(table):
@@ -382,56 +382,56 @@ def _organization_modif_wrapper(action_name):
     return _wrapper
 
 
-def _user_modif_wrapper(action_name):
+# def _user_modif_wrapper(action_name):
 
-    action = tk.get_action(action_name)
+#     action = tk.get_action(action_name)
 
-    def _wrapper(context, data_dict):
+#     def _wrapper(context, data_dict):
 
-        first_name = data_dict.get('first_name', '')
-        last_name = data_dict.get('last_name', '')
+#         first_name = data_dict.get('first_name', '')
+#         last_name = data_dict.get('last_name', '')
 
-        # sync 'fullname' with 'first_name' and last_name'
-        if 'fullname' not in data_dict.keys():
-            data_dict['fullname'] = '{0} {1}'.format(first_name, last_name)
+#         # sync 'fullname' with 'first_name' and last_name'
+#         if 'fullname' not in data_dict.keys():
+#             data_dict['fullname'] = '{0} {1}'.format(first_name, last_name)
 
-        result_dict = action(context, data_dict)
+#         result_dict = action(context, data_dict)
 
-        result_dict['first_name'] = first_name
-        result_dict['last_name'] = last_name
+#         result_dict['first_name'] = first_name
+#         result_dict['last_name'] = last_name
 
-        # updating the extra information (not found in the original user
-        # object)
+#         # updating the extra information (not found in the original user
+#         # object)
 
-        new_extra = model.User.get(result_dict['id']).extra
-        if new_extra is None:
-            new_extra = UserExtra(first_name, last_name, result_dict['id'])
-        else:
-            new_extra.first_name = first_name
-            new_extra.last_name = last_name
-        new_extra.save()
+#         new_extra = model.User.get(result_dict['id']).extra
+#         if new_extra is None:
+#             new_extra = UserExtra(first_name, last_name, result_dict['id'])
+#         else:
+#             new_extra.first_name = first_name
+#             new_extra.last_name = last_name
+#         new_extra.save()
 
-        return result_dict
+#         return result_dict
 
-    return _wrapper
+#     return _wrapper
 
 
-# @@ must change
-def _user_show_wrapper():
+# # @@ must change
+# def _user_show_wrapper():
 
-    action = tk.get_action('user_show')
+#     action = tk.get_action('user_show')
 
-    def _wrapper(context, data_dict):
+#     def _wrapper(context, data_dict):
 
-        result_dict = action(context, data_dict)
-        extra = model.User.get(result_dict['id']).extra
-        if extra is not None:
-            result_dict['first_name'] = extra.first_name
-            result_dict['last_name'] = extra.last_name
+#         result_dict = action(context, data_dict)
+#         extra = model.User.get(result_dict['id']).extra
+#         if extra is not None:
+#             result_dict['first_name'] = extra.first_name
+#             result_dict['last_name'] = extra.last_name
 
-        return result_dict
+#         return result_dict
 
-    return _wrapper
+#     return _wrapper
 
 
 def _organization_show_wrapper():
@@ -480,66 +480,66 @@ def _organization_show_wrapper():
 
 # @@ this function at present only used when listing members of an org.
 # Must be adapted to refer to a Person object rather than a CKAN User
-def _username_helper_fun(user, maxlength=0):
-    if not isinstance(user, model.User):
-        user_name = text_type(user)
-        result = user_name
-        user = model.User.get(user_name)
-        if user:
-            result = user.name
-    else:
-        result = user.name
+# def _username_helper_fun(user, maxlength=0):
+#     if not isinstance(user, model.User):
+#         user_name = text_type(user)
+#         result = user_name
+#         user = model.User.get(user_name)
+#         if user:
+#             result = user.name
+#     else:
+#         result = user.name
 
-    if maxlength and len(result) > maxlength:
-        result = result[:maxlength] + '...'
+#     if maxlength and len(result) > maxlength:
+#         result = result[:maxlength] + '...'
 
-    return result
-
-
-# @@ Used in organization form to facilitate designation of contact person.
-# Will have to change.
-def autocomplete_filtered():
-
-    q = request.args.get(u'q', u'')
-    org_id = request.args.get(u'org_id', u'')
-    limit = request.args.get(u'limit', 20)
-    user_list = []
-    if q:
-        context = {u'model': model, u'session': model.Session,
-                   u'user': g.user, u'auth_user_obj': g.userobj}
-
-        data_dict = {u'q': q, u'limit': limit}
-
-        # get list with matching user names
-        user_list = tk.get_action(u'user_autocomplete')(context,
-                                                        data_dict)
-
-        # narrow down to list of users who are actual members
-        if org_id:
-            member_list = tk.get_action('member_list')(
-                {'model': model}, {'id': org_id})
-            member_ids = [x[0] for x in member_list]
-            user_list = [u for u in user_list if u['id'] in member_ids]
-
-    return api._finish_ok(user_list)
+#     return result
 
 
-# @@ This must change to refer to the new Person table, not to users
-def contact_person_validator(value, context):
+# # @@ Used in organization form to facilitate designation of contact person.
+# # Will have to change.
+# def autocomplete_filtered():
 
-    org_id = context['group'].id
-    member_list = tk.get_action('member_list')(
-        {'model': model}, {'id': org_id})
-    member_ids = [x[0] for x in member_list]
+#     q = request.args.get(u'q', u'')
+#     org_id = request.args.get(u'org_id', u'')
+#     limit = request.args.get(u'limit', 20)
+#     user_list = []
+#     if q:
+#         context = {u'model': model, u'session': model.Session,
+#                    u'user': g.user, u'auth_user_obj': g.userobj}
 
-    user = model.User.by_name(value)
-    if user is None:
-        raise Invalid(_('Unknown user entered as contact person.'))
+#         data_dict = {u'q': q, u'limit': limit}
 
-    if user.id not in member_ids:
-        raise Invalid(_('Specified user is not member of the organization.'))
+#         # get list with matching user names
+#         user_list = tk.get_action(u'user_autocomplete')(context,
+#                                                         data_dict)
 
-    return value
+#         # narrow down to list of users who are actual members
+#         if org_id:
+#             member_list = tk.get_action('member_list')(
+#                 {'model': model}, {'id': org_id})
+#             member_ids = [x[0] for x in member_list]
+#             user_list = [u for u in user_list if u['id'] in member_ids]
+
+#     return api._finish_ok(user_list)
+
+
+# # @@ This must change to refer to the new Person table, not to users
+# def contact_person_validator(value, context):
+
+#     org_id = context['group'].id
+#     member_list = tk.get_action('member_list')(
+#         {'model': model}, {'id': org_id})
+#     member_ids = [x[0] for x in member_list]
+
+#     user = model.User.by_name(value)
+#     if user is None:
+#         raise Invalid(_('Unknown user entered as contact person.'))
+
+#     if user.id not in member_ids:
+#         raise Invalid(_('Specified user is not member of the organization.'))
+
+#     return value
 
 
 def _edit_metadata_auth(context, data_dict=None):
@@ -765,7 +765,8 @@ def _publication_delete(context, data_dict):
         context['session'].commit()
     except:
         context['session'].rollback()
-        
+
+
 def _license_delete(context, data_dict):
     tk.check_access('edit_metadata', context, data_dict)
     lic = context['session'].query(License).get(data_dict['id'])
@@ -863,6 +864,7 @@ def _update_fun(mclass):
             License: 'license_update',
             Publication: 'publication_update'}[mclass]
 
+
 def _create_fun(mclass):
     return {Person: 'person_create',
             DataFormat: 'dataformat_create',
@@ -922,9 +924,10 @@ def _dsetlist(selected_ids):
 
     return dsetlist
 
+
 def _extra_info(mclass, data):
     if mclass == Person:
-        data = data or {} # avoid problem with referencing NoneType below
+        data = data or {}  # avoid problem with referencing NoneType below
         return {'orglist_aff':
                 _orglist([x[0] for x in data.get('affiliation', [])]),
                 'orglist_contact':
@@ -1012,9 +1015,9 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
     plugins.implements(plugins.IConfigurer)
     plugins.implements(plugins.IConfigurable)
     plugins.implements(plugins.IActions)
-    plugins.implements(plugins.ITemplateHelpers)
+    # plugins.implements(plugins.ITemplateHelpers)
     plugins.implements(plugins.IBlueprint)
-    plugins.implements(plugins.IValidators)
+    # plugins.implements(plugins.IValidators)
     plugins.implements(plugins.IAuthFunctions)
     plugins.implements(plugins.IRoutes)
     # plugins.implements(plugins.IGroupForm)
@@ -1038,18 +1041,18 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
     def get_auth_functions(self):
         return{'edit_metadata': _edit_metadata_auth}
 
-    # ================================ IValidators ============================
-    def get_validators(self):
+    # # ================================ IValidators ============================
+    # def get_validators(self):
 
-        return {'valid_contact_person': contact_person_validator}
+    #     return {'valid_contact_person': contact_person_validator}
 
     # ================================ IBlueprint =============================
 
     def get_blueprint(self):
         blueprint = Blueprint(self.name, self.__module__)
         blueprint.template_folder = u'templates'
-        blueprint.add_url_rule('/api/co2datashare/autocomplete_filtered',
-                               view_func=autocomplete_filtered)
+        # blueprint.add_url_rule('/api/co2datashare/autocomplete_filtered',
+        #                        view_func=autocomplete_filtered)
         blueprint.add_url_rule('/metadata/dataformat',
                                view_func=_edit_dataformat,
                                methods=['GET', 'POST'])
@@ -1064,19 +1067,19 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
                                methods=['GET', 'POST'])
         return blueprint
 
-    # ============================= ITemplateHelpers ==========================
-    def get_helpers(self):
-        # @@ currently only used when list
-        return {'username': _username_helper_fun}
+    # # ============================= ITemplateHelpers ==========================
+    # def get_helpers(self):
+    #     # @@ currently only used when list
+    #     return {'username': _username_helper_fun}
 
     # ================================= IActions ==============================
     def get_actions(self):
 
         result = {}
-        for aname in ['user_create', 'user_update']:
-            result[aname] = _user_modif_wrapper(aname)
+        # for aname in ['user_create', 'user_update']:
+        #     result[aname] = _user_modif_wrapper(aname)
 
-        result['user_show'] = _user_show_wrapper()
+        # result['user_show'] = _user_show_wrapper()
 
         for aname in ['organization_create', 'organization_update']:
             result[aname] = _organization_modif_wrapper(aname)
