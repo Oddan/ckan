@@ -1,4 +1,5 @@
 {% import 'macros/form.html' as form %}
+{% import 'formext.html' as formext %}
 
 <form id='organization-edit-form' class="dataset-form" method="post" data-module="basic-form" enctype="multipart/form-data">
   {% block error_summary %}
@@ -23,22 +24,67 @@
 
     {{ form.input('homepageURL', label=_('Homepage URL'), id='field-homepage-url', placeholder=_('URL to the organization\'s homepage'), value=data.homepageURL, error=errors.homepageURL) }}   
 
-    <label class="control-label"> _("Contact Person")</label>
-
-    {% set is_disabled = '' %}
-    {% if not data.name %} 
-      {% set is_disabled = 'disabled' %}
-      <i> _('(To add contact person, first save organization and add at least one member.)') </i>
-    {% endif %}
-    
-    {# {% call form.input_block("contact_person", "Contact person (username)", is_required=True) %} #}
-    <input id="contact_person" type="text" name="contact_person" placeholder=_("Contact person")
-           value="{{ data.contact_person }}"  class="control-medium" data-module="autocomplete" 
-           {{is_disabled}} data-module-source="/api/co2datashare/autocomplete_filtered?org_id={{data.name}}&q=?"> 
-           {# {% endcall %}  #}
-    
+  
     {{ form.image_upload(data, errors, is_upload_enabled=h.uploads_enabled(), is_url=is_url, is_upload=is_upload) }}
 
+  
+    
+    {# ============================= Input contact org ============================= #}
+    <div class="col-xs-6">
+      
+      <label class="control-label"> {{_("Contact person(s)") }}</label>
+      
+      <div onclick="multiselect_synclist('contact_person', 'contact_person-list')">
+        <i>(hold down CTRL for multiselect)</i>
+        {{ formext.multiselect('contact_person', 
+                               label=_('Update contact(s)'), 
+                               error=errors.contact_person, 
+                               classes='control-large', 
+                               attrs={'multiple': 'true', 'style': 'width: 100%'}, 
+                               options=data.contact_person_listitems) }}
+      </div>
+      <b>Currently chosen contact(s)</b>
+      <div id="contact_person-list">
+        {% for per in data.contact_person %}
+          <li> {{ per[1] }} </li>
+        {% endfor %} 
+      </div>
+    </div>
+  
+    <div class="col-xs-6">
+      
+      <label class="control-label"> {{_("Affiliates") }}</label>
+      
+      <div onclick="multiselect_synclist('people', 'people-list')">
+        <i>(hold down CTRL for multiselect)</i>
+        {{ formext.multiselect('people', 
+                               label=_('Update people list'), 
+                               error=errors.people, 
+                               classes='control-large', 
+                               attrs={'multiple': 'true', 'style': 'width: 100%'}, 
+                               options=data.people_listitems) }}
+      </div>
+      <b>Currently chosen people</b> 
+      <div id="people-list">
+        {% for per in data.people %}
+          <li> {{ per[1] }} </li>
+        {% endfor %} 
+      </div>
+    </div>
+    
+    {# <label class="control-label"> _("Contact Person")</label> #}
+
+    {# {% set is_disabled = '' %} #}
+    {# {% if not data.name %}  #}
+    {#   {% set is_disabled = 'disabled' %} #}
+    {#   <i> _('(To add contact person, first save organization and add at least one member.)') </i> #}
+    {# {% endif %} #}
+    
+    {# {\# {% call form.input_block("contact_person", "Contact person (username)", is_required=True) %} #\} #}
+    {# <input id="contact_person" type="text" name="contact_person" placeholder=_("Contact person") #}
+    {#        value="{{ data.contact_person }}"  class="control-medium" data-module="autocomplete"  #}
+    {#        {{is_disabled}} data-module-source="/api/co2datashare/autocomplete_filtered?org_id={{data.name}}&q=?">  #}
+    {#        {\# {% endcall %}  #\} #}
   {% endblock %}
 
   {% block custom_fields %}

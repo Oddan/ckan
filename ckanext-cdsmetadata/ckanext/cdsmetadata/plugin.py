@@ -26,6 +26,8 @@ license_table = None
 publication_table = None
 person_table = None
 user_extra_table = None # @@ remove
+organization_extra_table = None
+
 
 affiliation_association_table = None  # associate Person with Organization
 contact_org_association_table = None  # associate contact Person with Organization
@@ -41,6 +43,13 @@ class Person(model.domain_object.DomainObject):
     @property
     def name(self):
         return self.last_name + ", " + self.first_name
+
+
+class OrganizationExtra(model.domain_object.DomainObject):
+    def __init__(self, homepageURL, org_id):
+        self.homepageURL = homepageURL
+        self.org_id = org_id
+    
 
 # @@ remove
 class UserExtra(model.domain_object.DomainObject):
@@ -75,7 +84,8 @@ def setup_model():
 
     # object tables
     prepare_data_format_table()
-    prepare_user_extra_table()
+    prepare_user_extra_table() # @@ remove
+    prepare_organization_extra_table()
     prepare_license_table()
     prepare_publication_table()
     prepare_person_table()
@@ -247,6 +257,26 @@ def prepare_data_format_table():
     ensure_table_created(data_format_table)
 
 
+def prepare_organization_extra_table():
+
+    global organization_extra_table
+    if organization_extra_table is None:
+        organization_extra_table = Table(
+            'organization_extra', meta.metadata,
+            Column('id', UnicodeText, primary_key=True, default=make_uuid),
+            Column('homepageURL', UnicodeText),
+            Column('org_id', UnicodeText, ForeignKey('group.id'))
+        )
+
+        meta.mapper(OrganizationExtra, organization_extra_table,
+                    properties={'organization':
+                                orm.relation(model.group.Group,
+                                             backref=orm.backref(
+                                                 'extra',
+                                                 uselist=False,
+                                                 cascade='all, delete, delete-orphan'))})
+        ensure_table_created(organization_extra_table)
+
 # @@ delete
 def prepare_user_extra_table():
 
@@ -261,11 +291,12 @@ def prepare_user_extra_table():
         )
 
         meta.mapper(UserExtra, user_extra_table,
-                    properties={'user': orm.relation(model.user.User,
-                                                     backref=orm.backref('extra',
-                                                            uselist=False,
-                                                            cascade='all, delete, delete-orphan'))}
-    )
+                    properties={'user':
+                                orm.relation(model.user.User,
+                                             backref=orm.backref(
+                                                 'extra',
+                                                 uselist=False,
+                                                 cascade='all, delete, delete-orphan'))})
 
     ensure_table_created(user_extra_table)
 
@@ -282,6 +313,44 @@ def ensure_table_created(table):
             # Session.commit()
 
 # @@ this will have to change
+
+
+def _organization_modif_wrapper(action_name):
+
+    action = tk.get_action(action_name)
+
+    def _wrapper(context, data_dict):
+
+        homepageURL = data_dict.get('homepageURL', '')
+
+        result_dict = action(context, data_dict)
+
+
+        # updating the extra information
+        new_extra = model.Group.get(result_dict['id']).extra
+        if new_extra is None:
+            new_extra = OrganizationExtra(homepageURL, result_dict['id'])
+        else:
+            new_extra.homepageURL = homepageURL
+
+        result_dict['homepageURL'] = homepageURL
+
+        new_extra.organization.contact_person = \
+            _list_people(context['session'], data_dict['contact_person'])
+        new_extra.organization.people = \
+            _list_people(context['session'], data_dict['people'])
+
+        try:
+            new_extra.save()
+            context['session'].comit()
+        except:
+            context['session'].rollback()
+            
+        return result_dict
+
+    return _wrapper
+
+
 def _user_modif_wrapper(action_name):
 
     action = tk.get_action(action_name)
@@ -328,6 +397,43 @@ def _user_show_wrapper():
         if extra is not None:
             result_dict['first_name'] = extra.first_name
             result_dict['last_name'] = extra.last_name
+
+        return result_dict
+
+    return _wrapper
+
+
+def _organization_show_wrapper():
+
+    action = tk.get_action('organization_show')
+
+    def _wrapper(context, data_dict):
+
+        result_dict = action(context, data_dict)
+
+        # recovering extra information
+        new_extra = model.Group.get(result_dict['id']).extra
+
+        homepageURL = '' if new_extra is None else new_extra.homepageURL
+        result_dict['homepageURL'] = homepageURL
+
+        # recovering contact people, if any
+        id = data_dict.get('id', None)
+        org = model.Group.get(id)
+        result_dict['contact_person'] = \
+            [(x.id, x.name, x.email) for x in org.contact_person]
+        result_dict['people'] = \
+            [(x.id, x.name, x.email) for x in org.people]
+
+        if result_dict['contact_person'] is not None:
+            result_dict['contact_person'].sort(key=lambda x: x[1])
+            result_dict['contact_person_listitems'] = \
+                _personlist([x[0] for x in result_dict['contact_person']])
+
+        if result_dict['people'] is not None:
+            result_dict['people'].sort(key=lambda x: x[1])
+            result_dict['people_listitems'] = \
+                _personlist([x[0] for x in result_dict['people']])
 
         return result_dict
 
@@ -421,6 +527,20 @@ def check_edit_metadata():
 
 def _ensure_list(obj):
     return obj if isinstance(obj, list) else [obj]
+
+
+
+def _list_people(session, people_ids):
+
+    people_ids = _ensure_list(people_ids)
+    people_query = session.query(Person)
+    result = []
+    for id in people_ids:
+        person = people_query.get(id)
+        if person:
+            result.append(person)
+
+    return result
 
 
 def _list_orgs(session, org_ids):
@@ -719,8 +839,24 @@ def _delete_fun(mclass):
             Publication: 'publication_delete'}[mclass]
 
 
+def _personlist(selected_ids):
+
+    people = model.Session.query(Person).all()
+    peoplelist = \
+        [{'value': x.id, 'text': x.name, 'selected': False} for x in people]
+
+    peoplelist.sort(key=lambda x: x['text'])
+
+    # set selection
+    for p in peoplelist:
+        if p['value'] in selected_ids:
+            p['selected'] = True
+
+    return peoplelist
+
+
 def _orglist(person_data):
-    
+
     orgs = model.Session.query(model.group.Group).all()
     orglist = \
         [{'value': x.id, 'text': x.title, 'selected': False} for x in orgs]
@@ -858,13 +994,13 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
                         tk.DefaultOrganizationForm):
     plugins.implements(plugins.IConfigurer)
     plugins.implements(plugins.IConfigurable)
-    plugins.implements(plugins.IGroupForm)
     plugins.implements(plugins.IActions)
     plugins.implements(plugins.ITemplateHelpers)
     plugins.implements(plugins.IBlueprint)
     plugins.implements(plugins.IValidators)
     plugins.implements(plugins.IAuthFunctions)
     plugins.implements(plugins.IRoutes)
+    # plugins.implements(plugins.IGroupForm)
 
     # ================================== IRoutes ==============================
     def before_map(self, map):
@@ -925,6 +1061,11 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
 
         result['user_show'] = _user_show_wrapper()
 
+        for aname in ['organization_create', 'organization_update']:
+            result[aname] = _organization_modif_wrapper(aname)
+        result['organization_show'] = _organization_show_wrapper()
+
+        
         result['dataformat_create'] = _data_format_create
         result['dataformat_update'] = _data_format_update
         result['dataformat_show'] = _data_format_show
@@ -960,61 +1101,51 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
         tk.add_resource('fanstatic', 'cdsmetadata')
         # tk.add_public_directory(config_, 'public')
 
-    # ================================ IGroupForm =============================
-    is_organization = True
+    # # ================================ IGroupForm =============================
+    # is_organization = True
 
-    def is_fallback(self):
+    # def is_fallback(self):
 
-        return True
+    #     return True
 
-    def group_types(self):
+    # def group_types(self):
 
-        return []
+    #     return []
 
-    def group_controller(self):
+    # def group_controller(self):
 
-        pass
+    #     pass
 
-    # @@ must change
-    def form_to_db_schema(self):
+    # def form_to_db_schema(self):
 
-        schema = super(CdsmetadataPlugin, self).form_to_db_schema()
-        schema.update({'homepageURL': [
-                            tk.get_validator('ignore_missing'),
-                            tk.get_converter('convert_to_extras')
-                                      ]})
-        schema.update({'contact_person':
-                       [tk.get_validator('ignore_missing'),
-                        tk.get_validator('valid_contact_person'),
-                        tk.get_converter('convert_to_extras')]})
+    #     schema = super(CdsmetadataPlugin, self).form_to_db_schema()
+    #     schema.update({'homepageURL': [
+    #                         tk.get_validator('ignore_missing'),
+    #                         tk.get_converter('convert_to_extras')
+    #                                   ]})
+    #     return schema
 
-        return schema
+    # def db_to_form_schema(self):
+    #     schema = self._default_show_group_schema()
 
-    # @@ must change
-    def db_to_form_schema(self):
-        schema = self._default_show_group_schema()
+    #     schema.update({'homepageURL': [
+    #         tk.get_converter('convert_from_extras'),
+    #         tk.get_validator('ignore_missing')
+    #     ]})
+    #     return schema
 
-        schema.update({'homepageURL': [
-            tk.get_converter('convert_from_extras'),
-            tk.get_validator('ignore_missing')
-        ]})
-        schema.update({'contact_person': [
-            tk.get_converter('convert_from_extras'),
-            tk.get_validator('ignore_missing')]})
-        return schema
+    # def _default_show_group_schema(self):
+    #     schema = _schema.default_group_schema()
 
-    def _default_show_group_schema(self):
-        schema = _schema.default_group_schema()
+    #     # make default show schema behave like when run with no validation
+    #     schema['num_followers'] = []
+    #     schema['created'] = []
+    #     schema['display_name'] = []
+    #     # schema['extras'] = {'__extras': [keep_extras]}  # has to be removed, or extras won't work
+    #     schema['package_count'] = [tk.get_validator('ignore_missing')]
+    #     schema['packages'] = {'__extras': [tk.get_validator('keep_extras')]}
+    #     schema['revision_id'] = []
+    #     schema['state'] = []
+    #     schema['users'] = {'__extras': [tk.get_validator('keep_extras')]}
 
-        # make default show schema behave like when run with no validation
-        schema['num_followers'] = []
-        schema['created'] = []
-        schema['display_name'] = []
-        # schema['extras'] = {'__extras': [keep_extras]}  # has to be removed, or extras won't work
-        schema['package_count'] = [tk.get_validator('ignore_missing')]
-        schema['packages'] = {'__extras': [tk.get_validator('keep_extras')]}
-        schema['revision_id'] = []
-        schema['state'] = []
-        schema['users'] = {'__extras': [tk.get_validator('keep_extras')]}
-
-        return schema
+    #     return schema
