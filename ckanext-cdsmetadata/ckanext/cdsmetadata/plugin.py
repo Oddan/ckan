@@ -29,7 +29,8 @@ user_extra_table = None # @@ remove
 
 affiliation_association_table = None  # associate Person with Organization
 contact_org_association_table = None  # associate contact Person with Organization
-
+contact_dataset_association_table = None # associate contact with Dataset
+person_contributor_dataset_association_table = None # contributor (Person) with dataset
 
 class Person(model.domain_object.DomainObject):
     def __init__(self, first_name, last_name, email):
@@ -82,6 +83,37 @@ def setup_model():
     # association tables
     prepare_affiliation_association_table()
     prepare_contact_org_association_table()
+    prepare_contact_dataset_association_table()
+    prepare_person_contributor_dataset_association_table()
+
+
+def prepare_person_contributor_dataset_association_table():
+
+    global person_contributor_dataset_association_table
+
+    if person_contributor_dataset_association_table is None:
+        person_contributor_dataset_association_table = Table(
+            'person_contributor_dataset_association', meta.metadata,
+            Column('dataset_id', UnicodeText, ForeignKey('package.id')),
+            Column('person_id', UnicodeText, ForeignKey('person.id'))
+        )
+
+        # create table
+        ensure_table_created(person_contributor_dataset_association_table)
+
+
+def prepare_contact_dataset_association_table():
+
+    global contact_dataset_association_table
+    if contact_dataset_association_table is None:
+        contact_dataset_association_table = Table(
+            'contact_dataset_association', meta.metadata,
+            Column('dataset_id', UnicodeText, ForeignKey('package.id')),
+            Column('person_id', UnicodeText, ForeignKey('person.id'))
+        )
+
+        # create table
+        ensure_table_created(contact_dataset_association_table)
 
 
 def prepare_contact_org_association_table():
@@ -127,17 +159,34 @@ def prepare_person_table():
         meta.mapper(
             Person, person_table,
             properties={'affiliation':
-                        orm.relationship(model.group.Group,
-                                         secondary=lambda: affiliation_association_table,
-                                         backref=orm.backref(
-                                             'people',
-                                             cascade='save-update, merge')),
+                        orm.relationship(
+                            model.group.Group,
+                            secondary=lambda: affiliation_association_table,
+                            backref=orm.backref(
+                                'people',
+                                cascade='save-update, merge')),
                         'contact_org':
-                        orm.relationship(model.group.Group,
-                                         secondary=lambda: contact_org_association_table,
-                                         backref=orm.backref(
-                                             'contact_person',
-                                             cascade='save-update, merge'))})
+                        orm.relationship(
+                            model.group.Group,
+                            secondary=lambda: contact_org_association_table,
+                            backref=orm.backref(
+                                'contact_person',
+                                cascade='save-update, merge')),
+                        'contact_dataset':
+                        orm.relationship(
+                            model.package.Package,
+                            secondary=lambda: contact_dataset_association_table,
+                            backref=orm.backref(
+                                'contact_person',
+                                cascade='save-update, merge')),
+                        'contributor_dataset':
+                        orm.relationship(
+                            model.package.Package,
+                            secondary=lambda : person_contributor_dataset_association_table,
+                            backref=orm.backref(
+                                'person_contributor',
+                                cascade='save-update, merge'))})
+
         # create table
         ensure_table_created(person_table)
 
@@ -385,16 +434,32 @@ def _list_orgs(session, org_ids):
     return result
 
 
+def _list_datasets(session, dset_ids):
+    dset_ids = _ensure_list(dset_ids)
+    dset_query = session.query(model.package.Package)
+    result = []
+    for id in dset_ids:
+        dset = dset_query.get(id)
+        if dset:
+            result.append(dset)
+    return result
+
+
 def _person_create(context, data_dict):
     tk.check_access('edit_metadata', context, data_dict)
 
     new_person = Person(data_dict['first_name'],
                         data_dict['last_name'],
                         data_dict['email'])
-    new_person.affiliation = _list_orgs(context['session'],
-                                        data_dict['affiliation'])
-    new_person.contact_org = _list_orgs(context['session'],
-                                        data_dict['contact_org'])
+    new_person.affiliation = \
+        _list_orgs(context['session'], data_dict['affiliation'])
+    new_person.contact_org = \
+        _list_orgs(context['session'], data_dict['contact_org'])
+    new_person.contact_dataset = \
+        _list_datasets(context['session'], data_dict['contact_dataset'])
+    new_person.contributor_dataset = \
+        _list_datasets(context['session'], data_dict['contributor_dataset'])
+
     try:
         new_person.save()
         context['session'].commit()
@@ -414,6 +479,7 @@ def _license_create(context, data_dict):
     except:
         context['session'].rollback()
 
+
 def _publication_create(context, data_dict):
     tk.check_access('edit_metadata', context, data_dict)
 
@@ -426,7 +492,7 @@ def _publication_create(context, data_dict):
     except:
         context['session'].rollback()
 
-        
+
 def _data_format_create(context, data_dict):
     tk.check_access('edit_metadata', context, data_dict)
 
@@ -442,12 +508,12 @@ def _data_format_create(context, data_dict):
 
 
 def _person_update(context, data_dict):
-    
+
     tk.check_access('edit_metadata', context, data_dict)
     per = context['session'].query(Person).get(data_dict['id'])
     if per is None:
         raise tk.ObjectNotFound
-    
+
     per.first_name = data_dict['first_name']
     per.last_name = data_dict['last_name']
     per.email = data_dict['email']
@@ -455,6 +521,10 @@ def _person_update(context, data_dict):
                                  data_dict['affiliation'])
     per.contact_org = _list_orgs(context['session'],
                                  data_dict['contact_org'])
+    per.contact_dataset = _list_datasets(context['session'],
+                                         data_dict['contact_dataset'])
+    per.contributor_dataset = _list_datasets(context['session'],
+                                             data_dict['contributor_dataset'])
 
     try:
         per.save()
@@ -573,7 +643,10 @@ def _person_show(context, data_dict):
             'last_name': per.last_name,
             'email': per.email,
             'affiliation': [(x.id, x.title) for x in per.affiliation],
-            'contact_org': [(x.id, x.title) for x in per.contact_org]}
+            'contact_org': [(x.id, x.title) for x in per.contact_org],
+            'contact_dataset': [(x.id, x.title) for x in per.contact_dataset],
+            'contributor_dataset': [(x.id, x.title)
+                                    for x in per.contributor_dataset]}
 
 
 def _publication_show(context, data_dict):
@@ -673,9 +746,40 @@ def _orglist(person_data):
     return {'orglist_aff': orglist_aff, 'orglist_contact': orglist_contact}
 
 
+def _dsetlist(person_data):
+
+    datasets = model.Session.query(model.package.Package).all()
+    dsetlist = \
+        [{'value': x.id, 'text': x.title, 'selected': False} for x in datasets]
+    dsetlist.sort(key=lambda x: x['text'])
+
+    # prepare list where all current contact datasets are listed
+    contact_list = \
+        [] if person_data is None \
+        else [x[0] for x in person_data['contact_dataset']]
+
+    dsetlist_contact = copy.deepcopy(dsetlist)
+    for d in dsetlist_contact:
+        if d['value'] in contact_list:
+            d['selected'] = True
+
+    # prepare list where all current contributor datasets are listed
+    contributor_list = \
+        [] if person_data is None \
+        else [x[0] for x in person_data['contributor_dataset']]
+
+    dsetlist_contributor = copy.deepcopy(dsetlist)
+    for d in dsetlist_contributor:
+        if d['value'] in contributor_list:
+            d['selected'] = True
+
+    return {'dsetlist_contact': dsetlist_contact,
+            'dsetlist_contributor': dsetlist_contributor}
+
+
 def _extra_info(mclass, data):
     if mclass == Person:
-        return _orglist(data)
+        return {'org': _orglist(data), 'dataset': _dsetlist(data)}
     else:
         return {DataFormat: None,
                 License: None,
@@ -703,6 +807,8 @@ def _extract_metadata_form_data(form, mclass):
     if mclass == Person:
         data_dict['affiliation'] = form.getlist('affiliation')
         data_dict['contact_org'] = form.getlist('contact_org')
+        data_dict['contact_dataset'] = form.getlist('contact_dataset')
+        data_dict['contributor_dataset'] = form.getlist('contributor_dataset')
 
     return data_dict
 
@@ -712,7 +818,7 @@ def _edit_metadata(mclass, template_name):
 
     context = {'model': model, 'session': model.Session,
                'user': g.user, 'auth_user_obj': g.userobj}
-    
+
     if request.method == 'POST':
 
         if 'save' in request.form:

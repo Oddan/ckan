@@ -5,11 +5,15 @@
 
 {# Affiliation-related #}
 {% set affiliations = g.cur_item['affiliation'] or [] %}
-{% set orglist_aff = g.extra['orglist_aff'] %}
+{% set orglist_aff = g.extra['org']['orglist_aff'] %}
 
 {# Contact person related (organization #}
 {% set contact_org = g.cur_item['contact_org'] or [] %}
-{% set orglist_contact = g.extra['orglist_contact'] %}
+{% set orglist_contact = g.extra['org']['orglist_contact'] %}
+{% set contact_dataset = g.cur_item['contact_dataset'] or [] %}
+{% set contributor_dataset = g.cur_item['contributor_dataset'] or [] %}
+{% set dsetlist_contact = g.extra['dataset']['dsetlist_contact'] %}
+{% set dsetlist_contributor = g.extra['dataset']['dsetlist_contributor'] %}
 
 
 {% block styles %}
@@ -71,15 +75,44 @@
       <li> {{ org[1] }} </li>
     {% endfor %} 
   </div>  
+  <br><br>
+
+  {# ========================== Input "contact dataset" ========================== #}
+
+  <div onclick="multiselect_synclist('contact_dataset', 'contact_dataset-list')">
+       <i>(hold down CTRL for multiselect)</i>
+       {{ formext.multiselect('contact_dataset', label=_('Update dataset contact role(s)'), 
+                              error=errors.contact_dataset, classes='control-large', 
+                              attrs={'multiple': 'true', 'style': 'width: 100%'}, 
+                              options=dsetlist_contact) }}
+  </div>
+  <b>Currently chosen contact dataset role(s)</b>
+  <div id="contact_dataset-list">
+    {% for dset in contact_dataset %}
+      <li> {{ dset[1] }} </li>
+    {% endfor %} 
+  </div>  
+  <br><br>
+
+  {# ======================== Input contributor datasets ======================== #}
+
+  <div onclick="multiselect_synclist('contributor_dataset', 'contributor_dataset-list')">
+       <i>(hold down CTRL for multiselect)</i>
+       {{ formext.multiselect('contributor_dataset', label=_('Update datasets contributed to'), 
+                              error=errors.contact_dataset, classes='control-large', 
+                              attrs={'multiple': 'true', 'style': 'width: 100%'}, 
+                              options=dsetlist_contributor) }}
+  </div>
+  <b>Currently set as contributor to following dataset(s):</b>
+  <div id="contributor_dataset-list">
+    {% for dset in contributor_dataset %}
+      <li> {{ dset[1] }} </li>
+    {% endfor %} 
+  </div>  
+  <br><br>
+
 
   
-  <b>Contact person for (organization)</b>
-  <br>
-  <b>Contact person for (dataset)</b>
-  <br>
-  <b>Contributor to (dataset)</b>
-  <br>
-              
 {% endblock %} 
 
               
