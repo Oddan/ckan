@@ -33,6 +33,7 @@ affiliation_association_table = None  # associate Person with Organization
 contact_org_association_table = None  # associate contact Person with Organization
 contact_dataset_association_table = None # associate contact with Dataset
 person_contributor_dataset_association_table = None # contributor (Person) with dataset
+org_contributor_dataset_association_table = None # contributor (Organization) with dataset
 
 class Person(model.domain_object.DomainObject):
     def __init__(self, first_name, last_name, email):
@@ -95,7 +96,22 @@ def setup_model():
     prepare_contact_org_association_table()
     prepare_contact_dataset_association_table()
     prepare_person_contributor_dataset_association_table()
+    prepare_org_contributor_dataset_association_table()
 
+
+def prepare_org_contributor_dataset_association_table():
+
+    global org_contributor_dataset_association_table
+
+    if org_contributor_dataset_association_table is None:
+        org_contributor_dataset_association_table = Table(
+            'org_contributor_dataset_association', meta.metadata,
+            Column('dataset_id', UnicodeText, ForeignKey('package.id')),
+            Column('org_id', UnicodeText, ForeignKey('organization_extra.id'))
+        )
+
+        # create table
+        ensure_table_created(org_contributor_dataset_association_table)
 
 def prepare_person_contributor_dataset_association_table():
 
@@ -274,7 +290,16 @@ def prepare_organization_extra_table():
                                              backref=orm.backref(
                                                  'extra',
                                                  uselist=False,
-                                                 cascade='all, delete, delete-orphan'))})
+                                                 cascade='all, delete, delete-orphan')),
+                                'datasets_contributed_to':
+                                orm.relationship(
+                                    model.package.Package,
+                                    secondary=lambda: org_contributor_dataset_association_table,
+                                    backref=orm.backref(
+                                        'org_contributor',
+                                        cascade='save-update, merge'))})
+
+        # create table
         ensure_table_created(organization_extra_table)
 
 # @@ delete
@@ -303,6 +328,10 @@ def prepare_user_extra_table():
 
 def ensure_table_created(table):
 
+    # if table.exists():
+    #     table.drop() # @@@@
+    #     Session.commit()
+
     if not table.exists():
         try:
             table.create()
@@ -325,27 +354,29 @@ def _organization_modif_wrapper(action_name):
 
         result_dict = action(context, data_dict)
 
-
         # updating the extra information
         new_extra = model.Group.get(result_dict['id']).extra
         if new_extra is None:
             new_extra = OrganizationExtra(homepageURL, result_dict['id'])
+            new_extra.save()  # necessary to access .organization below
         else:
             new_extra.homepageURL = homepageURL
 
         result_dict['homepageURL'] = homepageURL
 
         new_extra.organization.contact_person = \
-            _list_people(context['session'], data_dict['contact_person'])
+            _list_people(context['session'],
+                         data_dict.get('contact_person', []))
         new_extra.organization.people = \
-            _list_people(context['session'], data_dict['people'])
+            _list_people(context['session'],
+                         data_dict.get('people', []))
 
-        try:
-            new_extra.save()
-            context['session'].comit()
-        except:
-            context['session'].rollback()
-            
+        new_extra.datasets_contributed_to = \
+            _list_datasets(context['session'],
+                           data_dict.get('dataset_contributions'))
+
+        new_extra.save()
+
         return result_dict
 
     return _wrapper
@@ -425,15 +456,22 @@ def _organization_show_wrapper():
         result_dict['people'] = \
             [(x.id, x.name, x.email) for x in org.people]
 
+        if new_extra is not None:
+            result_dict['datasets_contributed_to'] = \
+                [(x.id, x.title) for x in new_extra.datasets_contributed_to]
+
         if result_dict['contact_person'] is not None:
             result_dict['contact_person'].sort(key=lambda x: x[1])
-            result_dict['contact_person_listitems'] = \
-                _personlist([x[0] for x in result_dict['contact_person']])
+        result_dict['contact_person_listitems'] = \
+            _personlist([x[0] for x in result_dict.get('contact_person', [])])
 
         if result_dict['people'] is not None:
             result_dict['people'].sort(key=lambda x: x[1])
-            result_dict['people_listitems'] = \
-                _personlist([x[0] for x in result_dict['people']])
+        result_dict['people_listitems'] = \
+            _personlist([x[0] for x in result_dict.get('people', [])])
+
+        result_dict['dataset_contributions_listitems'] = \
+            _dsetlist([x[0] for x in result_dict.get('datasets_contributed_to', [])])
 
         return result_dict
 
@@ -855,67 +893,46 @@ def _personlist(selected_ids):
     return peoplelist
 
 
-def _orglist(person_data):
+def _orglist(selected_ids):
 
     orgs = model.Session.query(model.group.Group).all()
     orglist = \
         [{'value': x.id, 'text': x.title, 'selected': False} for x in orgs]
     orglist.sort(key=lambda x: x['text'])
 
-    # prepare list where all current affiliations are selected
-    afflist = \
-        [] if person_data is None else [x[0] for x in person_data['affiliation']]
-    orglist_aff = copy.deepcopy(orglist) 
-
-    for o in orglist_aff:
-        if o['value'] in afflist:
+    # set selection
+    for o in orglist:
+        if o['value'] in selected_ids:
             o['selected'] = True
 
-    # prepare list where all current contact organizations are listed
-    contact_list = \
-        [] if person_data is None else [x[0] for x in person_data['contact_org']]
-    orglist_contact = copy.deepcopy(orglist)
-    for o in orglist_contact:
-        if o['value'] in contact_list:
-            o['selected'] = True
-
-    return {'orglist_aff': orglist_aff, 'orglist_contact': orglist_contact}
+    return orglist
 
 
-def _dsetlist(person_data):
+def _dsetlist(selected_ids):
 
     datasets = model.Session.query(model.package.Package).all()
     dsetlist = \
         [{'value': x.id, 'text': x.title, 'selected': False} for x in datasets]
     dsetlist.sort(key=lambda x: x['text'])
 
-    # prepare list where all current contact datasets are listed
-    contact_list = \
-        [] if person_data is None \
-        else [x[0] for x in person_data['contact_dataset']]
-
-    dsetlist_contact = copy.deepcopy(dsetlist)
-    for d in dsetlist_contact:
-        if d['value'] in contact_list:
+    # set selection
+    for d in dsetlist:
+        if d['value'] in selected_ids:
             d['selected'] = True
 
-    # prepare list where all current contributor datasets are listed
-    contributor_list = \
-        [] if person_data is None \
-        else [x[0] for x in person_data['contributor_dataset']]
-
-    dsetlist_contributor = copy.deepcopy(dsetlist)
-    for d in dsetlist_contributor:
-        if d['value'] in contributor_list:
-            d['selected'] = True
-
-    return {'dsetlist_contact': dsetlist_contact,
-            'dsetlist_contributor': dsetlist_contributor}
-
+    return dsetlist
 
 def _extra_info(mclass, data):
     if mclass == Person:
-        return {'org': _orglist(data), 'dataset': _dsetlist(data)}
+        data = data or {} # avoid problem with referencing NoneType below
+        return {'orglist_aff':
+                _orglist([x[0] for x in data.get('affiliation', [])]),
+                'orglist_contact':
+                _orglist([x[0] for x in data.get('contact_org', [])]),
+                'dsetlist_contact':
+                _dsetlist([x[0] for x in data.get('contact_dataset', [])]),
+                'dsetlist_contributor':
+                _dsetlist([x[0] for x in data.get('contributor_dataset', [])])}
     else:
         return {DataFormat: None,
                 License: None,
@@ -1149,3 +1166,64 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
     #     schema['users'] = {'__extras': [tk.get_validator('keep_extras')]}
 
     #     return schema
+
+
+
+
+# def _orglist(person_data):
+
+#     orgs = model.Session.query(model.group.Group).all()
+#     orglist = \
+#         [{'value': x.id, 'text': x.title, 'selected': False} for x in orgs]
+#     orglist.sort(key=lambda x: x['text'])
+
+#     # prepare list where all current affiliations are selected
+#     afflist = \
+#         [] if person_data is None else [x[0] for x in person_data['affiliation']]
+#     orglist_aff = copy.deepcopy(orglist) 
+
+#     for o in orglist_aff:
+#         if o['value'] in afflist:
+#             o['selected'] = True
+
+#     # prepare list where all current contact organizations are listed
+#     contact_list = \
+#         [] if person_data is None else [x[0] for x in person_data['contact_org']]
+#     orglist_contact = copy.deepcopy(orglist)
+#     for o in orglist_contact:
+#         if o['value'] in contact_list:
+#             o['selected'] = True
+
+#     return {'orglist_aff': orglist_aff, 'orglist_contact': orglist_contact}
+
+
+# def _dsetlist(person_data):
+
+#     datasets = model.Session.query(model.package.Package).all()
+#     dsetlist = \
+#         [{'value': x.id, 'text': x.title, 'selected': False} for x in datasets]
+#     dsetlist.sort(key=lambda x: x['text'])
+
+#     # prepare list where all current contact datasets are listed
+#     contact_list = \
+#         [] if person_data is None \
+#         else [x[0] for x in person_data['contact_dataset']]
+
+#     dsetlist_contact = copy.deepcopy(dsetlist)
+#     for d in dsetlist_contact:
+#         if d['value'] in contact_list:
+#             d['selected'] = True
+
+#     # prepare list where all current contributor datasets are listed
+#     contributor_list = \
+#         [] if person_data is None \
+#         else [x[0] for x in person_data['contributor_dataset']]
+
+#     dsetlist_contributor = copy.deepcopy(dsetlist)
+#     for d in dsetlist_contributor:
+#         if d['value'] in contributor_list:
+#             d['selected'] = True
+
+#     return {'dsetlist_contact': dsetlist_contact,
+#             'dsetlist_contributor': dsetlist_contributor}
+    

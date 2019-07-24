@@ -34,7 +34,18 @@
   {% endfor %} 
   </table>
   
-  
+  <h2> Datasets contributed to </h2>
+  <table class='table'>
 
+    <tr>
+      <th>Name</th>
+    </tr>
+    {% for dset in c.group_dict.datasets_contributed_to %}
+      <tr>
+        <td> {{ dset[1] }} </td>
+      </tr>
+  {% endfor %} 
+  </table>
+  
   
 {% endblock %}

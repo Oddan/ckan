@@ -5,15 +5,16 @@
 
 {# Affiliation-related #}
 {% set affiliations = g.cur_item['affiliation'] or [] %}
-{% set orglist_aff = g.extra['org']['orglist_aff'] %}
+{% set orglist_aff = g.extra['orglist_aff'] %}
 
 {# Contact person related (organization #}
 {% set contact_org = g.cur_item['contact_org'] or [] %}
-{% set orglist_contact = g.extra['org']['orglist_contact'] %}
+{% set orglist_contact = g.extra['orglist_contact'] %}
 {% set contact_dataset = g.cur_item['contact_dataset'] or [] %}
 {% set contributor_dataset = g.cur_item['contributor_dataset'] or [] %}
-{% set dsetlist_contact = g.extra['dataset']['dsetlist_contact'] %}
-{% set dsetlist_contributor = g.extra['dataset']['dsetlist_contributor'] %}
+{% set dsetlist_contact = g.extra['dsetlist_contact'] %}
+{% set dsetlist_contributor = g.extra['dsetlist_contributor'] %} 
+
 
 
 {% block styles %}

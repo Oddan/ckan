@@ -50,7 +50,8 @@
         {% endfor %} 
       </div>
     </div>
-  
+
+    {# ============================= Input affiliates ============================= #}
     <div class="col-xs-6">
       
       <label class="control-label"> {{_("Affiliates") }}</label>
@@ -71,6 +72,32 @@
         {% endfor %} 
       </div>
     </div>
+
+    <br><br>
+    {# ======================= Input datasets contributed to ======================= #}
+    <div style="clear: both;"><br><br></div>
+    
+    <div class="col-xs-6">
+      <label class="control-label"> {{_("Datasets contributed to") }}</label>
+      
+      <div onclick="multiselect_synclist('dataset_contributions', 'dataset_contributions-list')">
+        <i>(hold down CTRL for multiselect)</i>
+        {{ formext.multiselect('dataset_contributions', 
+                               label=_('Update list of datasets contributed to'), 
+                               error=errors.dataset_contributions, 
+                               classes='control-large', 
+                               attrs={'multiple': 'true', 'style': 'width: 100%'}, 
+                               options=data.dataset_contributions_listitems) }}
+      </div>
+      <b>Currently chosen datasets</b> 
+      <div id="people-list">
+        {% for dc in data.dataset_contributions %}
+          <li> {{ dc[1] }} </li>
+        {% endfor %} 
+      </div>
+    </div>
+    
+    <div style="clear: both;"><br><br></div>
     
     {# <label class="control-label"> _("Contact Person")</label> #}
 
