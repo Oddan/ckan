@@ -1,6 +1,7 @@
 from sqlalchemy import orm, types, Column, Table, ForeignKey, MetaData
 from flask import Blueprint, render_template, render_template_string
 from logic import NotFound, NotAuthorized, check_access
+from ckan.model import meta, Session
 import warnings
 import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
@@ -171,26 +172,16 @@ def _modify_package_schema(schema):
     return schema
 
 def ensure_special_access_table_present():
+    global rights_table
     #pdb.set_trace()
-    tmp_metadata = MetaData(model.meta.metadata.bind)
-    with warnings.catch_warnings():
-        warnings.filterwarnings('ignore', '.*(reflection|tsvector).*')
-        tmp_metadata.reflect()
+    if not rights_table.exists():
+        #try:
+        rights_table.create()
+        # except Exception:
+        #     # remove possibly incorrectly created tableS
+        #     Session.execute('DROP TABLE ' + rights_table.fullname)
+        #     Session.commit()
 
-    #pdb.set_trace()
-    if ((not rights_table_name in tmp_metadata.tables.keys()) or
-        (tmp_metadata.tables[rights_table_name].c.keys() !=
-         model.meta.metadata.tables[rights_table_name].c.keys())):
-        raise exceptions.CkanConfigurationException(
-            '''Database not properly set up.
-
-            The special user rights table needs to be included in the database.
-            In order to create it, copy the file migration/XXX_add_special_rights_table.py
-            to the ckan/migration/versions folder and substitute XXX by the new revision number. 
-            
-            Then run paster db upgrade.
-            '''
-            )
 
 def _grant_user_rights(users, dataset_id):
 
@@ -264,6 +255,7 @@ class CDSCAccessManagementPlugin(plugins.SingletonPlugin, toolkit.DefaultDataset
     plugins.implements(plugins.IMiddleware)
     plugins.implements(plugins.IConfigurer)
     plugins.implements(plugins.IDatasetForm)
+    # plugins.implements(plugins.IConfigurable)
 
 
     # ================================ IBlueprint ================================
@@ -316,9 +308,15 @@ class CDSCAccessManagementPlugin(plugins.SingletonPlugin, toolkit.DefaultDataset
     # ================================ IConfigurer ================================
     
     def update_config(self, config):
-        #ensure_special_access_table_present()
         toolkit.add_template_directory(config, 'templates')
-    
+
+    # # =============================== IConfigurable ===============================
+
+    # def configure(self, config):
+    #     # this function is called after the database has initially been set up,
+    #     # so this is a good place for adding our custom table
+    #     ensure_special_access_table_present()
+        
     # =============================== IDatasetForm ===============================
     
     def create_package_schema(self):
