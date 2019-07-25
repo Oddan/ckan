@@ -30,8 +30,9 @@
   
     
     {# ============================= Input contact org ============================= #}
+    {% set contact_person_listitems = h.personlist(data.contact_person) %}
     <div class="col-xs-6">
-      
+
       <label class="control-label"> {{_("Contact person(s)") }}</label>
       
       <div onclick="multiselect_synclist('contact_person', 'contact_person-list')">
@@ -41,7 +42,7 @@
                                error=errors.contact_person, 
                                classes='control-large', 
                                attrs={'multiple': 'true', 'style': 'width: 100%'}, 
-                               options=data.contact_person_listitems) }}
+                               options=contact_person_listitems) }}
       </div>
       <b>Currently chosen contact(s)</b>
       <div id="contact_person-list">
@@ -52,6 +53,7 @@
     </div>
 
     {# ============================= Input affiliates ============================= #}
+    {% set people_listitems = h.personlist(data.people) %}
     <div class="col-xs-6">
       
       <label class="control-label"> {{_("Affiliates") }}</label>
@@ -63,7 +65,7 @@
                                error=errors.people, 
                                classes='control-large', 
                                attrs={'multiple': 'true', 'style': 'width: 100%'}, 
-                               options=data.people_listitems) }}
+                               options=people_listitems) }}
       </div>
       <b>Currently chosen people</b> 
       <div id="people-list">
@@ -76,7 +78,9 @@
     <br><br>
     {# ======================= Input datasets contributed to ======================= #}
     <div style="clear: both;"><br><br></div>
-    
+
+    {% set dataset_contributions_listitems = h.dsetlist(data.datasets_contributed_to) %}
+
     <div class="col-xs-6">
       <label class="control-label"> {{_("Datasets contributed to") }}</label>
       
@@ -87,7 +91,7 @@
                                error=errors.dataset_contributions, 
                                classes='control-large', 
                                attrs={'multiple': 'true', 'style': 'width: 100%'}, 
-                               options=data.dataset_contributions_listitems) }}
+                               options=dataset_contributions_listitems) }}
       </div>
       <b>Currently chosen datasets</b> 
       <div id="dataset_contributions-list">

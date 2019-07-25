@@ -319,11 +319,12 @@ def _organization_modif_wrapper(action_name):
 
     def _wrapper(context, data_dict):
 
-        homepageURL = data_dict.get('homepageURL', '')
-
         result_dict = action(context, data_dict)
 
         # updating the extra information
+
+        homepageURL = data_dict.get('homepageURL', '')
+
         new_extra = model.Group.get(result_dict['id']).extra
         if new_extra is None:
             new_extra = OrganizationExtra(homepageURL, result_dict['id'])
@@ -342,9 +343,43 @@ def _organization_modif_wrapper(action_name):
 
         new_extra.datasets_contributed_to = \
             _list_datasets(context['session'],
-                           data_dict.get('dataset_contributions'))
+                           data_dict.get('dataset_contributions', []))
 
         new_extra.save()
+
+        return result_dict
+
+    return _wrapper
+
+
+def _package_modif_wrapper(action_name):
+
+    action = tk.get_action(action_name)
+
+    def _wrapper(context, data_dict):
+
+        result_dict = action(context, data_dict)
+
+        # updating the extra information
+        pkg = model.Package.get(result_dict['id'])
+
+        # contact person
+        pkg.contact_person = \
+            _list_people(context['session'],
+                         data_dict.get('contact_person', []))
+
+        # contributor person
+        pkg.person_contributor = \
+            _list_people(context['session'],
+                         data_dict.get('person_contributor', []))
+
+        # contributor organization
+        orgs = _list_orgs(context['session'],
+                          data_dict.get('org_contributor', []))
+
+        pkg.org_contributor = [x.extra for x in orgs]
+
+        pkg.save()
 
         return result_dict
 
@@ -381,27 +416,19 @@ def _organization_show_wrapper():
             for li in result_dict['datasets_contributed_to']:
                 owner_org = model.Group.get(li[2])
                 li[2] = "" if owner_org is None else owner_org.title
-            
+
         if result_dict['contact_person'] is not None:
             result_dict['contact_person'].sort(key=lambda x: x[1])
-        result_dict['contact_person_listitems'] = \
-            _personlist([x[0] for x in result_dict.get('contact_person', [])])
 
         if result_dict['people'] is not None:
             result_dict['people'].sort(key=lambda x: x[1])
-        result_dict['people_listitems'] = \
-            _personlist([x[0] for x in result_dict.get('people', [])])
-
-        result_dict['dataset_contributions_listitems'] = \
-            _dsetlist(
-                [x[0] for x in result_dict.get('datasets_contributed_to', [])])
 
         return result_dict
 
     return _wrapper
 
 
-def _dataset_show_wrapper():
+def _package_show_wrapper():
     action = tk.get_action('package_show')
 
     def _wrapper(context, data_dict):
@@ -417,10 +444,11 @@ def _dataset_show_wrapper():
 
             result_dict['person_contributor'] = \
                 [(x.id, x.name, x.email) for x in pkg.person_contributor]
-            
+
             result_dict['org_contributor'] = \
-                [(x.organization.id, x.organization.title) for x in pkg.org_contributor]
-            
+                [(x.organization.id, x.organization.title)
+                 for x in pkg.org_contributor]
+
         return result_dict
 
     return _wrapper
@@ -765,6 +793,7 @@ def _delete_fun(mclass):
 def _personlist(selected_ids):
 
     people = model.Session.query(Person).all()
+
     peoplelist = \
         [{'value': x.id, 'text': x.name, 'selected': False} for x in people]
 
@@ -780,7 +809,9 @@ def _personlist(selected_ids):
 
 def _orglist(selected_ids):
 
-    orgs = model.Session.query(model.group.Group).all()
+    orgs = model.Session.query(model.group.Group).\
+           filter_by(state='active').all()
+
     orglist = \
         [{'value': x.id, 'text': x.title, 'selected': False} for x in orgs]
     orglist.sort(key=lambda x: x['text'])
@@ -795,7 +826,8 @@ def _orglist(selected_ids):
 
 def _dsetlist(selected_ids):
 
-    datasets = model.Session.query(model.package.Package).all()
+    datasets = model.Session.query(model.package.Package).\
+               filter_by(state='active').all()
     dsetlist = \
         [{'value': x.id, 'text': x.title, 'selected': False}
          for x in datasets]
@@ -904,7 +936,7 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
     plugins.implements(plugins.IConfigurer)
     plugins.implements(plugins.IConfigurable)
     plugins.implements(plugins.IActions)
-    # plugins.implements(plugins.ITemplateHelpers)
+    plugins.implements(plugins.ITemplateHelpers)
     plugins.implements(plugins.IBlueprint)
     # plugins.implements(plugins.IValidators)
     plugins.implements(plugins.IAuthFunctions)
@@ -964,9 +996,11 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
             result[aname] = _organization_modif_wrapper(aname)
         result['organization_show'] = _organization_show_wrapper()
 
-        result['package_show'] = _dataset_show_wrapper()
+        for aname in ['package_create', 'package_update']:
+            result[aname] = _package_modif_wrapper(aname)
 
-        
+        result['package_show'] = _package_show_wrapper()
+
         result['dataformat_create'] = _data_format_create
         result['dataformat_update'] = _data_format_update
         result['dataformat_show'] = _data_format_show
@@ -988,6 +1022,14 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
         result['person_delete'] = _person_delete
 
         return result
+
+    # ============================= ITemplateHelpers ==========================
+
+    def get_helpers(self):
+
+        return {'personlist': lambda l: _personlist([x[0] for x in l]),
+                'orglist': lambda l: _orglist([x[0] for x in l]),
+                'dsetlist': lambda l: _dsetlist(x[0] for x in l)}
 
     # =============================== IConfigurable ===========================
     def configure(self, config):
