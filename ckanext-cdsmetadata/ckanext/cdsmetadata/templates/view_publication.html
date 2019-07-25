@@ -1,0 +1,41 @@
+{% extends "page.html"%}
+
+{% block secondary_content %}
+
+  {% snippet "snippets/publication_helper.html" %}
+
+  {% block secondary_help_content %}{% endblock %}
+  
+{% endblock %}
+
+{% block primary_content_inner %}
+
+<h1> Publication information </h1>
+
+<h3> Publication name </h3>
+
+{{ name }}
+
+<h3> Citation </h3>
+
+{{ citation }}
+
+<h3> DOI </h3>
+
+<a href="https://doi.org/{{doi}}">{{ doi }}</a>
+
+<h3> Is referenced by the following datasets: </h3>
+
+<table class="table table-striped table-bordered table-condensed">
+
+  {% for dset in datasets %}
+    <tr>
+      <td>
+        <a href="{{h.url_for(controller='package', action='read', id=dset[0])}}">{{ dset[1] }}</a>
+      </td>
+    </tr>
+  {% endfor %}
+  
+</table>
+
+{% endblock %}

@@ -33,6 +33,7 @@ contact_org_association_table = None  # associate contact Person with Organizati
 contact_dataset_association_table = None # associate contact with Dataset
 person_contributor_dataset_association_table = None # contributor (Person) with dataset
 org_contributor_dataset_association_table = None # contributor (Organization) with dataset
+dataset_publication_association_table = None # Associate publications with datasets
 
 
 class Person(model.domain_object.DomainObject):
@@ -88,6 +89,22 @@ def setup_model():
     prepare_contact_dataset_association_table()
     prepare_person_contributor_dataset_association_table()
     prepare_org_contributor_dataset_association_table()
+    prepare_dataset_publication_association_table()
+
+
+def prepare_dataset_publication_association_table():
+
+    global dataset_publication_association_table
+
+    if dataset_publication_association_table is None:
+        dataset_publication_association_table = Table(
+            'dataset_publication_association', meta.metadata,
+            Column('dataset_id', UnicodeText, ForeignKey('package.id')),
+            Column('pub_id', UnicodeText, ForeignKey('publication.id'))
+        )
+
+        # create table
+        ensure_table_created(dataset_publication_association_table)
 
 
 def prepare_org_contributor_dataset_association_table():
@@ -221,7 +238,15 @@ def prepare_publication_table():
             Column('citation', UnicodeText),
             Column('doi', Unicode(TITLE_MAX_L), unique=True)
         )
-        meta.mapper(Publication, publication_table)
+        meta.mapper(
+            Publication, publication_table,
+            properties={'datasets':
+                        orm.relationship(
+                            model.package.Package,
+                            secondary=lambda: dataset_publication_association_table,
+                            backref=orm.backref(
+                                'publications',
+                                cascade='save-update, merge'))})
 
         # create table
         ensure_table_created(publication_table)
@@ -379,6 +404,12 @@ def _package_modif_wrapper(action_name):
 
         pkg.org_contributor = [x.extra for x in orgs]
 
+        # associated publications
+
+        pkg.publications = \
+            _list_pubs(context['session'],
+                       data_dict.get('publications', []))
+        
         pkg.save()
 
         return result_dict
@@ -449,6 +480,9 @@ def _package_show_wrapper():
                 [(x.organization.id, x.organization.title)
                  for x in pkg.org_contributor]
 
+            result_dict['publications'] = \
+                [(x.id, x.name, x.doi) for x in pkg.publications]
+
         return result_dict
 
     return _wrapper
@@ -500,6 +534,18 @@ def _list_orgs(session, org_ids):
         org = org_query.get(id)
         if org:
             result.append(org)
+    return result
+
+
+def _list_pubs(session, pub_ids):
+    pub_ids = _ensure_list(pub_ids)
+    pub_query = session.query(Publication)
+    result = []
+    for id in pub_ids:
+        pub = pub_query.get(id)
+        if pub:
+            result.append(pub)
+
     return result
 
 
@@ -725,9 +771,14 @@ def _publication_show(context, data_dict):
     if pub is None:
         raise tk.ObjectNotFound
 
+    pub_datasets = pub.datasets
+    datasets = [] if pub_datasets is None \
+        else [(x.id, x.name) for x in pub.datasets]
+
     return {'name': pub.name,
             'citation': pub.citation,
-            'doi': pub.doi}
+            'doi': pub.doi,
+            'datasets': datasets}
 
 
 def _license_show(context, data_dict):
@@ -841,6 +892,22 @@ def _dsetlist(selected_ids):
     return dsetlist
 
 
+def _publist(selected_ids):
+
+    pubs = model.Session.query(Publication).all()
+
+    publist = \
+        [{'value': x.id, 'text': x.name, 'selected': False} for x in pubs]
+    publist.sort(key=lambda x: x['text'])
+
+    # set selection
+    for p in publist:
+        if p['value'] in selected_ids:
+            p['selected'] = True
+
+    return publist
+
+
 def _extra_info(mclass, data):
     if mclass == Person:
         data = data or {}  # avoid problem with referencing NoneType below
@@ -887,8 +954,16 @@ def _extract_metadata_form_data(form, mclass):
 
 def _display_person(id):
     data = _person_show({'session': Session}, {'id': id})
-    
+
     return render('view_person.html', data)
+
+
+def _display_publication(id):
+
+    data = _publication_show({'session': Session}, {'id': id})
+    
+    return render('view_publication.html', data)
+    
 
 def _edit_metadata(mclass, template_name):
     check_edit_metadata()  # check authorization
@@ -984,6 +1059,11 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
                                u'view_person_info',
                                view_func=_display_person)
 
+        blueprint.add_url_rule('/view/publication/<id>',
+                               u'view_publication',
+                               view_func=_display_publication)
+        
+
 
         return blueprint
 
@@ -1029,7 +1109,8 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
 
         return {'personlist': lambda l: _personlist([x[0] for x in l]),
                 'orglist': lambda l: _orglist([x[0] for x in l]),
-                'dsetlist': lambda l: _dsetlist(x[0] for x in l)}
+                'dsetlist': lambda l: _dsetlist([x[0] for x in l]),
+                'publist': lambda l: _publist([x[0] for x in l])}
 
     # =============================== IConfigurable ===========================
     def configure(self, config):

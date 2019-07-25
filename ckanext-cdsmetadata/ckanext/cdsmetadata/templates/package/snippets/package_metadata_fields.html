@@ -46,6 +46,7 @@
   </div>
 
   <div style="clear: both;"><br><br></div>
+
   {# ========================== Input contact person(s) ========================== #}
   {% set contact_person_listitems = h.personlist(data.contact_person) %}
   <div class="col-xs-6">
@@ -68,7 +69,29 @@
 
   <div style="clear: both;"><br><br></div>  
 
+  {# ============================= Input references ============================= #}
 
+  {% set publications_listitems = h.publist(data.publications) %} 
+  
+  <div onclick="multiselect_synclist('publications', 'publication-list')">
+    <i>(hold down CTRL for multiselect)</i>
+    {{ formext.multiselect('publications', 
+                           label=_('Update publication list'), 
+                           error=errors.publication, 
+                           classes='control-large', 
+                           attrs={'multiple': 'true', 'style': 'width: 100%'}, 
+                           options=publications_listitems) }}
+  </div>
+  <b>Currently chosen publications</b>
+  <div id="publication-list">
+    {% for per in data.publications %}
+      <li> {{ per[1] }} </li>
+    {% endfor %} 
+  </div>
+  
+  <br><br>
+
+  
   {# ===================== Old CKAN metadata (what to keep) ===================== #}
   
   {% block package_metadata_fields_url %}
