@@ -415,6 +415,12 @@ def _dataset_show_wrapper():
             result_dict['contact_person'] = \
                 [(x.id, x.name, x.email) for x in pkg.contact_person]
 
+            result_dict['person_contributor'] = \
+                [(x.id, x.name, x.email) for x in pkg.person_contributor]
+            
+            result_dict['org_contributor'] = \
+                [(x.organization.id, x.organization.title) for x in pkg.org_contributor]
+            
         return result_dict
 
     return _wrapper
