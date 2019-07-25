@@ -5,22 +5,25 @@
 {# We annex this block to present information about relations to people and datasets #}
 
   <h2> Organization contact person(s)</h2>
-  <table class='table'>
-
+  <table class="table table-striped table-bordered table-condensed">
     <tr>
       <th>Name</th>
       <th>Email</th>
     </tr>
     {% for contact in c.group_dict.contact_person %}
       <tr>
-        <td> {{ contact[1] }} </td>
+        <td>
+          <a href="{{ h.url_for('cdsmetadata.view_person_info', id=contact[0]) }} ">
+             {{ contact[1] }}
+          </a>
+        </td>
         <td> {{ contact[2] }} </td>
       </tr>
   {% endfor %} 
   </table>
 
   <h2> Affiliates </h2>
-  <table class='table'>
+  <table class="table table-striped table-bordered table-condensed">
 
     <tr>
       <th>Name</th>
@@ -28,7 +31,11 @@
     </tr>
     {% for contact in c.group_dict.people %}
       <tr>
-        <td> {{ contact[1] }} </td>
+        <td>
+          <a href="{{ h.url_for('cdsmetadata.view_person_info', id=contact[0]) }} ">
+             {{ contact[1] }}
+          </a>
+        </td>
         <td> {{ contact[2] }} </td>
       </tr>
   {% endfor %} 
@@ -39,10 +46,18 @@
 
     <tr>
       <th>Name</th>
+      <th>Owning organization</th>
     </tr>
     {% for dset in c.group_dict.datasets_contributed_to %}
       <tr>
-        <td> {{ dset[1] }} </td>
+        <td>
+          <a href="{{ h.url_for(controller='package', action='read', id=dset[0]) }}">
+            {{ dset[1] }}
+          </a>
+        </td>
+        <td>
+          {{ dset[2] }}
+        </td>
       </tr>
   {% endfor %} 
   </table>

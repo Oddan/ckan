@@ -1,0 +1,81 @@
+{% extends "page.html"%}
+
+{% block secondary_content %}
+
+  <p> This is a test </p>
+  
+{% endblock %}
+
+{% block primary_content_inner %}
+
+  <h2> Roles for {{ first_name }} {{ last_name }}</h2>
+
+  <p class="content"> Email: {{ email }} </p>
+
+  <h3> Affiliations </h3>
+
+  <table class="table table-striped table-bordered table-condensed">
+
+    <tr> <th>Organizations</th> </tr>
+
+    {% for aff in affiliation %}
+      <tr>
+        <td>
+          <a href="{{ h.url_for(controller='organization', action='read', id=aff[0]) }}">
+             {{ aff[1] }}
+          </a>
+        </td>
+      </tr>
+  {% endfor %} 
+  </table>
+
+  <h3> Contact person for (organizations) </h3>
+
+  <table class="table table-striped table-bordered table-condensed">
+    <tr> <th>Organizations</th> </tr>
+    
+    {% for co in contact_org %}
+      <tr>
+        <td>
+          <a href="{{ h.url_for(controller='organization', action='read', id=co[0]) }}">
+            {{ co[1] }}
+          </a>
+        </td>
+      </tr>
+    {% endfor %}
+  </table>
+  
+  <h3> Contact person for (datasets) </h3>
+
+  <table class="table table-striped table-bordered table-condensed">
+    <tr> <th>Datasets</th> </tr>
+    
+    {% for co in contact_dataset %}
+      <tr>
+        <td>
+          <a href="{{ h.url_for(controller='package', action='read', id=co[0]) }}">
+            {{ co[1] }}
+          </a>
+        </td>
+      </tr>
+    {% endfor %}
+  </table>
+  
+  <h3> Contributor to (datasets) </h3>
+  
+  <table class="table table-striped table-bordered table-condensed">
+    <tr> <th>Datasets</th> </tr>
+    
+    {% for co in contributor_dataset %}
+      <tr>
+        <td>
+          <a href="{{ h.url_for(controller='package', action='read', id=co[0]) }}">
+            {{ co[1] }}
+          </a>
+        </td>
+      </tr>
+    {% endfor %}
+  </table>
+
+  
+{% endblock %} 
