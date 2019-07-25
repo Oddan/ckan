@@ -2,15 +2,18 @@
 
 {% block secondary_content %}
 
-  <p> This is a test </p>
+  {% snippet "snippets/person_helper.html" %}
+
+  {% block secondary_help_content %}{% endblock %}
   
 {% endblock %}
 
 {% block primary_content_inner %}
 
-  <h2> Roles for {{ first_name }} {{ last_name }}</h2>
+  <h1> Roles for {{ first_name }} {{ last_name }}</h1>
 
-  <p class="content"> Email: {{ email }} </p>
+  <h3> Email </h3>
+  <a href="mailto:{{ email }}"> {{ email }} </a>
 
   <h3> Affiliations </h3>
 

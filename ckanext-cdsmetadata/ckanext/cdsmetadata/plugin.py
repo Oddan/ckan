@@ -401,6 +401,25 @@ def _organization_show_wrapper():
     return _wrapper
 
 
+def _dataset_show_wrapper():
+    action = tk.get_action('package_show')
+
+    def _wrapper(context, data_dict):
+
+        result_dict = action(context, data_dict)
+
+        # Including information on contact persons and contributors
+        id = data_dict.get('id', None)
+        pkg = model.package.Package.get(id)
+        if pkg is not None:
+            result_dict['contact_person'] = \
+                [(x.id, x.name, x.email) for x in pkg.contact_person]
+
+        return result_dict
+
+    return _wrapper
+
+
 def _edit_metadata_auth(context, data_dict=None):
     user_name = context.get('user', None)
     if user_name is None:
@@ -939,6 +958,9 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
             result[aname] = _organization_modif_wrapper(aname)
         result['organization_show'] = _organization_show_wrapper()
 
+        result['package_show'] = _dataset_show_wrapper()
+
+        
         result['dataformat_create'] = _data_format_create
         result['dataformat_update'] = _data_format_update
         result['dataformat_show'] = _data_format_show

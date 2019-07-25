@@ -90,8 +90,8 @@
                                options=data.dataset_contributions_listitems) }}
       </div>
       <b>Currently chosen datasets</b> 
-      <div id="people-list">
-        {% for dc in data.dataset_contributions %}
+      <div id="dataset_contributions-list">
+        {% for dc in data.datasets_contributed_to %}
           <li> {{ dc[1] }} </li>
         {% endfor %} 
       </div>
