@@ -5,7 +5,10 @@
 {% block package_metadata_fields %}
 
   {# ======================= Input contributors (persons) ======================= #}
-  {% set person_contributor_listitems = h.personlist(data.person_contributor) %}
+  {% set person_contributor = c.pkg_dict['person_contributor'] %}
+  {% set person_contributor_listitems = h.personlist(person_contributor) %}
+  {# {% set person_contributor_listitems = h.personlist(data.person_contributor) %} #}
+  
   <div class="col-xs-6">
     <div onclick="multiselect_synclist('person_contributor', 'person_contributor-list')">
       <i>(hold down CTRL for multiselect)</i>
@@ -18,7 +21,7 @@
       </div>
       <b>Currently chosen person contributors</b>
       <div id="person_contributor-list">
-        {% for per in data.person_contributor %}
+        {% for per in person_contributor %}
           <li> {{ per[1] }} </li>
         {% endfor %} 
       </div>
@@ -26,7 +29,10 @@
 
 
   {# ==================== Input contributors (organizations) ==================== #}
-  {% set org_contributor_listitems = h.orglist(data.org_contributor) %}
+  {% set org_contributor = c.pkg_dict['org_contributor'] %}
+  {% set org_contributor_listitems = h.orglist(org_contributor) %}
+  {# {% set org_contributor_listitems = h.orglist(data.org_contributor) %} #}
+
   <div class="col-xs-6">
     <div onclick="multiselect_synclist('org_contributor', 'org_contributor-list')">
       <i>(hold down CTRL for multiselect)</i>
@@ -39,7 +45,7 @@
       </div>
       <b>Currently chosen organization contributors</b>
       <div id="org_contributor-list">
-        {% for per in data.org_contributor %}
+        {% for per in org_contributor %}
           <li> {{ per[1] }} </li>
         {% endfor %} 
       </div>
@@ -48,7 +54,10 @@
   <div style="clear: both;"><br><br></div>
 
   {# ========================== Input contact person(s) ========================== #}
-  {% set contact_person_listitems = h.personlist(data.contact_person) %}
+  {# {% set contact_person_listitems = h.personlist(data.contact_person) %} #}
+  {% set contact_person = c.pkg_dict['contact_person'] %}
+  {% set contact_person_listitems = h.personlist(contact_person) %}
+
   <div class="col-xs-6">
     <div onclick="multiselect_synclist('contact_person', 'contact_person-list')">
       <i>(hold down CTRL for multiselect)</i>
@@ -59,9 +68,9 @@
                              attrs={'multiple': 'true', 'style': 'width: 100%'}, 
                              options=contact_person_listitems) }}
       </div>
-      <b>Currently chosen organization contributors</b>
+      <b>Currently chosen contact person(s)</b>
       <div id="contact_person-list">
-        {% for per in data.contact_person %}
+        {% for per in contact_person %}
           <li> {{ per[1] }} </li>
         {% endfor %} 
       </div>
@@ -71,7 +80,9 @@
 
   {# ============================= Input references ============================= #}
 
-  {% set publications_listitems = h.publist(data.publications) %} 
+  {% set publications = c.pkg_dict['publications'] %}
+  {% set publications_listitems = h.publist(publications) %} 
+  {# {% set publications_listitems = h.publist(data.publications) %}  #}
   
   <div onclick="multiselect_synclist('publications', 'publication-list')">
     <i>(hold down CTRL for multiselect)</i>
@@ -84,7 +95,7 @@
   </div>
   <b>Currently chosen publications</b>
   <div id="publication-list">
-    {% for per in data.publications %}
+    {% for per in publications %}
       <li> {{ per[1] }} </li>
     {% endfor %} 
   </div>

@@ -337,7 +337,6 @@ def ensure_table_created(table):
 
 # @@ this will have to change
 
-
 def _organization_modif_wrapper(action_name):
 
     action = tk.get_action(action_name)
@@ -371,46 +370,6 @@ def _organization_modif_wrapper(action_name):
                            data_dict.get('dataset_contributions', []))
 
         new_extra.save()
-
-        return result_dict
-
-    return _wrapper
-
-
-def _package_modif_wrapper(action_name):
-
-    action = tk.get_action(action_name)
-
-    def _wrapper(context, data_dict):
-
-        result_dict = action(context, data_dict)
-
-        # updating the extra information
-        pkg = model.Package.get(result_dict['id'])
-
-        # contact person
-        pkg.contact_person = \
-            _list_people(context['session'],
-                         data_dict.get('contact_person', []))
-
-        # contributor person
-        pkg.person_contributor = \
-            _list_people(context['session'],
-                         data_dict.get('person_contributor', []))
-
-        # contributor organization
-        orgs = _list_orgs(context['session'],
-                          data_dict.get('org_contributor', []))
-
-        pkg.org_contributor = [x.extra for x in orgs]
-
-        # associated publications
-
-        pkg.publications = \
-            _list_pubs(context['session'],
-                       data_dict.get('publications', []))
-        
-        pkg.save()
 
         return result_dict
 
@@ -453,35 +412,6 @@ def _organization_show_wrapper():
 
         if result_dict['people'] is not None:
             result_dict['people'].sort(key=lambda x: x[1])
-
-        return result_dict
-
-    return _wrapper
-
-
-def _package_show_wrapper():
-    action = tk.get_action('package_show')
-
-    def _wrapper(context, data_dict):
-
-        result_dict = action(context, data_dict)
-
-        # Including information on contact persons and contributors
-        id = data_dict.get('id', None)
-        pkg = model.package.Package.get(id)
-        if pkg is not None:
-            result_dict['contact_person'] = \
-                [(x.id, x.name, x.email) for x in pkg.contact_person]
-
-            result_dict['person_contributor'] = \
-                [(x.id, x.name, x.email) for x in pkg.person_contributor]
-
-            result_dict['org_contributor'] = \
-                [(x.organization.id, x.organization.title)
-                 for x in pkg.org_contributor]
-
-            result_dict['publications'] = \
-                [(x.id, x.name, x.doi) for x in pkg.publications]
 
         return result_dict
 
@@ -961,9 +891,9 @@ def _display_person(id):
 def _display_publication(id):
 
     data = _publication_show({'session': Session}, {'id': id})
-    
+
     return render('view_publication.html', data)
-    
+
 
 def _edit_metadata(mclass, template_name):
     check_edit_metadata()  # check authorization
@@ -1006,8 +936,76 @@ def _edit_metadata(mclass, template_name):
     return render(template_name + '.html')
 
 
+def _show_package_schema(schema):
+
+    schema.update({
+        'contact_person': [tk.get_validator('ignore_missing'),
+                           tk.get_converter('convert_to_list_if_string')],
+        'person_contributor': [tk.get_validator('ignore_missing'),
+                               tk.get_converter('convert_to_list_if_string')],
+        'org_contributor': [tk.get_validator('ignore_missing'),
+                            tk.get_converter('convert_to_list_if_string')],
+        'publications': [tk.get_validator('ignore_missing'),
+                         tk.get_converter('convert_to_list_if_string')],
+    })
+    return schema
+
+
+def _modif_package_schema(schema):
+
+    # for now, there is no difference between the show and the modif schemas
+    return _show_package_schema(schema)
+
+
+def _package_after_update(context, pkg_dict):
+
+    pkg = context['package']
+
+    # contact person
+    pkg.contact_person = \
+        _list_people(context['session'],
+                     pkg_dict.get('contact_person', []))
+
+    # contributor person
+    pkg.person_contributor = \
+        _list_people(context['session'],
+                     pkg_dict.get('person_contributor', []))
+
+    # contributor organization
+    orgs = _list_orgs(context['session'],
+                      pkg_dict.get('org_contributor', []))
+
+    pkg.org_contributor = [x.extra for x in orgs]
+
+    # associated publications
+
+    pkg.publications = \
+        _list_pubs(context['session'],
+                   pkg_dict.get('publications', []))
+
+
+def _package_before_view(pkg_dict):
+
+    pkg = model.package.Package.get(pkg_dict['id'])
+
+    pkg_dict['contact_person'] = \
+        [(x.id, x.name, x.email) for x in pkg.contact_person]
+
+    pkg_dict['person_contributor'] = \
+        [(x.id, x.name, x.email) for x in pkg.person_contributor]
+
+    pkg_dict['org_contributor'] = \
+        [(x.organization.id, x.organization.title)
+         for x in pkg.org_contributor]
+
+    pkg_dict['publications'] = \
+        [(x.id, x.name, x.doi) for x in pkg.publications]
+
+    return pkg_dict
+
+
 class CdsmetadataPlugin(plugins.SingletonPlugin,
-                        tk.DefaultOrganizationForm):
+                        tk.DefaultDatasetForm):
     plugins.implements(plugins.IConfigurer)
     plugins.implements(plugins.IConfigurable)
     plugins.implements(plugins.IActions)
@@ -1017,6 +1015,8 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
     plugins.implements(plugins.IAuthFunctions)
     plugins.implements(plugins.IRoutes)
     # plugins.implements(plugins.IGroupForm)
+    plugins.implements(plugins.IPackageController, inherit=True)
+    plugins.implements(plugins.IDatasetForm, inherit=True)
 
     # ================================== IRoutes ==============================
     def before_map(self, map):
@@ -1072,14 +1072,13 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
 
         result = {}
 
+        # since a plugin cannot at the same time be an IOrganizationController
+        # and an IPackageController (clash of function names), we use the below
+        # wrapping mechanism to add functionality to the creation, update and
+        # showing of organizations. 
         for aname in ['organization_create', 'organization_update']:
             result[aname] = _organization_modif_wrapper(aname)
         result['organization_show'] = _organization_show_wrapper()
-
-        for aname in ['package_create', 'package_update']:
-            result[aname] = _package_modif_wrapper(aname)
-
-        result['package_show'] = _package_show_wrapper()
 
         result['dataformat_create'] = _data_format_create
         result['dataformat_update'] = _data_format_update
@@ -1125,3 +1124,102 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
         tk.add_resource('fanstatic', 'cdsmetadata')
         # tk.add_public_directory(config_, 'public')
 
+    # ============================ IPackageController =========================
+
+    def after_create(self, context, pkg_dict):
+        _package_after_update(context, pkg_dict)
+
+    def after_update(self, context, pkg_dict):
+        _package_after_update(context, pkg_dict)
+
+    def before_view(self, pkg_dict):
+        return _package_before_view(pkg_dict)
+
+    # =============================== IDatasetForm ============================
+
+    def is_fallback(self):
+        return True
+
+    def package_types(self):
+        return []
+
+    def create_package_schema(self):
+        schema = super(CdsmetadataPlugin, self).create_package_schema()
+        return _modif_package_schema(schema)
+
+    def update_package_schema(self):
+        schema = super(CdsmetadataPlugin, self).update_package_schema()
+        return _modif_package_schema(schema)
+
+    def show_package_schema(self):
+        schema = super(CdsmetadataPlugin, self).show_package_schema()
+        return _show_package_schema(schema)
+
+
+# def _package_show_wrapper():
+#     action = tk.get_action('package_show')
+
+#     def _wrapper(context, data_dict):
+
+#         result_dict = action(context, data_dict)
+
+#         # Including information on contact persons and contributors
+#         id = data_dict.get('id', None)
+#         pkg = model.package.Package.get(id)
+#         if pkg is not None:
+#             result_dict['contact_person'] = \
+#                 [(x.id, x.name, x.email) for x in pkg.contact_person]
+
+#             result_dict['person_contributor'] = \
+#                 [(x.id, x.name, x.email) for x in pkg.person_contributor]
+
+#             result_dict['org_contributor'] = \
+#                 [(x.organization.id, x.organization.title)
+#                  for x in pkg.org_contributor]
+
+#             result_dict['publications'] = \
+#                 [(x.id, x.name, x.doi) for x in pkg.publications]
+
+#         return result_dict
+
+#     return _wrapper
+
+
+# def _package_modif_wrapper(action_name):
+
+#     action = tk.get_action(action_name)
+
+#     def _wrapper(context, data_dict):
+
+#         result_dict = action(context, data_dict)
+
+#         # updating the extra information
+#         pkg = model.Package.get(result_dict['id'])
+
+#         # contact person
+#         pkg.contact_person = \
+#             _list_people(context['session'],
+#                          data_dict.get('contact_person', []))
+
+#         # contributor person
+#         pkg.person_contributor = \
+#             _list_people(context['session'],
+#                          data_dict.get('person_contributor', []))
+
+#         # contributor organization
+#         orgs = _list_orgs(context['session'],
+#                           data_dict.get('org_contributor', []))
+
+#         pkg.org_contributor = [x.extra for x in orgs]
+
+#         # associated publications
+
+#         pkg.publications = \
+#             _list_pubs(context['session'],
+#                        data_dict.get('publications', []))
+        
+#         pkg.save()
+
+#         return result_dict
+
+#     return _wrapper
