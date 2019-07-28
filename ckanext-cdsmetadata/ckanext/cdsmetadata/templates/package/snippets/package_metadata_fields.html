@@ -125,6 +125,10 @@
   
   <br><br>
 
+  {# ================================= Input DOI ================================= #}
+
+  {{ form.input('doi', id='field-doi', label='Digital Object Identifier (DOI)', error=errors.doi,
+                value=data.doi, classes=['control-medium']) }}
   
   {# ===================== Old CKAN metadata (what to keep) ===================== #}
   

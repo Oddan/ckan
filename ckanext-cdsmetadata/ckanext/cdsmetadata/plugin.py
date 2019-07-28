@@ -1022,12 +1022,24 @@ def _show_package_schema(schema):
         'publications': [tk.get_validator('ignore_missing'),
                          tk.get_converter('convert_to_list_if_string')],
         'related_dataset': [tk.get_validator('ignore_missing'),
-                            tk.get_converter('convert_to_list_if_string')]
+                            tk.get_converter('convert_to_list_if_string')],
+        'doi': [tk.get_converter('convert_from_extras'),
+                tk.get_validator('ignore_missing'),
+                tk.get_validator('check_doi')]
+                
+
     })
     return schema
 
 
 def _modif_package_schema(schema):
+
+    # reusing the schema from _show_package_schema, with certain modifications
+    schema = _show_package_schema(schema)
+
+    schema['doi'] = [tk.get_validator('ignore_missing'),
+                     tk.get_validator('check_doi'),
+                     tk.get_converter('convert_to_extras')]
 
     # for now, there is no difference between the show and the modif schemas
     return _show_package_schema(schema)
@@ -1064,6 +1076,7 @@ def _package_after_update(context, pkg_dict):
                        pkg_dict.get('related_dataset', []))
 
 
+
 def _package_before_view(pkg_dict):
 
     pkg = model.package.Package.get(pkg_dict['id'])
@@ -1081,11 +1094,22 @@ def _package_before_view(pkg_dict):
     pkg_dict['publications'] = \
         [(x.id, x.name, x.doi) for x in pkg.publications]
 
-    # pdb.set_trace()
     pkg_dict['related_dataset'] = \
         [(x.id, x.title) for x in pkg.related_dataset]
 
     return pkg_dict
+
+
+def _check_doi(value, context):
+    if value is None:
+        return None
+
+    if (len(value) >= 4 and value.lower()[0:4] == 'http') or \
+       (len(value) >= 3 and value.lower()[0:3] == 'doi') or \
+       value.lower().find('doi.org') != -1:
+        raise Invalid(_('Please do not include http or doi part of doi'))
+
+    return value
 
 
 class CdsmetadataPlugin(plugins.SingletonPlugin,
@@ -1095,7 +1119,7 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
     plugins.implements(plugins.IActions)
     plugins.implements(plugins.ITemplateHelpers)
     plugins.implements(plugins.IBlueprint)
-    # plugins.implements(plugins.IValidators)
+    plugins.implements(plugins.IValidators)
     plugins.implements(plugins.IAuthFunctions)
     plugins.implements(plugins.IRoutes)
     # plugins.implements(plugins.IGroupForm)
@@ -1219,6 +1243,12 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
     def before_view(self, pkg_dict):
         return _package_before_view(pkg_dict)
 
+    # ================================ IValidators ============================
+
+    def get_validators(self):
+
+        return {'check_doi': _check_doi}
+    
     # =============================== IDatasetForm ============================
 
     def is_fallback(self):
