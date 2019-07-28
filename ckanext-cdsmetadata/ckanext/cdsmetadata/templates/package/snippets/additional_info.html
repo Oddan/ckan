@@ -109,6 +109,17 @@
         </td>
       </tr> 
 
+      {# =========================== Show related datasets =========================== #}
+      <tr>
+        <th scope="row" class="dataset-label">{{ _("Related datasets") }}</th>
+        <td class="dataset-details">
+          {% for dset in pkg_dict.related_dataset %}
+            <a href="{{ h.url_for(controller='package', action='read', id=dset[0]) }}">{{ dset[1] }}</a> <br>
+          {% endfor %}
+        </td>
+        
+      </tr>
+      
       
       {# =========================== Show extras (unused) =========================== #}
 

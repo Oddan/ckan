@@ -147,6 +147,9 @@ def prepare_dataset_dataset_association_table():
             other_datasets = _ensure_list(other_datasets)
 
             for other in other_datasets:
+                if other.id == self.id:
+                    # ignore self-references
+                    continue
                 meta.Session.add(DatasetAssociator(self.id, other.id))
                 meta.Session.add(DatasetAssociator(other.id, self.id))
 
@@ -872,7 +875,7 @@ def _orglist(selected_ids):
     return orglist
 
 
-def _dsetlist(selected_ids):
+def _dsetlist(selected_ids, omit_ids=[]):
 
     datasets = model.Session.query(model.package.Package).\
                filter_by(state='active').all()
@@ -881,6 +884,10 @@ def _dsetlist(selected_ids):
          for x in datasets]
     dsetlist.sort(key=lambda x: x['text'])
 
+    # removing items that should be omitted
+    omit_ids = _ensure_list(omit_ids)
+    dsetlist = filter(lambda x: x['value'] not in omit_ids, dsetlist)
+    
     # set selection
     for d in dsetlist:
         if d['value'] in selected_ids:
@@ -1185,7 +1192,7 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
 
         return {'personlist': lambda l: _personlist([x[0] for x in l]),
                 'orglist': lambda l: _orglist([x[0] for x in l]),
-                'dsetlist': lambda l: _dsetlist([x[0] for x in l]),
+                'dsetlist': lambda l, o: _dsetlist([x[0] for x in l], o),
                 'publist': lambda l: _publist([x[0] for x in l])}
 
     # =============================== IConfigurable ===========================

@@ -77,8 +77,9 @@
   </div>
 
   {# ========================= Input related datasets() ========================= #}
-  {% set related_dataset = c.pkg_dict['related_dataset'] %}
-  {% set related_dataset_listitems = h.dsetlist(related_dataset) %} 
+  {% set cur_id = c.pkg.id %}
+  {% set related_dataset = c.pkg_dict['related_dataset'] %} 
+  {% set related_dataset_listitems = h.dsetlist(related_dataset, cur_id) %} 
   
   <div class="col-xs-6">
     <div onclick="multiselect_synclist('related_dataset', 'related_dataset-list')">
@@ -90,7 +91,7 @@
                              attrs={'multiple': 'true', 'style': 'width: 100%'}, 
                              options=related_dataset_listitems) }}
       </div>
-      <b>Currently chosen contact person(s)</b>
+      <b>Currently related dataset(s)</b>
       <div id="related_dataset-list">
         {% for dset in related_dataset %}
           <li> {{ dset[1] }} </li>
