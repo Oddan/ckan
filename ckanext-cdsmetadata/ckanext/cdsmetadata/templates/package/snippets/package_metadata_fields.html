@@ -76,6 +76,28 @@
       </div>
   </div>
 
+  {# ========================= Input related datasets() ========================= #}
+  {% set related_dataset = c.pkg_dict['related_dataset'] %}
+  {% set related_dataset_listitems = h.dsetlist(related_dataset) %} 
+  
+  <div class="col-xs-6">
+    <div onclick="multiselect_synclist('related_dataset', 'related_dataset-list')">
+      <i>(hold down CTRL for multiselect)</i>
+      {{ formext.multiselect('related_dataset', 
+                             label=_('Update list of related datasets'), 
+                             error=errors.related_dataset, 
+                             classes='control-large', 
+                             attrs={'multiple': 'true', 'style': 'width: 100%'}, 
+                             options=related_dataset_listitems) }}
+      </div>
+      <b>Currently chosen contact person(s)</b>
+      <div id="related_dataset-list">
+        {% for dset in related_dataset %}
+          <li> {{ dset[1] }} </li>
+        {% endfor %} 
+      </div>
+  </div>
+  
   <div style="clear: both;"><br><br></div>  
 
   {# ============================= Input references ============================= #}

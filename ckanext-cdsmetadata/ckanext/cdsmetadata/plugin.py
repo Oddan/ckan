@@ -5,7 +5,7 @@ from ckan import model
 from ckan.model import meta, Session
 from ckan.model.types import make_uuid
 from ckan.common import request, g, _
-from sqlalchemy import types, Table, Column, ForeignKey, orm
+from sqlalchemy import types, Table, Column, ForeignKey, orm, or_
 from sqlalchemy.types import UnicodeText, Unicode, Boolean
 import ckan.logic as logic
 import ckan.logic.schema as _schema
@@ -34,6 +34,7 @@ contact_dataset_association_table = None # associate contact with Dataset
 person_contributor_dataset_association_table = None # contributor (Person) with dataset
 org_contributor_dataset_association_table = None # contributor (Organization) with dataset
 dataset_publication_association_table = None # Associate publications with datasets
+dataset_dataset_association_table = None # Associate related datasets
 
 
 class Person(model.domain_object.DomainObject):
@@ -90,6 +91,69 @@ def setup_model():
     prepare_person_contributor_dataset_association_table()
     prepare_org_contributor_dataset_association_table()
     prepare_dataset_publication_association_table()
+    prepare_dataset_dataset_association_table()
+
+def prepare_dataset_dataset_association_table():
+
+    global dataset_dataset_association_table
+
+    if dataset_dataset_association_table is None:
+        dataset_dataset_association_table = Table(
+            'dataset_dataset_association', meta.metadata,
+            Column('id', UnicodeText, primary_key=True, default=make_uuid),
+            Column('dset1_id', UnicodeText, ForeignKey('package.id')),
+            Column('dset2_id', UnicodeText, ForeignKey('package.id'))
+        )
+
+        # create table
+        ensure_table_created(dataset_dataset_association_table)
+
+        class DatasetAssociator(model.domain_object.DomainObject):
+            def __init__(self, dset1_id, dset2_id):
+                self.dset1_id = dset1_id
+                self.dset2_id = dset2_id
+
+        meta.mapper(DatasetAssociator, dataset_dataset_association_table)
+
+        # since we cannot run meta.mapper on Package again, we will have to add
+        # our own implementation of a relationship property
+
+        def remove_links(id):
+            entries = \
+                meta.Session.query(DatasetAssociator).filter(
+                    (DatasetAssociator.dset1_id==id) |
+                    (DatasetAssociator.dset2_id==id))
+            
+                # meta.Session.query(DatasetAssociator).filter_by(dset1_id=id) + \
+                # meta.Session.query(DatasetAssociator).filter_by(dset2_id=id)
+
+            for e in entries:
+                meta.Session.delete(e)
+
+            meta.Session.commit()
+
+        def getter(self):
+            entries = \
+                meta.Session.query(DatasetAssociator).filter_by(dset1_id=self.id)
+
+            result = [meta.Session.query(model.package.Package).get(x.dset2_id)
+                      for x in entries]
+            return result
+
+        def setter(self, other_datasets):
+
+            remove_links(self.id)
+
+            other_datasets = _ensure_list(other_datasets)
+
+            for other in other_datasets:
+                meta.Session.add(DatasetAssociator(self.id, other.id))
+                meta.Session.add(DatasetAssociator(other.id, self.id))
+
+            meta.Session.commit()  # @@ could it cause trouble to commit here?
+
+        model.package.Package.related_dataset = property(fget=getter,
+                                                         fset=setter)
 
 
 def prepare_dataset_publication_association_table():
@@ -440,7 +504,10 @@ def check_edit_metadata():
 
 
 def _ensure_list(obj):
-    return obj if isinstance(obj, list) else [obj]
+    return \
+        obj if isinstance(obj, list) else \
+        [] if obj is None else \
+        [obj]
 
 
 def _list_people(session, people_ids):
@@ -947,6 +1014,8 @@ def _show_package_schema(schema):
                             tk.get_converter('convert_to_list_if_string')],
         'publications': [tk.get_validator('ignore_missing'),
                          tk.get_converter('convert_to_list_if_string')],
+        'related_dataset': [tk.get_validator('ignore_missing'),
+                            tk.get_converter('convert_to_list_if_string')]
     })
     return schema
 
@@ -978,10 +1047,14 @@ def _package_after_update(context, pkg_dict):
     pkg.org_contributor = [x.extra for x in orgs]
 
     # associated publications
-
     pkg.publications = \
         _list_pubs(context['session'],
                    pkg_dict.get('publications', []))
+
+    # associated datasets
+    pkg.related_dataset = \
+        _list_datasets(context['session'],
+                       pkg_dict.get('related_dataset', []))
 
 
 def _package_before_view(pkg_dict):
@@ -1000,6 +1073,10 @@ def _package_before_view(pkg_dict):
 
     pkg_dict['publications'] = \
         [(x.id, x.name, x.doi) for x in pkg.publications]
+
+    # pdb.set_trace()
+    pkg_dict['related_dataset'] = \
+        [(x.id, x.title) for x in pkg.related_dataset]
 
     return pkg_dict
 
