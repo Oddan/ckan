@@ -1042,7 +1042,7 @@ def _modif_package_schema(schema):
                      tk.get_converter('convert_to_extras')]
 
     # for now, there is no difference between the show and the modif schemas
-    return _show_package_schema(schema)
+    return schema
 
 
 def _package_after_update(context, pkg_dict):
