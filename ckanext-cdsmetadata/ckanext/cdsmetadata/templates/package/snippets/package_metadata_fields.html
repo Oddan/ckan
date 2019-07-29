@@ -4,6 +4,15 @@
 
 {% block package_metadata_fields %}
 
+  {# ============================ Input project type ============================ #}
+  {% set project_types = h.project_types() %} 
+
+  {{ form.select('project_type', id='field-project_type', label=_('Project type'),
+                 options=project_types, selected=data.project_type or project_types[0],
+                 error=errors.project_type, classes='control-large') 
+  }} 
+
+  
   {# ======================= Input contributors (persons) ======================= #}
   {% set person_contributor = c.pkg_dict['person_contributor'] %}
   {% set person_contributor_listitems = h.personlist(person_contributor) %}
@@ -129,6 +138,7 @@
 
   {{ form.input('doi', id='field-doi', label='Digital Object Identifier (DOI)', error=errors.doi,
                 value=data.doi, classes=['control-medium']) }}
+
   
   {# ===================== Old CKAN metadata (what to keep) ===================== #}
   

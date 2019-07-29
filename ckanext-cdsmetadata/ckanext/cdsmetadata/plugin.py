@@ -1025,15 +1025,15 @@ def _show_package_schema(schema):
                             tk.get_converter('convert_to_list_if_string')],
         'doi': [tk.get_converter('convert_from_extras'),
                 tk.get_validator('ignore_missing'),
-                tk.get_validator('check_doi')]
-                
-
+                tk.get_validator('check_doi')],
+        'project_type': [tk.get_converter('convert_from_extras'),
+                         tk.get_validator('project_type_validator')]
     })
     return schema
 
 
 def _modif_package_schema(schema):
-
+    
     # reusing the schema from _show_package_schema, with certain modifications
     schema = _show_package_schema(schema)
 
@@ -1041,6 +1041,9 @@ def _modif_package_schema(schema):
                      tk.get_validator('check_doi'),
                      tk.get_converter('convert_to_extras')]
 
+    schema['project_type'] = [tk.get_validator('project_type_validator'),
+                              tk.get_converter('convert_to_extras')]
+    
     # for now, there is no difference between the show and the modif schemas
     return schema
 
@@ -1101,6 +1104,7 @@ def _package_before_view(pkg_dict):
 
     return pkg_dict
 
+# ========================= Validator implementations =========================
 
 def _check_doi(value, context):
     if value is None:
@@ -1111,6 +1115,16 @@ def _check_doi(value, context):
        value.lower().find('doi.org') != -1:
         raise Invalid(_('Please do not include http or doi part of doi'))
 
+    return value
+
+
+def _project_type_validator(value, context):
+    
+    if value is None:
+        return None # normally shouldn't happen
+    if not value in CdsmetadataPlugin.project_types:
+        raise Invalid(_('Invalid project type.  Valid types are: "' +
+                        '", "'.join(CdsmetadataPlugin.project_types) + '".'))
     return value
 
 
@@ -1219,7 +1233,10 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
         return {'personlist': lambda l: _personlist([x[0] for x in l]),
                 'orglist': lambda l: _orglist([x[0] for x in l]),
                 'dsetlist': lambda l, o=[]: _dsetlist([x[0] for x in l], o),
-                'publist': lambda l: _publist([x[0] for x in l])}
+                'publist': lambda l: _publist([x[0] for x in l]),
+                'project_types': lambda : [{'name': x, 'value': x}
+                                           for x in self.project_types]
+                }
 
     # =============================== IConfigurable ===========================
     def configure(self, config):
@@ -1249,10 +1266,14 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
 
     def get_validators(self):
 
-        return {'check_doi': _check_doi}
-    
+        return {'check_doi': _check_doi,
+                'project_type_validator': _project_type_validator}
+        
     # =============================== IDatasetForm ============================
 
+    # we store allowed options here, which will be used by specific validators
+    project_types = ['Pilot', 'Commercial', 'Other']
+    
     def is_fallback(self):
         return True
 
