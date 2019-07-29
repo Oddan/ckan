@@ -1030,8 +1030,11 @@ def _show_package_schema(schema):
                          tk.get_validator('project_type_validator')],
         'access_level': [tk.get_converter('convert_from_extras'),
                          tk.get_validator('access_level_validator')],
-        'release_date': [tk.get_converter('convert_from_extras')]
-                         
+        'release_date': [tk.get_converter('convert_from_extras')],
+        'temporal_coverage_start' : [tk.get_converter('convert_from_extras'),
+                                     tk.get_validator('temporal_coverage_nonnegative')],
+        'temporal_coverage_end' : [tk.get_converter('convert_from_extras')]
+                                   
     })
     return schema
 
@@ -1051,6 +1054,11 @@ def _modif_package_schema(schema):
     schema['access_level'] = [tk.get_validator('access_level_validator'),
                               tk.get_converter('convert_to_extras')]
     schema['release_date'] = [tk.get_converter('convert_to_extras')]
+
+    schema['temporal_coverage_start'] = [tk.get_validator('temporal_coverage_nonnegative'),
+                                         tk.get_converter('convert_to_extras')]
+    schema['temporal_coverage_end'] = [tk.get_validator('temporal_coverage_nonnegative'),
+                                       tk.get_converter('convert_to_extras')]
     
     # for now, there is no difference between the show and the modif schemas
     return schema
@@ -1145,6 +1153,14 @@ def _access_level_validator(value, context):
                         '", "'.join(CdsmetadataPlugin.access_levels) + '".'))
     return value
 
+def _temporal_coverage_nonnegative(key, data, errors, context):
+
+    start_date = dateutil.parser.parse(data.get(('temporal_coverage_start',)))
+    end_date = dateutil.parser.parse(data.get(('temporal_coverage_end',)))
+
+    if start_date > end_date:
+        raise Invalid(_("Invalid date range; start date is after end date."))
+    
 
 class CdsmetadataPlugin(plugins.SingletonPlugin,
                         tk.DefaultDatasetForm):
@@ -1290,7 +1306,8 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
 
         return {'check_doi': _check_doi,
                 'project_type_validator': _project_type_validator,
-                'access_level_validator': _access_level_validator}
+                'access_level_validator': _access_level_validator,
+                'temporal_coverage_nonnegative': _temporal_coverage_nonnegative}
         
     # =============================== IDatasetForm ============================
 

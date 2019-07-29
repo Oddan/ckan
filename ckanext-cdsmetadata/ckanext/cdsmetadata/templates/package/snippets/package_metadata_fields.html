@@ -4,6 +4,7 @@
 
 {% block package_metadata_fields %}
 
+    
   {# ============================ Input project type ============================ #}
   {% set project_types = h.project_types() %} 
 
@@ -27,7 +28,24 @@
                value=data.release_date or h.date_today(),
                type="date", error=errors.release_date, classes='control-medium') }}
   
-  
+  {# ========================== Input temporal coverage ========================== #}
+
+      <div class="col-xs-6">
+      {{form.input('temporal_coverage_start', id='field-temporal_coverage_start',
+                   label=_('Coverage start date'),
+                   value=data.temporal_coverage_start or h.date_today(),
+                   type="date", error=errors.temporal_coverage_start,
+                   classes='control-medium') }}
+      </div>
+      <div class="col-xs-6">
+      {{form.input('temporal_coverage_end', id='field-temporal_coverage_end',
+                   label=_('Coverage end date'),
+                   value=data.temporal_coverage_end or h.date_today(),
+                   type="date", error=errors.temporal_coverage_end,
+                   classes='control-medium') }}
+      </div>
+
+      
   {# ======================= Input contributors (persons) ======================= #}
   {% set person_contributor = c.pkg_dict['person_contributor'] %}
   {% set person_contributor_listitems = h.personlist(person_contributor) %}

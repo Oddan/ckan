@@ -102,6 +102,15 @@
             {% endif %}
           </td>
         </tr>
+
+        {# ========================== Show temporal coverage ========================== #}
+        <tr>
+          <th scope="row" class="dataset-label">{{ _("Period covered by the dataset") }}</th>
+          <td class="dataset-details">
+            <b>Start:</b> {{ pkg_dict.temporal_coverage_start }} <br>
+            <b>End:</b>   {{ pkg_dict.temporal_coverage_end }} 
+          </td>
+        </tr>
         
         {# =========================== Show contact persons =========================== #}
         
