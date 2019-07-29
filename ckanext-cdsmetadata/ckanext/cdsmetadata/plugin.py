@@ -1047,7 +1047,8 @@ def _modif_package_schema(schema):
 
 def _package_after_update(context, pkg_dict):
 
-    pkg = context['package']
+    pkg = meta.Session.query(model.package.Package).get(pkg_dict['id'])
+    # pkg = context['package'] @@ (only works for package_update, not package_create)
 
     # contact person
     pkg.contact_person = \
@@ -1060,6 +1061,7 @@ def _package_after_update(context, pkg_dict):
                      pkg_dict.get('person_contributor', []))
 
     # contributor organization
+    
     orgs = _list_orgs(context['session'],
                       pkg_dict.get('org_contributor', []))
 
@@ -1216,7 +1218,7 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
 
         return {'personlist': lambda l: _personlist([x[0] for x in l]),
                 'orglist': lambda l: _orglist([x[0] for x in l]),
-                'dsetlist': lambda l, o: _dsetlist([x[0] for x in l], o),
+                'dsetlist': lambda l, o=[]: _dsetlist([x[0] for x in l], o),
                 'publist': lambda l: _publist([x[0] for x in l])}
 
     # =============================== IConfigurable ===========================
