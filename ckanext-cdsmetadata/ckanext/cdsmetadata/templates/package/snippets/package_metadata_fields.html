@@ -12,6 +12,14 @@
                  error=errors.project_type, classes='control-large') 
   }} 
 
+  {# ============================ Input access level ============================ #}
+  {% set access_levels = h.access_levels() %}
+
+  {{ form.select('access_level', id='field-access_level', label=_('Access level'),
+                 options=access_levels, selected=data.access_level or access_levels[0],
+                 error=errors.access_level, classes='control-large') 
+  }} 
+  
   
   {# ======================= Input contributors (persons) ======================= #}
   {% set person_contributor = c.pkg_dict['person_contributor'] %}

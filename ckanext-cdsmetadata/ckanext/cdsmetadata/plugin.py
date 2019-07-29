@@ -1027,7 +1027,9 @@ def _show_package_schema(schema):
                 tk.get_validator('ignore_missing'),
                 tk.get_validator('check_doi')],
         'project_type': [tk.get_converter('convert_from_extras'),
-                         tk.get_validator('project_type_validator')]
+                         tk.get_validator('project_type_validator')],
+        'access_level': [tk.get_converter('convert_from_extras'),
+                         tk.get_validator('access_level_validator')]
     })
     return schema
 
@@ -1042,6 +1044,9 @@ def _modif_package_schema(schema):
                      tk.get_converter('convert_to_extras')]
 
     schema['project_type'] = [tk.get_validator('project_type_validator'),
+                              tk.get_converter('convert_to_extras')]
+
+    schema['access_level'] = [tk.get_validator('access_level_validator'),
                               tk.get_converter('convert_to_extras')]
     
     # for now, there is no difference between the show and the modif schemas
@@ -1125,6 +1130,16 @@ def _project_type_validator(value, context):
     if not value in CdsmetadataPlugin.project_types:
         raise Invalid(_('Invalid project type.  Valid types are: "' +
                         '", "'.join(CdsmetadataPlugin.project_types) + '".'))
+    return value
+
+
+def _access_level_validator(value, context):
+    
+    if value is None:
+        return None # normally shouldn't happen
+    if not value in CdsmetadataPlugin.access_levels:
+        raise Invalid(_('Invalid access level.  Valid types are: "' +
+                        '", "'.join(CdsmetadataPlugin.access_levels) + '".'))
     return value
 
 
@@ -1235,7 +1250,9 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
                 'dsetlist': lambda l, o=[]: _dsetlist([x[0] for x in l], o),
                 'publist': lambda l: _publist([x[0] for x in l]),
                 'project_types': lambda : [{'name': x, 'value': x}
-                                           for x in self.project_types]
+                                           for x in self.project_types],
+                'access_levels': lambda : [{'name': x, 'value': x}
+                                           for x in self.access_levels]
                 }
 
     # =============================== IConfigurable ===========================
@@ -1267,12 +1284,14 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
     def get_validators(self):
 
         return {'check_doi': _check_doi,
-                'project_type_validator': _project_type_validator}
+                'project_type_validator': _project_type_validator,
+                'access_level_validator': _access_level_validator}
         
     # =============================== IDatasetForm ============================
 
     # we store allowed options here, which will be used by specific validators
     project_types = ['Pilot', 'Commercial', 'Other']
+    access_levels = ['Open', 'Restricted']
     
     def is_fallback(self):
         return True
