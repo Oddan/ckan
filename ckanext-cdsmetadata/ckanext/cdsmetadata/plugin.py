@@ -787,7 +787,8 @@ def _license_show(context, data_dict):
     if lic is None:
         raise tk.ObjectNotFound
 
-    return {'name': lic.name,
+    return {'id': lic.id,
+            'name': lic.name,
             'description': lic.description,
             'license_url': lic.license_url}
 
@@ -912,6 +913,38 @@ def _publist(selected_ids):
     return publist
 
 
+def _licenselist():
+
+    licenses = model.Session.query(License).all()
+
+    license_list = \
+        [{'value': x.id, 'text': x.name, 'selected': False} for x in licenses]
+    license_list.sort(key=lambda x: x['text'])
+
+    return license_list
+
+
+def  _get_license(id):
+    try:
+        lic = model.Session.query(License).get(id)
+        return lic
+    except:
+        return None
+
+def _datasets_with_license(license_id):
+
+    # @@ is there a better (quicker) way to do this?
+    dsets = meta.Session.query(model.package.Package).all()
+
+    result = []
+    for d in dsets:
+        dset_lic_id = d.extras.get('cdslicense', None)
+        if dset_lic_id and dset_lic_id == license_id:
+            result.append(d)
+
+    return result
+
+
 def _extra_info(mclass, data):
     if mclass == Person:
         data = data or {}  # avoid problem with referencing NoneType below
@@ -967,6 +1000,12 @@ def _display_publication(id):
     data = _publication_show({'session': Session}, {'id': id})
 
     return render('view_publication.html', data)
+
+
+def _display_license(id):
+
+    data = _license_show({'session': Session}, {'id': id})
+    return render('view_license.html', data)
 
 
 def _edit_metadata(mclass, template_name):
@@ -1033,7 +1072,9 @@ def _show_package_schema(schema):
         'release_date': [tk.get_converter('convert_from_extras')],
         'temporal_coverage_start' : [tk.get_converter('convert_from_extras'),
                                      tk.get_validator('temporal_coverage_nonnegative')],
-        'temporal_coverage_end' : [tk.get_converter('convert_from_extras')]
+        'temporal_coverage_end' : [tk.get_converter('convert_from_extras')],
+        'cdslicense' : [tk.get_converter('convert_from_extras'),
+                        tk.get_validator('ignore_missing') ]
                                    
     })
     return schema
@@ -1059,6 +1100,8 @@ def _modif_package_schema(schema):
                                          tk.get_converter('convert_to_extras')]
     schema['temporal_coverage_end'] = [tk.get_validator('temporal_coverage_nonnegative'),
                                        tk.get_converter('convert_to_extras')]
+    schema['cdslicense'] = [tk.get_validator('ignore_missing'),
+                            tk.get_converter('convert_to_extras')]
     
     # for now, there is no difference between the show and the modif schemas
     return schema
@@ -1155,11 +1198,15 @@ def _access_level_validator(value, context):
 
 def _temporal_coverage_nonnegative(key, data, errors, context):
 
-    start_date = dateutil.parser.parse(data.get(('temporal_coverage_start',)))
-    end_date = dateutil.parser.parse(data.get(('temporal_coverage_end',)))
+    start = data.get(('temporal_coverage_start',),None)
+    end = data.get(('temporal_coverage_end',), None)
 
-    if start_date > end_date:
-        raise Invalid(_("Invalid date range; start date is after end date."))
+    if start and end:
+        start_date = dateutil.parser.parse(start)
+        end_date = dateutil.parser.parse(end)
+
+        if start_date > end_date:
+            raise Invalid(_("Invalid date range; start date is after end date."))
     
 
 class CdsmetadataPlugin(plugins.SingletonPlugin,
@@ -1221,7 +1268,9 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
                                u'view_publication',
                                view_func=_display_publication)
         
-
+        blueprint.add_url_rule('/view/license/<id>',
+                               u'view_license',
+                               view_func=_display_license)
 
         return blueprint
 
@@ -1272,8 +1321,11 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
                                            for x in self.project_types],
                 'access_levels': lambda : [{'name': x, 'value': x}
                                            for x in self.access_levels],
+                'licenselist': lambda : _licenselist(),
+                'get_license': _get_license,
                 'date_today': lambda : datetime.date.today(),
-                'str_2_date': lambda str : dateutil.parser.parse(str)
+                'str_2_date': lambda str : dateutil.parser.parse(str),
+                'datasets_with_license': _datasets_with_license
                 }
 
     # =============================== IConfigurable ===========================

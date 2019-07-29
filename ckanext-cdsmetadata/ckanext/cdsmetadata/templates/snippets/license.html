@@ -1,0 +1,26 @@
+{% block license %}
+
+  {% block license_wrapper %} 
+      <section class="module module-narrow module-shallow license">  
+        {% block license_title %}  
+         <h2 class="module-heading"><i class="fa fa-lock"></i> {{ _('License') }}</h2>  
+        {% endblock %}  
+        
+        {% block license_content %}  
+          <p class="module-content">  
+            {% block license_content_inner %}
+              {% set lic = h.get_license(pkg_dict.cdslicense) %}
+              {% if lic %}
+                <a class="module-content",
+                   href="{{ h.url_for('cdsmetadata.view_license', id=lic.id) }}">
+                   {{lic.name}}
+                </a>
+              {% else %}
+                <i>Unspecified</i>
+              {% endif %}
+            {% endblock %}  
+          </p>  
+        {% endblock %} 
+      </section>  
+    {% endblock %}  
+{% endblock %}

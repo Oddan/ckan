@@ -20,36 +20,36 @@
           </tr>
         {% endif %}
 
-        {% if pkg_dict.author_email %}
-          <tr>
-            <th scope="row" class="dataset-label">{{ _("Author") }}</th>
-            <td class="dataset-details" property="dc:creator">{{ h.mail_to(email_address=pkg_dict.author_email, name=pkg_dict.author) }}</td>
-          </tr>
-        {% elif pkg_dict.author %}
-          <tr>
-            <th scope="row" class="dataset-label">{{ _("Author") }}</th>
-            <td class="dataset-details" property="dc:creator">{{ pkg_dict.author }}</td>
-          </tr>
-        {% endif %}
+        {% if pkg_dict.author_email %} 
+          <tr> 
+            <th scope="row" class="dataset-label">{{ _("Author") }}</th> 
+            <td class="dataset-details" property="dc:creator">{{ h.mail_to(email_address=pkg_dict.author_email, name=pkg_dict.author) }}</td> 
+          </tr> 
+        {% elif pkg_dict.author %} 
+          <tr> 
+            <th scope="row" class="dataset-label">{{ _("Author") }}</th> 
+            <td class="dataset-details" property="dc:creator">{{ pkg_dict.author }}</td> 
+          </tr> 
+        {% endif %} 
 
-        {% if pkg_dict.maintainer_email %}
-          <tr>
-            <th scope="row" class="dataset-label">{{ _('Maintainer') }}</th>
-            <td class="dataset-details" property="dc:contributor">{{ h.mail_to(email_address=pkg_dict.maintainer_email, name=pkg_dict.maintainer) }}</td>
-          </tr>
-        {% elif pkg_dict.maintainer %}
-          <tr>
-            <th scope="row" class="dataset-label">{{ _('Maintainer') }}</th>
-            <td class="dataset-details" property="dc:contributor">{{ pkg_dict.maintainer }}</td>
-          </tr>
-        {% endif %}
+        {% if pkg_dict.maintainer_email %} 
+          <tr> 
+            <th scope="row" class="dataset-label">{{ _('Maintainer') }}</th> 
+            <td class="dataset-details" property="dc:contributor">{{ h.mail_to(email_address=pkg_dict.maintainer_email, name=pkg_dict.maintainer) }}</td> 
+          </tr> 
+        {% elif pkg_dict.maintainer %} 
+          <tr> 
+            <th scope="row" class="dataset-label">{{ _('Maintainer') }}</th> 
+            <td class="dataset-details" property="dc:contributor">{{ pkg_dict.maintainer }}</td> 
+          </tr> 
+        {% endif %} 
 
-        {% if pkg_dict.version %}
-          <tr>
-            <th scope="row" class="dataset-label">{{ _("Version") }}</th>
-            <td class="dataset-details">{{ pkg_dict.version }}</td>
-          </tr>
-        {% endif %}
+        {% if pkg_dict.version %} 
+          <tr> 
+            <th scope="row" class="dataset-label">{{ _("Version") }}</th> 
+            <td class="dataset-details">{{ pkg_dict.version }}</td> 
+          </tr> 
+        {% endif %} 
 
         {% if h.check_access('package_update',{'id':pkg_dict.id}) %}
           <tr>
@@ -75,24 +75,41 @@
           </tr>
         {% endif %}
 
-        {# ============================= Show project type ============================ #}
+        {# =============================== Show license =============================== #}
+        {% set license = h.get_license(pkg_dict.cdslicense) %}
+        <tr> 
+          <th scope="row" class="dataset-label">{{ _("License") }} </th>
 
+          <td class="dataset-details"> 
+            {% if license %}
+              <a href="{{ h.url_for('cdsmetadata.view_license', id=license.id) }}"> {{license.name}}</a>
+          {% else %} 
+            <i>unspecified</i> 
+          {% endif %} 
+            </td> 
+        </tr> 
+        
+        {# ============================= Show project type ============================ #}
+        {% if pkg_dict.project_type %}
         <tr>
           <th scope="row" class="dataset-label">{{ _("Project type") }}</th>
           <td class="dataset-details">
             {{ pkg_dict.project_type }} 
           </td>
         </tr>
+        {% endif %}
 
         {# ============================= Show access level ============================ #}
+        {% if pkg_dict.access_level %}
         <tr>
           <th scope="row" class="dataset-label">{{ _("Access level") }}</th>
           <td class="dataset-details">
             {{ pkg_dict.access_level }} 
           </td>
         </tr>
-
+        {% endif %}
         {# ============================= Show release date ============================ #}
+        {% if pkg_dict.release_date %}
         <tr>
           <th scope="row" class="dataset-label">{{ _("Release date") }}</th>
           <td class="dataset-details">
@@ -102,8 +119,10 @@
             {% endif %}
           </td>
         </tr>
-
+        {% endif %}
+        
         {# ========================== Show temporal coverage ========================== #}
+        {% if pkg_dict.temporal_coverage_start and pkg_dict.temporal_coverage_end %}
         <tr>
           <th scope="row" class="dataset-label">{{ _("Period covered by the dataset") }}</th>
           <td class="dataset-details">
@@ -111,9 +130,8 @@
             <b>End:</b>   {{ pkg_dict.temporal_coverage_end }} 
           </td>
         </tr>
-        
+        {% endif %}
         {# =========================== Show contact persons =========================== #}
-        
       <tr> 
         <th scope="row" class="dataset-label">{{ _("Contact person(s)") }}</th> 
         <td class="dataset-details">
@@ -158,24 +176,25 @@
       </tr>
 
       {# ================================= Show DOI ================================= #}
+      {% if pkg_dict.doi %}
       <tr>
         <th scope="row" class="dataset-label">{{ _("Digital Object Identifier (DOI)") }}</th>
         <td class="dataset-details">
           <a href="https://doi.org/{{pkg_dict.doi}}"> {{ pkg_dict.doi }}</a>
         </td>
       </tr>
-      
+      {% endif %}
       
       {# =========================== Show extras (unused) =========================== #}
 
       {% block extras scoped %}
-        {% for extra in h.sorted_extras(pkg_dict.extras) %}
-          {% set key, value = extra %}
-          <tr rel="dc:relation" resource="_:extra{{ i }}">
-            <th scope="row" class="dataset-label" property="rdfs:label">{{ _(key) }}</th>
-            <td class="dataset-details" property="rdf:value">{{ value }}</td>
-          </tr>
-        {% endfor %}
+        {# {% for extra in h.sorted_extras(pkg_dict.extras) %} #}
+        {#   {% set key, value = extra %} #}
+        {#   <tr rel="dc:relation" resource="_:extra{{ i }}"> #}
+        {#     <th scope="row" class="dataset-label" property="rdfs:label">{{ _(key) }}</th> #}
+        {#     <td class="dataset-details" property="rdf:value">{{ value }}</td> #}
+        {#   </tr> #}
+        {# {% endfor %} #}
       {% endblock %}
 
       {% endblock %}

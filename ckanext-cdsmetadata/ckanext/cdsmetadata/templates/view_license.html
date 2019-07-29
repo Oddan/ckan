@@ -1,0 +1,50 @@
+{% extends "page.html"%}
+
+{% block secondary_content %}
+
+  {% snippet "snippets/license_helper.html" %}
+
+  {% block secondary_help_content %}{% endblock %}
+  
+{% endblock %}
+
+{% block primary_content_inner %}
+
+<h1> License information </h1>
+
+<h3> License name </h3>
+
+{{ name }}
+
+<h3> Description </h3>
+
+{{ description }}
+
+<h3> Link </h3>
+
+<a href="{{license_url}}">{{license_url}}</a>
+
+
+{% set dsets = h.datasets_with_license(id) %}
+
+{% if dsets %}
+
+<h3> Is referenced by the following dataset(s): </h3> 
+
+<table class="table table-striped table-bordered table-condensed">
+
+  {% for d in dsets %}
+    <tr> 
+      <td> 
+        <a href="{{h.url_for(controller='package', action='read', id=d.id)}}">{{d.name}}</a> 
+      </td> 
+    </tr> 
+  {% endfor %} 
+  
+</table> 
+
+{% else %}
+  <h4><i> No dataset currently uses this license. </i></h4>
+{% endif %}
+
+{% endblock %}
