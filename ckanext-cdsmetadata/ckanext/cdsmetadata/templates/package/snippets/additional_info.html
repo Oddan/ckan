@@ -91,6 +91,17 @@
             {{ pkg_dict.access_level }} 
           </td>
         </tr>
+
+        {# ============================= Show release date ============================ #}
+        <tr>
+          <th scope="row" class="dataset-label">{{ _("Release date") }}</th>
+          <td class="dataset-details">
+            {{ pkg_dict.release_date }}
+            {% if h.str_2_date(pkg_dict.release_date).date() > h.date_today() %}
+              <i>(Currently embargoed)</i>
+            {% endif %}
+          </td>
+        </tr>
         
         {# =========================== Show contact persons =========================== #}
         

@@ -14,7 +14,7 @@ from ckan.views import api
 from ckan.lib.navl.dictization_functions import Invalid
 from ckan.lib.base import abort, render
 
-import copy
+import copy, datetime, dateutil
 import pdb
 
 TITLE_MAX_L = 100
@@ -1011,7 +1011,7 @@ def _edit_metadata(mclass, template_name):
 
 
 def _show_package_schema(schema):
-
+    
     schema.update({
         'contact_person': [tk.get_validator('ignore_missing'),
                            tk.get_converter('convert_to_list_if_string')],
@@ -1029,7 +1029,9 @@ def _show_package_schema(schema):
         'project_type': [tk.get_converter('convert_from_extras'),
                          tk.get_validator('project_type_validator')],
         'access_level': [tk.get_converter('convert_from_extras'),
-                         tk.get_validator('access_level_validator')]
+                         tk.get_validator('access_level_validator')],
+        'release_date': [tk.get_converter('convert_from_extras')]
+                         
     })
     return schema
 
@@ -1048,6 +1050,7 @@ def _modif_package_schema(schema):
 
     schema['access_level'] = [tk.get_validator('access_level_validator'),
                               tk.get_converter('convert_to_extras')]
+    schema['release_date'] = [tk.get_converter('convert_to_extras')]
     
     # for now, there is no difference between the show and the modif schemas
     return schema
@@ -1252,7 +1255,9 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
                 'project_types': lambda : [{'name': x, 'value': x}
                                            for x in self.project_types],
                 'access_levels': lambda : [{'name': x, 'value': x}
-                                           for x in self.access_levels]
+                                           for x in self.access_levels],
+                'date_today': lambda : datetime.date.today(),
+                'str_2_date': lambda str : dateutil.parser.parse(str)
                 }
 
     # =============================== IConfigurable ===========================

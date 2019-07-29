@@ -19,6 +19,13 @@
                  options=access_levels, selected=data.access_level or access_levels[0],
                  error=errors.access_level, classes='control-large') 
   }} 
+
+  {# ============================ Input release date ============================ #}
+  <p><i>(If a future release date is chosen, the dataset will be in embargo
+        until that date.)</i></p>
+  {{form.input('release_date', id='field-release_date', label=_('Release date'),
+               value=data.release_date or h.date_today(),
+               type="date", error=errors.release_date, classes='control-medium') }}
   
   
   {# ======================= Input contributors (persons) ======================= #}
