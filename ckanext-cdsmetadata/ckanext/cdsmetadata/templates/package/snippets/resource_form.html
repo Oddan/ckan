@@ -1,0 +1,16 @@
+{% ckan_extends %}
+
+{% block metadata_fields %}
+  {% set resource_classes = h.resource_categories() %}
+
+  <i class="fa fa-info-circle"></i>
+  <i>Choose as specific as possible.  For an overview of the classifcation,
+    click <a href="{{ h.url_for('cdsmetadata.resource_categories') }}" target="_blank">here</a>.</i>
+    
+    {{ form.select('category', id='field-category', label=_('Resource category'),
+                   options=resource_classes, 
+                   selected=data.category or resource_classes[0].value,
+                   error=errors.category,
+                   classes='control-large') }}
+  
+{% endblock %}

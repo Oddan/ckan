@@ -81,8 +81,7 @@ setup(
     entry_points='''
         [ckan.plugins]
         cdsmetadata=ckanext.cdsmetadata.plugin:CdsmetadataPlugin
-        dataset_metadata=ckanext.dataset_metadata.plugin:DatasetMetadataPlugin
-
+        cdsmetadata_resources=ckanext.cdsmetadata.plugin2:CdsMetadataResourcesPlugin
 
         [babel.extractors]
         ckan = ckan.lib.extract:extract_ckan

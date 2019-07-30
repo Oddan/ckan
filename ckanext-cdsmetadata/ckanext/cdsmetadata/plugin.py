@@ -13,6 +13,7 @@ from six import text_type
 from ckan.views import api
 from ckan.lib.navl.dictization_functions import Invalid
 from ckan.lib.base import abort, render
+from resource_category import ResourceCategory
 
 import copy, datetime, dateutil
 import pdb
@@ -26,6 +27,7 @@ license_table = None
 publication_table = None
 person_table = None
 organization_extra_table = None
+resource_extra_table = None
 
 
 affiliation_association_table = None  # associate Person with Organization
@@ -48,6 +50,18 @@ class Person(model.domain_object.DomainObject):
         return self.last_name + ", " + self.first_name
 
 
+class ResourceExtra(model.domain_object.DomainObject):
+    def __init__(self,
+                 resource_id=None, category_id=None, purpose=None,
+                 assumptions=None, sources=None, dataformat_id=None):
+        self.resource_id = resource_id
+        self.category_id = category_id
+        self.purpose = purpose
+        self.assumptions = assumptions
+        self.sources = sources
+        self.dataformat_id = dataformat_id
+        
+    
 class OrganizationExtra(model.domain_object.DomainObject):
     def __init__(self, homepageURL, org_id):
         self.homepageURL = homepageURL
@@ -83,6 +97,7 @@ def setup_model():
     prepare_license_table()
     prepare_publication_table()
     prepare_person_table()
+    prepare_resource_extra_table()
 
     # association tables
     prepare_affiliation_association_table()
@@ -387,6 +402,44 @@ def prepare_organization_extra_table():
         ensure_table_created(organization_extra_table)
 
 
+def prepare_resource_extra_table():
+
+    global resource_extra_table
+    if resource_extra_table is None:
+        resource_extra_table = Table(
+            'resource_extra', meta.metadata,
+            Column('id', UnicodeText, primary_key=True, default=make_uuid),
+            Column('resource_id', UnicodeText, ForeignKey('resource.id')),
+            Column('category_id', UnicodeText, ForeignKey('resource_category.code')),
+            Column('purpose', UnicodeText),
+            Column('assumptions', UnicodeText),
+            Column('sources', UnicodeText),
+            Column('dataformat_id', UnicodeText, ForeignKey('data_format.id'))
+        )
+
+        meta.mapper(ResourceExtra, resource_extra_table,
+                    properties = {'resource':
+                                  orm.relation(model.resource.Resource,
+                                               backref=orm.backref(
+                                                   'extra',
+                                                   uselist=False,
+                                                   cascade='all, delete, delete-orphan')),
+                                  'category':
+                                  orm.relation(ResourceCategory,
+                                               backref=orm.backref(
+                                                   'resources',
+                                                   cascade='save-update, merge')),
+                                  'dataformat':
+                                  orm.relation(DataFormat,
+                                               backref=orm.backref(
+                                                   'resources',
+                                                   cascade='save-update, merge'))})
+
+        # create table
+        ensure_table_created(resource_extra_table)
+                                  
+                    
+        
 def ensure_table_created(table):
 
     # if table.exists():
@@ -442,13 +495,42 @@ def _organization_modif_wrapper(action_name):
 
     return _wrapper
 
+# def _resource_modif_wrapper(action_name):
+
+#     action = tk.get_action(action_name)
+
+#     def _wrapper(context, data_dict):
+
+#         result_dict = action(context, data_dict)
+
+#         category = data_dict.get('category', None)
+#         purpose = data_dict.get('purpose', 'Not specified')
+#         assumptions = data_dict.get('assumptions', 'Not specified')
+#         sources = data_dict.get('sources', 'Not specified')
+#         data_format = data_dict.get('data_format', None)
+        
+#         extra = model.Resource.get(result_dict['id']).extra
+#         if extra is None:
+#             extra = ResourceExtra(result_dict['id'], category, purpose,
+#                                   assumptions, sources, data_format)
+#         else:
+#             extra.category_id = category
+#             extra.purpose = purpose
+#             extra.assumptions = assumptions
+#             extra.sources = sources
+#             extra.dataformat_id = data_format
+
+#         extra.save()
+            
+#         return result_dict
+#     return _wrapper
+
 
 def _organization_show_wrapper():
 
     action = tk.get_action('organization_show')
 
     def _wrapper(context, data_dict):
-
         result_dict = action(context, data_dict)
 
         # recovering extra information
@@ -483,6 +565,35 @@ def _organization_show_wrapper():
         return result_dict
 
     return _wrapper
+
+
+# def _resource_show_wrapper():
+
+#     action = tk.get_action('resource_show')
+
+#     def _wrapper(context, data_dict):
+#         #pdb.set_trace()
+#         result_dict = action(context, data_dict)
+
+#         # recovering extra information
+#         extra = model.Resource.get(result_dict['id']).extra
+        
+#         if extra is None:
+#             result_dict['category'] = None
+#             result_dict['purpose'] = ''
+#             result_dict['assumptions'] = ''
+#             result_dict['sources'] = ''
+#             result_dict['data_format'] = None
+#         else:
+#             result_dict['category'] = extra.category_id
+#             result_dict['purpose'] = extra.purpose
+#             result_dict['assumptions'] = extra.assumptions
+#             result_dict['sources'] = extra.sources
+#             result_dict['data_format'] = extra.dataformat_id
+
+#         return result_dict
+    
+#     return _wrapper
 
 
 def _edit_metadata_auth(context, data_dict=None):
@@ -1008,6 +1119,23 @@ def _display_license(id):
     return render('view_license.html', data)
 
 
+def _display_resource_categories():
+
+    data = _list_all_categories()
+    return render('view_categories.html', data)
+
+
+def _list_all_categories():
+
+    categories = Session.query(ResourceCategory).all()
+
+    result = {'categories' :
+              sorted([(x.code, x.title, x.description.splitlines()) for x in categories],
+                     key=lambda tup: tup[0])}
+
+    return result
+
+
 def _edit_metadata(mclass, template_name):
     check_edit_metadata()  # check authorization
 
@@ -1213,11 +1341,16 @@ def _temporal_coverage_nonnegative(key, data, errors, context):
             raise Invalid(_("Invalid date range; start date is after end date."))
 
 def _wgs84_validator(value, context):
-    #pdb.set_trace()
-    try:
-        lon, lat = map(float, value.strip('[](){}').split(','))
-    except:
-        raise Invalid(_("Wrong input format.  Use: 'lon, lat'"))
+
+    if type(value)==list and len(value)==2:
+        # this is likely a data object that has been previously validated
+        lon, lat = value
+    else:
+        # this is text coming right from user input
+        try:
+            lon, lat = map(float, value.strip('[](){}').split(','))
+        except:
+            raise Invalid(_("Wrong input format.  Use: 'lon, lat'"))
 
     if lon < -180 or lon > 180:
         raise Invalid(_("Longitude should be in [-180, 180]"))
@@ -1238,7 +1371,6 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
     plugins.implements(plugins.IValidators)
     plugins.implements(plugins.IAuthFunctions)
     plugins.implements(plugins.IRoutes)
-    # plugins.implements(plugins.IGroupForm)
     plugins.implements(plugins.IPackageController, inherit=True)
     plugins.implements(plugins.IDatasetForm, inherit=True)
 
@@ -1290,6 +1422,9 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
         blueprint.add_url_rule('/view/license/<id>',
                                u'view_license',
                                view_func=_display_license)
+        blueprint.add_url_rule('/view/resource_categories',
+                               u'resource_categories',
+                               view_func=_display_resource_categories)
 
         return blueprint
 
@@ -1301,7 +1436,7 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
         # since a plugin cannot at the same time be an IOrganizationController
         # and an IPackageController (clash of function names), we use the below
         # wrapping mechanism to add functionality to the creation, update and
-        # showing of organizations. 
+        # showing of organizations.
         for aname in ['organization_create', 'organization_update']:
             result[aname] = _organization_modif_wrapper(aname)
         result['organization_show'] = _organization_show_wrapper()
@@ -1336,15 +1471,18 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
                 'orglist': lambda l: _orglist([x[0] for x in l]),
                 'dsetlist': lambda l, o=[]: _dsetlist([x[0] for x in l], o),
                 'publist': lambda l: _publist([x[0] for x in l]),
-                'project_types': lambda : [{'name': x, 'value': x}
+                'project_types': lambda : [{'text': x, 'value': x}
                                            for x in self.project_types],
-                'access_levels': lambda : [{'name': x, 'value': x}
+                'access_levels': lambda : [{'text': x, 'value': x}
                                            for x in self.access_levels],
                 'licenselist': lambda : _licenselist(),
                 'get_license': _get_license,
                 'date_today': lambda : datetime.date.today(),
                 'str_2_date': lambda str : dateutil.parser.parse(str),
                 'datasets_with_license': _datasets_with_license,
+                'resource_categories': lambda : \
+                    [{'value': x[0], 'text': x[0] + ' - ' + x[1]}
+                     for x in _list_all_categories()['categories']]
                 }
 
     # =============================== IConfigurable ===========================

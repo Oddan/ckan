@@ -1,0 +1,59 @@
+{% extends "page.html" %}
+
+{% block secondary_content %}
+  <div class="module module-narrow module-shallow">
+    <h2 class="module-heading">
+      <i class="fa fa-info-circle"></i>
+      {{ _('Resource classification') }}
+    </h2>
+    <div class="module-content">
+      <p>
+        {% trans %}
+          <p> The CO2 Storage Data Category Classification is used to categorize
+            different type of dataset components, and allow assignment of
+            category-specific metadata items.</p>
+            <p> The classification has three levels of detail: <i>section</i>
+              (first digit), <i>class</i> (second digit) and <i>subclass</i> (third
+              digit).</p>
+            {% endtrans %}
+      </p>
+    </div>
+  </div>
+{% endblock %}
+
+{% block primary_content_inner %}
+
+<h2>CO2 Storage Data Category Classification</h2>
+
+<table class="table table-striped table-bordered table-condensed">
+  <col style="width:10%">
+  <col>
+  <col>
+  <thead>
+    <tr>
+      <th scope="col">{{ _('Code') }}</th>
+      <th scope="col">{{ _('Title') }}</th>
+      <th scope="col">{{ _('Comment / examples') }}</th>
+    </tr>
+  </thead>
+  <tbody>
+  
+    {% for c in categories %}
+      {% if c[0][-3:] == '0.0' %}
+        {# This is a major heading #}
+        <tr style="font-weight:bold;">
+      {% else %}
+        <tr>
+      {% endif %}
+          <td> {{c[0]}}</td>
+          <td> {{c[1]}}</td>
+      <td style="font-weight:normal"><i>
+              {% for l in c[2] %} 
+                <p>{{l}}</p> 
+                {% endfor %} 
+          </i></td>
+        </tr>
+    {% endfor %}
+</table>
+{% endblock %}
+  
