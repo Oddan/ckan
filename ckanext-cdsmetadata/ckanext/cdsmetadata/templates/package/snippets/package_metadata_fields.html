@@ -4,23 +4,38 @@
 
 {% block package_metadata_fields %}
 
-    
+  {# ========================= Input spatial coordinates ========================= #}
+  <div class="col-xs-6">
+    <i class="fa fa-info-circle"></i>
+    <i>Format: '&lt;lon&gt;, &lt;lat&gt;', using WGS 84 (SRID 4326)</i>
+  {{form.input('location', id='field-location', label=_('Geolocation'),
+    value=data.location or '<lon>, <lat>',
+    error=errors.location, classes='control-medium') }}
+  </div>
+
+  <div style="clear: both;"></div>
+  
   {# ============================ Input project type ============================ #}
   {% set project_types = h.project_types() %} 
 
+  <div class="col-xs-6">
   {{ form.select('project_type', id='field-project_type', label=_('Project type'),
                  options=project_types, selected=data.project_type or project_types[0],
                  error=errors.project_type, classes='control-large') 
   }} 
-
+  </div>
+    
   {# ============================ Input access level ============================ #}
   {% set access_levels = h.access_levels() %}
-
+  <div class="col-xs-6">
   {{ form.select('access_level', id='field-access_level', label=_('Access level'),
                  options=access_levels, selected=data.access_level or access_levels[0],
                  error=errors.access_level, classes='control-large') 
   }} 
+  </div>
 
+  <div style="clear: both;"></div>
+  
   {# ============================ Input release date ============================ #}
   <span class="info-block info-inline">
     <i class="fa fa-info-circle"></i>

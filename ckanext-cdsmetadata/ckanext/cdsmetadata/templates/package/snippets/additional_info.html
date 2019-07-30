@@ -130,8 +130,20 @@
             <b>End:</b>   {{ pkg_dict.temporal_coverage_end }} 
           </td>
         </tr>
-        {% endif %}
-        {# =========================== Show contact persons =========================== #}
+      {% endif %}
+
+      {# =========================== Show spatial location =========================== #}
+      {% if pkg_dict.location %}
+        <tr>
+          <th scope="row" class="dataset-label">{{ _("Geolocation (WGS 84)") }}</th>
+          <td class="dataset-details">
+            <b>Longitude:</b> {{ pkg_dict.location[0] }} <br>
+            <b>Latitude:</b> {{ pkg_dict.location[1] }} 
+          </td>
+        </tr>
+      {% endif %}
+      
+      {# =========================== Show contact persons =========================== #}
       <tr> 
         <th scope="row" class="dataset-label">{{ _("Contact person(s)") }}</th> 
         <td class="dataset-details">

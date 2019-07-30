@@ -1074,7 +1074,9 @@ def _show_package_schema(schema):
                                      tk.get_validator('temporal_coverage_nonnegative')],
         'temporal_coverage_end' : [tk.get_converter('convert_from_extras')],
         'cdslicense' : [tk.get_converter('convert_from_extras'),
-                        tk.get_validator('ignore_missing') ]
+                        tk.get_validator('ignore_missing') ],
+        'location' : [tk.get_converter('convert_from_extras'),
+                      tk.get_validator('wgs84-validator')]
                                    
     })
     return schema
@@ -1102,6 +1104,8 @@ def _modif_package_schema(schema):
                                        tk.get_converter('convert_to_extras')]
     schema['cdslicense'] = [tk.get_validator('ignore_missing'),
                             tk.get_converter('convert_to_extras')]
+    schema['location'] = [tk.get_validator('wgs84-validator'),
+                          tk.get_converter('convert_to_extras')]
     
     # for now, there is no difference between the show and the modif schemas
     return schema
@@ -1207,7 +1211,22 @@ def _temporal_coverage_nonnegative(key, data, errors, context):
 
         if start_date > end_date:
             raise Invalid(_("Invalid date range; start date is after end date."))
-    
+
+def _wgs84_validator(value, context):
+    #pdb.set_trace()
+    try:
+        lon, lat = map(float, value.strip('[](){}').split(','))
+    except:
+        raise Invalid(_("Wrong input format.  Use: 'lon, lat'"))
+
+    if lon < -180 or lon > 180:
+        raise Invalid(_("Longitude should be in [-180, 180]"))
+
+    if lat < -90 or lat > 90:
+        raise Invalid(_("Latitude should be in [-90, 90]"))
+
+    return [lon, lat]
+        
 
 class CdsmetadataPlugin(plugins.SingletonPlugin,
                         tk.DefaultDatasetForm):
@@ -1325,7 +1344,7 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
                 'get_license': _get_license,
                 'date_today': lambda : datetime.date.today(),
                 'str_2_date': lambda str : dateutil.parser.parse(str),
-                'datasets_with_license': _datasets_with_license
+                'datasets_with_license': _datasets_with_license,
                 }
 
     # =============================== IConfigurable ===========================
@@ -1359,6 +1378,7 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
         return {'check_doi': _check_doi,
                 'project_type_validator': _project_type_validator,
                 'access_level_validator': _access_level_validator,
+                'wgs84-validator' : _wgs84_validator,
                 'temporal_coverage_nonnegative': _temporal_coverage_nonnegative}
         
     # =============================== IDatasetForm ============================
