@@ -27,7 +27,7 @@ license_table = None
 publication_table = None
 person_table = None
 organization_extra_table = None
-resource_extra_table = None
+#resource_extra_table = None
 
 
 affiliation_association_table = None  # associate Person with Organization
@@ -50,16 +50,16 @@ class Person(model.domain_object.DomainObject):
         return self.last_name + ", " + self.first_name
 
 
-class ResourceExtra(model.domain_object.DomainObject):
-    def __init__(self,
-                 resource_id=None, category_id=None, purpose=None,
-                 assumptions=None, sources=None, dataformat_id=None):
-        self.resource_id = resource_id
-        self.category_id = category_id
-        self.purpose = purpose
-        self.assumptions = assumptions
-        self.sources = sources
-        self.dataformat_id = dataformat_id
+# class ResourceExtra(model.domain_object.DomainObject):
+#     def __init__(self,
+#                  resource_id=None, category_id=None, purpose=None,
+#                  assumptions=None, sources=None, dataformat_id=None):
+#         self.resource_id = resource_id
+#         self.category_id = category_id
+#         self.purpose = purpose
+#         self.assumptions = assumptions
+#         self.sources = sources
+#         self.dataformat_id = dataformat_id
         
     
 class OrganizationExtra(model.domain_object.DomainObject):
@@ -74,7 +74,16 @@ class DataFormat(model.domain_object.DomainObject):
         self.is_open = is_open
         self.description = description
 
+    @property
+    def resources(self):
+        # @@ inefficient implementation.  Is there a way to do this directly
+        # using sqlalchemy?
+        result = filter(lambda r: r.extras.get('dataformat', None) == self.id,
+                      Session.query(model.Resource).all())
 
+        return sorted(result, key=lambda x: x.name)
+
+        
 class License(model.domain_object.DomainObject):
     def __init__(self, name, description, license_url):
         self.name = name
@@ -97,7 +106,7 @@ def setup_model():
     prepare_license_table()
     prepare_publication_table()
     prepare_person_table()
-    prepare_resource_extra_table()
+    #prepare_resource_extra_table()
 
     # association tables
     prepare_affiliation_association_table()
@@ -402,41 +411,41 @@ def prepare_organization_extra_table():
         ensure_table_created(organization_extra_table)
 
 
-def prepare_resource_extra_table():
+# def prepare_resource_extra_table():
 
-    global resource_extra_table
-    if resource_extra_table is None:
-        resource_extra_table = Table(
-            'resource_extra', meta.metadata,
-            Column('id', UnicodeText, primary_key=True, default=make_uuid),
-            Column('resource_id', UnicodeText, ForeignKey('resource.id')),
-            Column('category_id', UnicodeText, ForeignKey('resource_category.code')),
-            Column('purpose', UnicodeText),
-            Column('assumptions', UnicodeText),
-            Column('sources', UnicodeText),
-            Column('dataformat_id', UnicodeText, ForeignKey('data_format.id'))
-        )
+#     global resource_extra_table
+#     if resource_extra_table is None:
+#         resource_extra_table = Table(
+#             'resource_extra', meta.metadata,
+#             Column('id', UnicodeText, primary_key=True, default=make_uuid),
+#             Column('resource_id', UnicodeText, ForeignKey('resource.id')),
+#             Column('category_id', UnicodeText, ForeignKey('resource_category.code')),
+#             Column('purpose', UnicodeText),
+#             Column('assumptions', UnicodeText),
+#             Column('sources', UnicodeText),
+#             Column('dataformat_id', UnicodeText, ForeignKey('data_format.id'))
+#         )
 
-        meta.mapper(ResourceExtra, resource_extra_table,
-                    properties = {'resource':
-                                  orm.relation(model.resource.Resource,
-                                               backref=orm.backref(
-                                                   'extra',
-                                                   uselist=False,
-                                                   cascade='all, delete, delete-orphan')),
-                                  'category':
-                                  orm.relation(ResourceCategory,
-                                               backref=orm.backref(
-                                                   'resources',
-                                                   cascade='save-update, merge')),
-                                  'dataformat':
-                                  orm.relation(DataFormat,
-                                               backref=orm.backref(
-                                                   'resources',
-                                                   cascade='save-update, merge'))})
+#         meta.mapper(ResourceExtra, resource_extra_table,
+#                     properties = {'resource':
+#                                   orm.relation(model.resource.Resource,
+#                                                backref=orm.backref(
+#                                                    'extra',
+#                                                    uselist=False,
+#                                                    cascade='all, delete, delete-orphan')),
+#                                   'category':
+#                                   orm.relation(ResourceCategory,
+#                                                backref=orm.backref(
+#                                                    'resources',
+#                                                    cascade='save-update, merge')),
+#                                   'dataformat':
+#                                   orm.relation(DataFormat,
+#                                                backref=orm.backref(
+#                                                    'resources',
+#                                                    cascade='save-update, merge'))})
 
-        # create table
-        ensure_table_created(resource_extra_table)
+#         # create table
+#         ensure_table_created(resource_extra_table)
                                   
                     
         
@@ -912,7 +921,8 @@ def _data_format_show(context, data_dict):
 
     return {'name': df.name,
             'is_open': df.is_open,
-            'description': df.description}
+            'description': df.description,
+            'resources': df.resources}
 
 
 def _edit_person():
@@ -1034,6 +1044,11 @@ def _licenselist():
     return license_list
 
 
+def _dataformatlist():
+
+    return [{'value': x.id, 'text': x.name, 'selected': False}
+            for x in model.Session.query(DataFormat).all()]
+
 def  _get_license(id):
     try:
         lic = model.Session.query(License).get(id)
@@ -1055,11 +1070,21 @@ def _datasets_with_license(license_id):
     return result
 
 def _category_name(category_id):
-    res = Session.query(ResourceCategory).get(category_id)
-    if res:
-        return res.title
-    else:
-        return u_("Unknown")
+
+    if category_id:
+        res = Session.query(ResourceCategory).get(category_id)
+        if res:
+            return res.title
+    return _("Unknown")
+
+
+def _dataformat_name(dataformat_id):
+
+    if dataformat_id:
+        res = Session.query(DataFormat).get(dataformat_id)
+        if res:
+            return res.name
+    return _("Unknown")
 
 
 def _extra_info(mclass, data):
@@ -1107,16 +1132,26 @@ def _extract_metadata_form_data(form, mclass):
 
 
 def _display_person(id):
-    data = _person_show({'session': Session}, {'id': id})
 
+    data = _person_show({'session': Session}, {'id': id})
     return render('view_person.html', data)
 
 
 def _display_publication(id):
 
     data = _publication_show({'session': Session}, {'id': id})
-
     return render('view_publication.html', data)
+
+def _display_dataformat(id):
+
+    data = _data_format_show({'session':Session}, {'id': id})
+
+    # add datasets to referenced resources
+    data['resources'] = \
+        [(x, Session.query(model.package.Package).get(x.package_id))
+         for x in data['resources']]
+    
+    return render('view_dataformat.html', data)
 
 
 def _display_license(id):
@@ -1136,7 +1171,8 @@ def _list_all_categories():
     categories = Session.query(ResourceCategory).all()
 
     result = {'categories' :
-              sorted([(x.code, x.title, x.description.splitlines()) for x in categories],
+              sorted([(x.code, x.title, x.description.splitlines())
+                      for x in categories],
                      key=lambda tup: tup[0])}
 
     return result
@@ -1218,6 +1254,8 @@ def _show_package_schema(schema):
         'sources' : [tk.get_validator('ignore_missing'),
                      tk.get_validator('validate_sources')],
         'assumptions': [tk.get_validator('ignore_missing')],
+        'dataformat': [tk.get_validator('ignore_missing'),
+                       tk.get_validator('dataformat_exists')]
     })
     
     return schema
@@ -1383,6 +1421,15 @@ def _category_exists_validator(value, context):
     
     return value
 
+def _dataformat_exists_validator(value, context):
+    
+    found = context['session'].query(DataFormat).get(value)
+
+    if not found:
+        raise Invalid("Dataformat does not exist.")
+
+    return value
+
 def _sources_validator(value):
 
     # check if a source list can be made, but do not use it
@@ -1458,15 +1505,15 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
         blueprint.add_url_rule('/metadata/person',
                                view_func=_edit_person,
                                methods=['GET', 'POST'])
-
         blueprint.add_url_rule('/view/person/<id>',
                                u'view_person_info',
                                view_func=_display_person)
-
         blueprint.add_url_rule('/view/publication/<id>',
                                u'view_publication',
                                view_func=_display_publication)
-        
+        blueprint.add_url_rule('/view/dataformat/<id>/',
+                               u'view_dataformat',
+                               view_func=_display_dataformat)
         blueprint.add_url_rule('/view/license/<id>',
                                u'view_license',
                                view_func=_display_license)
@@ -1524,11 +1571,13 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
                 'access_levels': lambda : [{'text': x, 'value': x}
                                            for x in self.access_levels],
                 'licenselist': lambda : _licenselist(),
+                'dataformatlist': _dataformatlist,
                 'get_license': _get_license,
                 'date_today': lambda : datetime.date.today(),
                 'str_2_date': lambda str : dateutil.parser.parse(str),
                 'datasets_with_license': _datasets_with_license,
                 'category_name': _category_name,
+                'dataformat_name': _dataformat_name,
                 'resource_categories': lambda : \
                     [{'value': x[0], 'text': x[0] + ' - ' + x[1]}
                      for x in _list_all_categories()['categories']],
@@ -1569,6 +1618,7 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
                 'wgs84-validator' : _wgs84_validator,
                 'category_exists' : _category_exists_validator,
                 'validate_sources': _sources_validator,
+                'dataformat_exists': _dataformat_exists_validator,
                 'temporal_coverage_nonnegative': _temporal_coverage_nonnegative}
         
     # =============================== IDatasetForm ============================

@@ -84,7 +84,7 @@
 
               
               <tr>
-                <th scope="row">{{ _('Format') }}</th>
+                <th scope="row">{{ _('Download format') }}</th>
                 <td>{{ res.mimetype_inner or res.mimetype or res.format or _('unknown') }}</td>
               </tr>
 
@@ -103,6 +103,17 @@
                 </td> 
               </tr>
 
+              {% if res.dataformat %}
+                <tr>
+                  <th scope="row">Data format</th>
+                  <td>
+                    <a href="{{ h.url_for('cdsmetadata.view_dataformat', id=res.dataformat)}}">
+                      {{ h.dataformat_name(res.dataformat) }}
+                    </a>
+                  </td>
+                </tr>
+              {% endif %}
+              
               {% if res.sources %}
                 {% set sourcelist = h.sourcelist( res.sources ) %}
                 <tr>

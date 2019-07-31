@@ -33,7 +33,17 @@
                   '<source 1 name> , <source 1 URI>\n<source 2 name> , <source 2 URI>',
                   error=errors.sources, classes='control-large') }}           
   
+  {# ============================= Input data format ============================= #}
+
+  {% set formats = h.dataformatlist() %}
   
+  <div class="col-md-6">  
+    {{ form.select('dataformat', id='field-dataformat', label=_('Data format'),  
+                   options=formats, selected=data.dataformat or formats[0],  
+                   error=errors.dataformat, classes='control-large') }}  
+  </div>  
+
+  <div style="clear: both;"></div>
   {# ============================== Input category ============================== #}
   <i class="fa fa-info-circle"></i>
   <i>Choose as specific as possible.  For an overview of the classifcation,

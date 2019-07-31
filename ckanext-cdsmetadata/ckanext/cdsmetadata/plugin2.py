@@ -1,10 +1,10 @@
 import ckan.plugins as plugins
-from plugin import ResourceExtra
-from ckan import model
-from ckan.model import meta, Session
-from resource_category import ResourceCategory
+# from plugin import ResourceExtra
+# from ckan import model
+# from ckan.model import meta, Session
+# from resource_category import ResourceCategory
 
-import pdb
+# import pdb
 
 def _resource_modif(context, resource):
     pass
