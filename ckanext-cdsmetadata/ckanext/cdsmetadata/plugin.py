@@ -14,6 +14,7 @@ from ckan.views import api
 from ckan.lib.navl.dictization_functions import Invalid, Missing
 from ckan.lib.base import abort, render
 from resource_category import ResourceCategory
+from ckan.lib import helpers as h
 
 import copy, datetime, dateutil
 import pdb
@@ -1159,6 +1160,67 @@ def _display_license(id):
     data = _license_show({'session': Session}, {'id': id})
     return render('view_license.html', data)
 
+def _display_dataformat_list():
+
+    itemlist = [(x.id,
+                 x.name,
+                 h.url_for('cdsmetadata.view_dataformat', id=x.id))
+                for x in Session.query(DataFormat).all()]
+    
+    data = {'items': sorted(itemlist, key=lambda tup: tup[1]),
+            'title': 'All currently registered dataformats',
+            'sidebar_header': "Dataformat list",
+            'sidebar_text': "A list of all dataformats \
+                             currently registered in the portal."}
+
+    return render('view_metadata_list.html', data)
+
+
+def _display_publication_list():
+
+    itemlist = [(x.id,
+                x.name,
+                h.url_for('cdsmetadata.view_publication', id=x.id))
+                for x in Session.query(Publication).all()]
+    data = {'items': sorted(itemlist, key=lambda tup: tup[1]),
+            'title': 'All currently registered publications',
+            'sidebar_header': "Publication list",
+            'sidebar_text': "A list of all publications \
+                             currently registered in the portal."}
+
+    return render('view_metadata_list.html', data)
+    
+    
+def _display_license_list():
+    
+    itemlist = [(x.id,
+                x.name,
+                h.url_for('cdsmetadata.view_license', id=x.id))
+                for x in Session.query(License).all()]
+    data = {'items': sorted(itemlist, key=lambda tup: tup[1]),
+            'title': 'All currently registered licenses',
+            'sidebar_header': "License list",
+            'sidebar_text': "A list of all licenses \
+                             currently registered in the portal."}
+
+    return render('view_metadata_list.html', data)
+
+
+def _display_person_list():
+    
+    itemlist = [(x.id,
+                x.name,
+                h.url_for('cdsmetadata.view_person_info', id=x.id))
+                for x in Session.query(Person).all()]
+    data = {'items': sorted(itemlist, key=lambda tup: tup[1]),
+            'title': 'All currently registered persons',
+            'sidebar_header': "Person list",
+            'sidebar_text': "A list of all persons registered \
+                             as having roles related to datasets \
+                             or organizations referenced in the portal."}
+
+    return render('view_metadata_list.html', data)
+
 
 def _display_resource_categories():
 
@@ -1521,6 +1583,20 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
                                u'resource_categories',
                                view_func=_display_resource_categories)
 
+        # ------ list persons,  publications, dataformats and licenses -------
+        blueprint.add_url_rule('/metadata/publication_list',
+                               u'publication_list',
+                               view_func=_display_publication_list)
+        blueprint.add_url_rule('/metadata/dataformat_list',
+                               u'dataformat_list',
+                               view_func=_display_dataformat_list)
+        blueprint.add_url_rule('/metadata/license_list',
+                               u'license_list',
+                               view_func=_display_license_list)
+        blueprint.add_url_rule('/metadata/person_list',
+                               u'person_list',
+                               view_func=_display_person_list)
+        
         return blueprint
 
     # ================================= IActions ==============================

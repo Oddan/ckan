@@ -4,7 +4,8 @@
 {% set doi = g.cur_item['doi'] or "" %}
 
 {% block dataformat_subheading %}
-  <h2>Edit Publications</h2> 
+<h2>Edit Publications</h2>
+<h5><a href="{{h.url_for('cdsmetadata.publication_list')}}">Click here for full (noneditable) list</a></h5>
 {% endblock %} 
 
 {% block metadata_form_fields %}

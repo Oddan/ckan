@@ -4,7 +4,8 @@
 {% set license_url = g.cur_item['license_url'] or "" %}
 
 {% block dataformat_subheading %}
-  <h2>Edit Licenses</h2> 
+  <h2>Edit Licenses</h2>
+  <h5><a href="{{h.url_for('cdsmetadata.license_list')}}">Click here for full (noneditable) list</a></h5>
 {% endblock %} 
 
 {% block metadata_form_fields %}

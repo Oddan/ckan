@@ -4,7 +4,8 @@
 {% set isopen = g.cur_item['is_open'] or False %}
 
 {% block dataformat_subheading %}
-  <h2>Edit Dataformats</h2> 
+  <h2>Edit Dataformats</h2>
+  <h5><a href="{{h.url_for('cdsmetadata.dataformat_list')}}">Click here for full (noneditable) list</a></h5>
 {% endblock %} 
 
 
