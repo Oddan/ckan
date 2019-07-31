@@ -13,7 +13,7 @@ from six import text_type
 from ckan.views import api
 from ckan.lib.navl.dictization_functions import Invalid, Missing
 from ckan.lib.base import abort, render
-from resource_category import ResourceCategory
+from resource_category import ResourceCategory, ResourceCategoryMetadataItem
 from ckan.lib import helpers as h
 
 import copy, datetime, dateutil
@@ -926,6 +926,26 @@ def _data_format_show(context, data_dict):
             'resources': df.resources}
 
 
+def _category_metadata_show(context, data_dict):
+    # @@ unimplemented
+    return {}
+
+
+def _category_metadata_create(context, data_dict):
+    # @@ unimplemented
+    pass
+
+
+def _category_metadata_update(context, data_dict):
+    # @@ unimplemented
+    pass
+
+
+def _category_metadata_delete(context, data_dict):
+    # @@ unimplemented
+    pass
+
+
 def _edit_person():
     return _edit_metadata(Person, "edit_person")
 
@@ -942,25 +962,33 @@ def _edit_publication():
     return _edit_metadata(Publication, "edit_publication")
 
 
+def _edit_category_metadata():
+    return _edit_metadata(ResourceCategoryMetadataItem,
+                          "edit_category_metadata")
+
+
 def _update_fun(mclass):
     return {Person: 'person_update',
             DataFormat: 'dataformat_update',
             License: 'license_update',
-            Publication: 'publication_update'}[mclass]
+            Publication: 'publication_update',
+            ResourceCategoryMetadataItem: 'category_metadata_update'}[mclass]
 
 
 def _create_fun(mclass):
     return {Person: 'person_create',
             DataFormat: 'dataformat_create',
             License: 'license_create',
-            Publication: 'publication_create'}[mclass]
+            Publication: 'publication_create',
+            ResourceCategoryMetadataItem: 'category_metadata_create'}[mclass]
 
 
 def _delete_fun(mclass):
     return {Person: 'person_delete',
             DataFormat: 'dataformat_delete',
             License: 'license_delete',
-            Publication: 'publication_delete'}[mclass]
+            Publication: 'publication_delete',
+            ResourceCategoryMetadataItem: 'category_metadata_delete'}[mclass]
 
 
 def _personlist(selected_ids):
@@ -1102,14 +1130,16 @@ def _extra_info(mclass, data):
     else:
         return {DataFormat: None,
                 License: None,
-                Publication: None}[mclass]
+                Publication: None,
+                ResourceCategoryMetadataItem: None}[mclass]
 
 
 def _show_fun(mclass):
     return {Person: 'person_show',
             DataFormat: 'dataformat_show',
             License: 'license_show',
-            Publication: 'publication_show'}[mclass]
+            Publication: 'publication_show',
+            ResourceCategoryMetadataItem: 'category_metadata_show'}[mclass]
 
 
 def _extract_metadata_form_data(form, mclass):
@@ -1143,15 +1173,16 @@ def _display_publication(id):
     data = _publication_show({'session': Session}, {'id': id})
     return render('view_publication.html', data)
 
+
 def _display_dataformat(id):
 
-    data = _data_format_show({'session':Session}, {'id': id})
+    data = _data_format_show({'session': Session}, {'id': id})
 
     # add datasets to referenced resources
     data['resources'] = \
         [(x, Session.query(model.package.Package).get(x.package_id))
          for x in data['resources']]
-    
+
     return render('view_dataformat.html', data)
 
 
@@ -1160,13 +1191,14 @@ def _display_license(id):
     data = _license_show({'session': Session}, {'id': id})
     return render('view_license.html', data)
 
+
 def _display_dataformat_list():
 
     itemlist = [(x.id,
                  x.name,
                  h.url_for('cdsmetadata.view_dataformat', id=x.id))
                 for x in Session.query(DataFormat).all()]
-    
+
     data = {'items': sorted(itemlist, key=lambda tup: tup[1]),
             'title': 'All currently registered dataformats',
             'sidebar_header': "Dataformat list",
@@ -1207,7 +1239,7 @@ def _display_license_list():
 
 
 def _display_person_list():
-    
+
     itemlist = [(x.id,
                 x.name,
                 h.url_for('cdsmetadata.view_person_info', id=x.id))
@@ -1232,7 +1264,7 @@ def _list_all_categories():
 
     categories = Session.query(ResourceCategory).all()
 
-    result = {'categories' :
+    result = {'categories':
               sorted([(x.code, x.title, x.description.splitlines())
                       for x in categories],
                      key=lambda tup: tup[0])}
@@ -1241,6 +1273,7 @@ def _list_all_categories():
 
 
 def _edit_metadata(mclass, template_name):
+
     check_edit_metadata()  # check authorization
 
     context = {'model': model, 'session': model.Session,
@@ -1256,9 +1289,9 @@ def _edit_metadata(mclass, template_name):
                 tk.get_action(_create_fun(mclass))(context, data_dict)
         elif 'delete' in request.params:
             # due to a quirk in the JavaScript handing of "confirm-action", the
-            # returned form will be empty.  The dataset id will however still be
-            # available from the url.  We therefore use request.params rather
-            # than request.form here.
+            # returned form will be empty.  The dataset id will however still
+            # be available from the url.  We therefore use request.params
+            # rather than request.form here.
             id = request.params['id']
             tk.get_action(_delete_fun(mclass))(context, {'id': id})
             return tk.redirect_to(request.base_url)
@@ -1275,14 +1308,15 @@ def _edit_metadata(mclass, template_name):
     g.extra = _extra_info(mclass, g.cur_item)  # class-specific info
 
     g.items = \
-        sorted([(x.id, x.name) for x in context['session'].query(mclass).all()],
+        sorted([(x.id, x.name)
+                for x in context['session'].query(mclass).all()],
                key=lambda tup: tup[1].lower())
 
     return render(template_name + '.html')
 
 
 def _show_package_schema(schema):
-    
+
     schema.update({
         'contact_person': [tk.get_validator('ignore_missing'),
                            tk.get_converter('convert_to_list_if_string')],
@@ -1355,7 +1389,6 @@ def _modif_package_schema(schema):
 def _package_after_update(context, pkg_dict):
 
     pkg = meta.Session.query(model.package.Package).get(pkg_dict['id'])
-    # pkg = context['package'] @@ (only works for package_update, not package_create)
 
     # contact person
     pkg.contact_person = \
@@ -1368,7 +1401,7 @@ def _package_after_update(context, pkg_dict):
                      pkg_dict.get('person_contributor', []))
 
     # contributor organization
-    
+
     orgs = _list_orgs(context['session'],
                       pkg_dict.get('org_contributor', []))
 
@@ -1477,7 +1510,7 @@ def _category_exists_validator(value, context):
     if type(value) == Missing:
         # @@ The value shouldn't really be missing, this is a stopgap
         # hack to allow development on an outdated database.
-        return None
+        return u'1.0.0'
     elif context['session'].query(ResourceCategory).get(value) is None:
         raise Invalid("Chosen resource category does not exist.")
     
@@ -1541,6 +1574,8 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
                     action='edit_publication', controller='cdsmetadata')
         map.connect('edit_person', '/metadata/person',
                     action='edit_person', controller='cdsmetadata')
+        map.connect('edit_category_metadata', '/metadata/category_metadata',
+                    action='edit_category_metadata', controller='cdsmetadata')
         return map
 
     def after_map(self, map):
@@ -1555,6 +1590,7 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
     def get_blueprint(self):
         blueprint = Blueprint(self.name, self.__module__)
         blueprint.template_folder = u'templates'
+        # -------------------------- edit metadata functions ------------------
         blueprint.add_url_rule('/metadata/dataformat',
                                view_func=_edit_dataformat,
                                methods=['GET', 'POST'])
@@ -1567,6 +1603,11 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
         blueprint.add_url_rule('/metadata/person',
                                view_func=_edit_person,
                                methods=['GET', 'POST'])
+        blueprint.add_url_rule('/metadata/category_metadata',
+                               view_func=_edit_category_metadata,
+                               methods=['GET', 'POST'])
+
+        # ---------------------- view individual metadata items ---------------
         blueprint.add_url_rule('/view/person/<id>',
                                u'view_person_info',
                                view_func=_display_person)
@@ -1579,11 +1620,11 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
         blueprint.add_url_rule('/view/license/<id>',
                                u'view_license',
                                view_func=_display_license)
+
+        # ----- list categories/persons/publications/dataformats/ licenses ----
         blueprint.add_url_rule('/view/resource_categories',
                                u'resource_categories',
                                view_func=_display_resource_categories)
-
-        # ------ list persons,  publications, dataformats and licenses -------
         blueprint.add_url_rule('/metadata/publication_list',
                                u'publication_list',
                                view_func=_display_publication_list)
@@ -1631,6 +1672,12 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
         result['person_update'] = _person_update
         result['person_show'] = _person_show
         result['person_delete'] = _person_delete
+
+        result['category_metadata_create'] = _category_metadata_create
+        result['category_metadata_update'] = _category_metadata_update
+        result['category_metadata_show'] = _category_metadata_show
+        result['category_metadata_delete'] = _category_metadata_delete
+        
 
         return result
 

@@ -18,7 +18,8 @@
   {{ h.build_nav_icon('edit_dataformat', _('DataFormat')) }}  
   {{ h.build_nav_icon('edit_license', _('License')) }}   
   {{ h.build_nav_icon('edit_publication', _('Publication')) }}
-  {{ h.build_nav_icon('edit_person', _('Person')) }} 
+  {{ h.build_nav_icon('edit_person', _('Person')) }}
+  {{ h.build_nav_icon('edit_category_metadata', _('Category metadata')) }}
 {% endblock %} 
 
 {% block primary_content_inner %}
@@ -32,6 +33,7 @@
     <div class="list-group pre-scrollable col-sm-4">
       
       <p> <em>Select from list, or &lt;<em>New</em>&gt to insert new item.</em></p>
+      
       <li class="list-group-item">
         <a href={{ h.url_for(template_name, new=true) }}>&lt;<em>New</em>&gt;</a>
       </li>

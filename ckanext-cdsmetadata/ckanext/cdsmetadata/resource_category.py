@@ -1,5 +1,6 @@
 from ckan.model.domain_object import DomainObject
 from ckan.model import meta, Session
+from ckan.model.types import make_uuid
 from sqlalchemy import Table, Column, ForeignKey, orm
 from sqlalchemy.types import UnicodeText, Unicode
 
@@ -12,7 +13,25 @@ class ResourceCategory(DomainObject):
         self.title = title
         self.description = description
 
+    # properties to make object compatible with other metadata objects
+    @property
+    def id(self):
+        return self.code
+
+    @property
+    def name(self):
+        return self.code + " - " + self.title
+
+
+class ResourceCategoryMetadataItem(DomainObject):
+    def __init__(self, name, category_id, datatype, doc):
+        self.name = name
+        self.category_id = category_id
+        self.datatype = datatype
+        self.doc = doc
+
 # =========================== Map table with class ===========================
+
 
 resource_category_table = Table(
     'resource_category', meta.metadata,
@@ -21,10 +40,34 @@ resource_category_table = Table(
     Column('description', UnicodeText)
 )
 
+
 meta.mapper(ResourceCategory, resource_category_table)
-            
+
+ITEM_NAME_MAX = 100
+TYPE_NAME_MAX = 100
+
+resource_category_metadata_item_table = Table(
+    'resource_category_metadata_item', meta.metadata,
+    Column('id', UnicodeText, primary_key=True, default=make_uuid),
+    Column('name', Unicode(ITEM_NAME_MAX)),
+    Column('category_id', UnicodeText, ForeignKey('resource_category.code')),
+    Column('datatype', Unicode(TYPE_NAME_MAX)),
+    Column('description', UnicodeText)
+)
+
+meta.mapper(ResourceCategoryMetadataItem,
+            resource_category_metadata_item_table,
+            properties={'category':
+                        orm.relationship(
+                            ResourceCategory,
+                            backref=orm.backref(
+                                'metadata_item',
+                                cascade='all, delete, delete-orphan'))})
 
 # ========================= Create and populate table =========================
+
+if not resource_category_metadata_item_table.exists():
+    resource_category_metadata_item_table.create()
 
 if not resource_category_table.exists():
 
