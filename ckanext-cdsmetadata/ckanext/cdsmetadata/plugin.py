@@ -11,7 +11,7 @@ import ckan.logic as logic
 import ckan.logic.schema as _schema
 from six import text_type
 from ckan.views import api
-from ckan.lib.navl.dictization_functions import Invalid
+from ckan.lib.navl.dictization_functions import Invalid, Missing
 from ckan.lib.base import abort, render
 from resource_category import ResourceCategory
 
@@ -572,7 +572,6 @@ def _organization_show_wrapper():
 #     action = tk.get_action('resource_show')
 
 #     def _wrapper(context, data_dict):
-#         #pdb.set_trace()
 #         result_dict = action(context, data_dict)
 
 #         # recovering extra information
@@ -1055,6 +1054,13 @@ def _datasets_with_license(license_id):
 
     return result
 
+def _category_name(category_id):
+    res = Session.query(ResourceCategory).get(category_id)
+    if res:
+        return res.title
+    else:
+        return u_("Unknown")
+
 
 def _extra_info(mclass, data):
     if mclass == Person:
@@ -1205,8 +1211,15 @@ def _show_package_schema(schema):
                         tk.get_validator('ignore_missing') ],
         'location' : [tk.get_converter('convert_from_extras'),
                       tk.get_validator('wgs84-validator')]
-                                   
     })
+    schema['resources'].update({
+        'category': [tk.get_validator('category_exists')],
+        'purpose' : [tk.get_validator('ignore_missing')],
+        'sources' : [tk.get_validator('ignore_missing'),
+                     tk.get_validator('validate_sources')],
+        'assumptions': [tk.get_validator('ignore_missing')],
+    })
+    
     return schema
 
 
@@ -1359,7 +1372,42 @@ def _wgs84_validator(value, context):
         raise Invalid(_("Latitude should be in [-90, 90]"))
 
     return [lon, lat]
+
+def _category_exists_validator(value, context):
+    if type(value) == Missing:
+        # @@ The value shouldn't really be missing, this is a stopgap
+        # hack to allow development on an outdated database.
+        return None
+    elif context['session'].query(ResourceCategory).get(value) is None:
+        raise Invalid("Chosen resource category does not exist.")
+    
+    return value
+
+def _sources_validator(value):
+
+    # check if a source list can be made, but do not use it
+    dummy = _make_sourcelist(value)
+
+    return value
+
+
+def _make_sourcelist(value):
+
+    lines = value.splitlines()
+
+    result = []
+    for num, l in enumerate(lines):
+        try:
+            name, uri = [x.strip() for x in l.split(',')]
+        except:
+            raise Invalid('Input format error on line {0}'.format(num+1))
+        result.append([name, uri])
+
+    return result
         
+
+
+
 
 class CdsmetadataPlugin(plugins.SingletonPlugin,
                         tk.DefaultDatasetForm):
@@ -1480,9 +1528,11 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
                 'date_today': lambda : datetime.date.today(),
                 'str_2_date': lambda str : dateutil.parser.parse(str),
                 'datasets_with_license': _datasets_with_license,
+                'category_name': _category_name,
                 'resource_categories': lambda : \
                     [{'value': x[0], 'text': x[0] + ' - ' + x[1]}
-                     for x in _list_all_categories()['categories']]
+                     for x in _list_all_categories()['categories']],
+                'sourcelist': _make_sourcelist
                 }
 
     # =============================== IConfigurable ===========================
@@ -1517,6 +1567,8 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
                 'project_type_validator': _project_type_validator,
                 'access_level_validator': _access_level_validator,
                 'wgs84-validator' : _wgs84_validator,
+                'category_exists' : _category_exists_validator,
+                'validate_sources': _sources_validator,
                 'temporal_coverage_nonnegative': _temporal_coverage_nonnegative}
         
     # =============================== IDatasetForm ============================
