@@ -2,6 +2,7 @@
 
 {% set resource_classes = h.resource_categories() %}
 {% set title = g.cur_item['title'] or "" %}
+{% set errors = g.errors or None %}
 {% set description = g.cur_item['description'] or None %}
 {% set datatype = g.cur_item['datatype'] or None %}
 {% set enum_items = g.cur_item['enum_items'] or None %}
@@ -14,10 +15,11 @@
   {% set category_id = category['code'] %}
 {% endif %}
 
-{% block styles %}
-  {{ super() }}
-  {% resource "cdsmetadata/category_metadata.js" %}
-{% endblock %}
+{# {% block styles %} #}
+{#   {{ super() }} #}
+{#   {% resource "cdsmetadata/category_metadata.js" %} #}
+{# {% endblock %} #}
+
 
 
 {% block dataformat_subheading %}
@@ -27,21 +29,41 @@
 
 {% block metadata_form_fields %}
 
+  <script>
+    function set_enum_input_visibility() {
+      var dtype = document.getElementById('field-datatype').value;
+      var target = document.getElementById('enum-input');
+      if (dtype == 'ENUM') {
+        target.style.display='block';
+      } else {
+        target.style.display='none';
+      }
+    }
+    function activate_relevant_table() {
+      var ca = document.getElementsByClassName('cat_atts'); 
+        for (var i = 0; i < ca.length; i++) {
+          ca[i].style.display='none';
+        }
+      document.getElementById(document.getElementById('field-category').value).style.display='block';
+    }
+    function init() {
+      set_enum_input_visibility();
+      activate_relevant_table();
+    }
+    window.onload = init;
+  </script>
+
   <div id='category_select_form'
-       onclick="var ca = document.getElementsByClassName('cat_atts'); 
-                for (var i = 0; i < ca.length; i++) {
-                  ca[i].style.display='none';
-                }
-                document.getElementById(document.getElementById('field-category').value).style.display='block';">
+       onclick="activate_relevant_table()">
     
   {{ form.select('category', id='field-category', label=_('Resource category'),
                  options=resource_classes, 
-                 selected=category_id or resource_classes[0].value,
+                 selected=category_id or category or resource_classes[0].value,
                  error=errors.category,
                  classes='control-large')
   }}
   </div>
-
+  
   {% for c in current_mapping %}
     <div id={{c}} class='cat_atts' style='display: none;'>
       {% if current_mapping[c] %}
@@ -73,18 +95,6 @@
                 value=title, error=errors.title, classes=['control-full'])
   }} 
 
-  <script>
-    function set_enum_input_visibility() {
-      var dtype = document.getElementById('field-datatype').value;
-      var target = document.getElementById('enum-input');
-      if (dtype == 'ENUM') {
-        target.style.display='block';
-      } else {
-        target.style.display='none';
-      }
-    }
-    window.onload = set_enum_input_visibility;
-  </script>
   
   <div id='datatype_select_form' onclick="set_enum_input_visibility()">
 

@@ -78,7 +78,7 @@ meta.mapper(ResourceCategoryMetadataItem,
                                 cascade='all, delete, delete-orphan'))})
 
 # ========================= Create and populate table =========================
-pdb.set_trace()
+
 if not resource_category_metadata_item_table.exists():
     resource_category_metadata_item_table.create()
 

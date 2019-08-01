@@ -1,7 +1,8 @@
 {% extends "page.html" %}
 {% import 'macros/form.html' as form %}
 {% import 'formext.html' as formext %}
-{% set errors = errors or {} %}
+{% set errors = g.errors or {} %}
+{% set error_summary = g.error_summary or {} %}
 {% set template_name = g.template_name %}
 
 {% block subtitle %}{{ _('Metadata editor') }}{% endblock %}
@@ -25,7 +26,9 @@
 {% block primary_content_inner %}
   {{ super()}}
 
-  {% block errors %}{{ form.errors(error_summary) }}{% endblock %}
+  {% block errors %}
+    {{ form.errors(error_summary) }}
+  {% endblock %}
 
   {% block dataformat_subheading %} {% endblock %}
 

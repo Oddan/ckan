@@ -9,12 +9,15 @@ from sqlalchemy import types, Table, Column, ForeignKey, orm, or_
 from sqlalchemy.types import UnicodeText, Unicode, Boolean
 import ckan.logic as logic
 import ckan.logic.schema as _schema
+from ckan.logic import ValidationError
 from six import text_type
 from ckan.views import api
 from ckan.lib.navl.dictization_functions import Invalid, Missing
 from ckan.lib.base import abort, render
 from resource_category import ResourceCategory, ResourceCategoryMetadataItem, category_metadata_datatypes
 from ckan.lib import helpers as h
+import re
+
 
 import copy, datetime, dateutil
 import pdb
@@ -1176,6 +1179,57 @@ def _show_fun(mclass):
             ResourceCategoryMetadataItem: 'category_metadata_show'}[mclass]
 
 
+def _resource_category_metadata_validator(data_dict):
+
+    title_errors = []
+    enum_errors = []
+
+    # check that attribute title is nonzero
+    if data_dict['title'] == '':
+        title_errors.append("Empty attribute title not allowed.")
+
+    # check that attribute title is unique
+    matches = Session.query(ResourceCategoryMetadataItem).\
+        filter_by(category_id=data_dict['category']).\
+        filter_by(title=data_dict['title']).\
+        filter(ResourceCategoryMetadataItem.id != data_dict.get('id', None))
+
+    if matches.count() > 0:
+        title_errors.append("An attribute with the same name \
+                             already exists for this category")
+
+    # check that title does not contain unallowed characters
+    if re.search('[^-_a-zA-Z0-9]', data_dict['title']):
+        title_errors.append("Title name should only contain alphanumeric \
+                            characters, underscore (_) or dash (-)")
+
+    # check that enumerations contains at least two options (if relevant)
+    if data_dict['datatype'] == 'ENUM':
+        items = data_dict.get('enum_items', None)
+        if items is None or len(items.split(',')) < 2:
+            enum_errors.append("Enumerations need at least two items.")
+
+    # assemble error structures and raise validation error if necessary
+    errors = {}
+    error_summary = {}
+    if title_errors:
+        errors['title'] = title_errors
+        error_summary['title'] = "Error in attribute title."
+    if enum_errors:
+        errors['enum'] = enum_errors
+        error_summary['enum'] = "error in enumeration items."
+
+    if errors:
+        raise ValidationError(errors, error_summary=error_summary)
+
+    return data_dict
+
+
+def _validation_function(mclass):
+    if mclass == ResourceCategoryMetadataItem:
+        return _resource_category_metadata_validator
+    return None
+
 def _extract_metadata_form_data(form, mclass):
     data_dict = {}
     for key in form.keys():
@@ -1197,7 +1251,7 @@ def _extract_metadata_form_data(form, mclass):
         # enumeration
         if data_dict['datatype'] != "ENUM":
             data_dict['enum_items'] = None
-        
+
     return data_dict
 
 
@@ -1318,14 +1372,37 @@ def _edit_metadata(mclass, template_name):
     context = {'model': model, 'session': model.Session,
                'user': g.user, 'auth_user_obj': g.userobj}
 
+    g.pkg_dict = request.params
+    id = g.pkg_dict.get('id', None)
+    g.cur_item = None
+    g.template_name = template_name
+
     if request.method == 'POST':
 
         if 'save' in request.form:
+
             data_dict = _extract_metadata_form_data(request.form, mclass)
-            if data_dict['id']:
-                tk.get_action(_update_fun(mclass))(context, data_dict)
-            else:
-                tk.get_action(_create_fun(mclass))(context, data_dict)
+
+            # run validation if validation function is present
+            data_ok = True
+            if _validation_function(mclass) is not None:
+                try:
+                    data_dict = _validation_function(mclass)(data_dict)
+                except ValidationError as e:
+                    id = request.form.get('save', None)
+                    g.pkg_dict = {'id': id} if id else {'new': True}
+                    g.cur_item = data_dict
+                    g.errors = e.error_dict
+                    g.error_summary = e.error_summary
+                    data_ok = False
+
+            # update database
+            if data_ok:
+                if data_dict['id']:
+                    tk.get_action(_update_fun(mclass))(context, data_dict)
+                else:
+                    tk.get_action(_create_fun(mclass))(context, data_dict)
+
         elif 'delete' in request.params:
             # due to a quirk in the JavaScript handing of "confirm-action", the
             # returned form will be empty.  The dataset id will however still
@@ -1335,12 +1412,7 @@ def _edit_metadata(mclass, template_name):
             tk.get_action(_delete_fun(mclass))(context, {'id': id})
             return tk.redirect_to(request.base_url)
 
-    g.pkg_dict = request.params
-    g.cur_item = None
-    g.template_name = template_name
-
-    id = request.params.get('id', None)
-    if id:
+    if id and (g.cur_item is None):
         show_fun = tk.get_action(_show_fun(mclass))
         g.cur_item = show_fun(context, {'id': id})
 
