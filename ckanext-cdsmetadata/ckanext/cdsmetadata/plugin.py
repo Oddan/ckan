@@ -13,7 +13,7 @@ from six import text_type
 from ckan.views import api
 from ckan.lib.navl.dictization_functions import Invalid, Missing
 from ckan.lib.base import abort, render
-from resource_category import ResourceCategory, ResourceCategoryMetadataItem
+from resource_category import ResourceCategory, ResourceCategoryMetadataItem, category_metadata_datatypes
 from ckan.lib import helpers as h
 
 import copy, datetime, dateutil
@@ -28,7 +28,6 @@ license_table = None
 publication_table = None
 person_table = None
 organization_extra_table = None
-#resource_extra_table = None
 
 
 affiliation_association_table = None  # associate Person with Organization
@@ -38,10 +37,6 @@ person_contributor_dataset_association_table = None # contributor (Person) with 
 org_contributor_dataset_association_table = None # contributor (Organization) with dataset
 dataset_publication_association_table = None # Associate publications with datasets
 dataset_dataset_association_table = None # Associate related datasets
-
-category_metadata_datatypes = [
-    'STRING', 'INTEGER', 'INTEGERLIST', 'FLOAT', 'FLOATLIST', 'ENUM'
-]
 
 
 class Person(model.domain_object.DomainObject):
@@ -55,18 +50,6 @@ class Person(model.domain_object.DomainObject):
         return self.last_name + ", " + self.first_name
 
 
-# class ResourceExtra(model.domain_object.DomainObject):
-#     def __init__(self,
-#                  resource_id=None, category_id=None, purpose=None,
-#                  assumptions=None, sources=None, dataformat_id=None):
-#         self.resource_id = resource_id
-#         self.category_id = category_id
-#         self.purpose = purpose
-#         self.assumptions = assumptions
-#         self.sources = sources
-#         self.dataformat_id = dataformat_id
-        
-    
 class OrganizationExtra(model.domain_object.DomainObject):
     def __init__(self, homepageURL, org_id):
         self.homepageURL = homepageURL
@@ -88,7 +71,7 @@ class DataFormat(model.domain_object.DomainObject):
 
         return sorted(result, key=lambda x: x.name)
 
-        
+
 class License(model.domain_object.DomainObject):
     def __init__(self, name, description, license_url):
         self.name = name
@@ -150,11 +133,8 @@ def prepare_dataset_dataset_association_table():
         def remove_links(id):
             entries = \
                 meta.Session.query(DatasetAssociator).filter(
-                    (DatasetAssociator.dset1_id==id) |
-                    (DatasetAssociator.dset2_id==id))
-            
-                # meta.Session.query(DatasetAssociator).filter_by(dset1_id=id) + \
-                # meta.Session.query(DatasetAssociator).filter_by(dset2_id=id)
+                    (DatasetAssociator.dset1_id == id) |
+                    (DatasetAssociator.dset2_id == id))
 
             for e in entries:
                 meta.Session.delete(e)
@@ -163,7 +143,8 @@ def prepare_dataset_dataset_association_table():
 
         def getter(self):
             entries = \
-                meta.Session.query(DatasetAssociator).filter_by(dset1_id=self.id)
+                meta.Session.query(DatasetAssociator).\
+                filter_by(dset1_id=self.id)
 
             result = [meta.Session.query(model.package.Package).get(x.dset2_id)
                       for x in entries]
@@ -940,7 +921,8 @@ def _category_metadata_show(context, data_dict):
     return {'title': cmd.title,
             'category': cmd.category,
             'datatype': cmd.datatype,
-            'description': cmd.description}
+            'description': cmd.description,
+            'enum_items': cmd.enum_items}
 
 
 def _category_metadata_create(context, data_dict):
@@ -949,7 +931,8 @@ def _category_metadata_create(context, data_dict):
     new_item = ResourceCategoryMetadataItem(data_dict['title'],
                                             data_dict['category'],  # @@
                                             data_dict['datatype'],
-                                            data_dict['description'])
+                                            data_dict['description'],
+                                            data_dict['enum_items'])
     new_item.save()
     context['session'].commit()
 
@@ -966,13 +949,14 @@ def _category_metadata_update(context, data_dict):
     item.category_id = data_dict['category']
     item.datatype = data_dict['datatype']
     item.description = data_dict['description']
+    item.enum_items = data_dict['enum_items']
 
     item.save()
 
 
 def _category_metadata_delete(context, data_dict):
     tk.check_access('edit_metadata', context, data_dict)
-    
+
     item = context['session'].query(
         ResourceCategoryMetadataItem).get(data_dict['id'])
     if item is None:
@@ -1203,12 +1187,17 @@ def _extract_metadata_form_data(form, mclass):
     # class-specific extractions
     if mclass == DataFormat:
         data_dict['is_open'] = 'is_open' in form.keys()
-    if mclass == Person:
+    elif mclass == Person:
         data_dict['affiliation'] = form.getlist('affiliation')
         data_dict['contact_org'] = form.getlist('contact_org')
         data_dict['contact_dataset'] = form.getlist('contact_dataset')
         data_dict['contributor_dataset'] = form.getlist('contributor_dataset')
-
+    elif mclass == ResourceCategoryMetadataItem:
+        # only store enumeration items if the datatype is actually an
+        # enumeration
+        if data_dict['datatype'] != "ENUM":
+            data_dict['enum_items'] = None
+        
     return data_dict
 
 

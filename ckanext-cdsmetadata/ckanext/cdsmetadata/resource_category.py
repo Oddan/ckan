@@ -8,6 +8,11 @@ import pdb
 resource_category_table = None
 CODE_LEN = 10
 
+category_metadata_datatypes = [
+    'STRING', 'INTEGER', 'INTEGERLIST', 'FLOAT', 'FLOATLIST', 'ENUM'
+]
+
+
 class ResourceCategory(DomainObject):
     def __init__(self, code, title, description):
         self.code = code
@@ -25,11 +30,13 @@ class ResourceCategory(DomainObject):
 
 
 class ResourceCategoryMetadataItem(DomainObject):
-    def __init__(self, title, category_id, datatype, description):
+    def __init__(self, title, category_id, datatype,
+                 description, enum_items=None):
         self.title = title
         self.category_id = category_id
         self.datatype = datatype
         self.description = description
+        self.enum_items = enum_items  # only relevant if datatype equals ENUM
 
     @property
     def name(self):
@@ -57,7 +64,8 @@ resource_category_metadata_item_table = Table(
     Column('title', Unicode(ITEM_TITLE_MAX)),
     Column('category_id', UnicodeText, ForeignKey('resource_category.code')),
     Column('datatype', Unicode(TYPE_NAME_MAX)),
-    Column('description', UnicodeText)
+    Column('description', UnicodeText),
+    Column('enum_items', UnicodeText)
 )
 
 meta.mapper(ResourceCategoryMetadataItem,
@@ -70,7 +78,7 @@ meta.mapper(ResourceCategoryMetadataItem,
                                 cascade='all, delete, delete-orphan'))})
 
 # ========================= Create and populate table =========================
-
+pdb.set_trace()
 if not resource_category_metadata_item_table.exists():
     resource_category_metadata_item_table.create()
 
