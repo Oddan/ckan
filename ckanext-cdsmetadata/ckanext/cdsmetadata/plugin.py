@@ -1361,8 +1361,19 @@ def _list_all_categories():
               sorted([(x.code, x.title, x.description.splitlines())
                       for x in categories],
                      key=lambda tup: tup[0])}
-
     return result
+
+
+def _list_all_category_metadata():
+
+    data_items = Session.query(ResourceCategoryMetadataItem).all()
+
+    return sorted(
+        [(x.category_id, x.title, x.datatype, x.description,
+          None if x.enum_items is None else map(unicode.strip,
+                                                x.enum_items.split(',')))
+         for x in data_items],
+        key=lambda tup: tup[0])
 
 
 def _edit_metadata(mclass, template_name):
@@ -1788,7 +1799,6 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
         result['category_metadata_update'] = _category_metadata_update
         result['category_metadata_show'] = _category_metadata_show
         result['category_metadata_delete'] = _category_metadata_delete
-        
 
         return result
 
@@ -1800,21 +1810,23 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
                 'orglist': lambda l: _orglist([x[0] for x in l]),
                 'dsetlist': lambda l, o=[]: _dsetlist([x[0] for x in l], o),
                 'publist': lambda l: _publist([x[0] for x in l]),
-                'project_types': lambda : [{'text': x, 'value': x}
-                                           for x in self.project_types],
-                'access_levels': lambda : [{'text': x, 'value': x}
-                                           for x in self.access_levels],
-                'licenselist': lambda : _licenselist(),
+                'project_types': lambda: [{'text': x, 'value': x}
+                                          for x in self.project_types],
+                'access_levels': lambda: [{'text': x, 'value': x}
+                                          for x in self.access_levels],
+                'licenselist': lambda: _licenselist(),
                 'dataformatlist': _dataformatlist,
                 'get_license': _get_license,
-                'date_today': lambda : datetime.date.today(),
-                'str_2_date': lambda str : dateutil.parser.parse(str),
+                'date_today': lambda: datetime.date.today(),
+                'str_2_date': lambda str: dateutil.parser.parse(str),
                 'datasets_with_license': _datasets_with_license,
                 'category_name': _category_name,
                 'dataformat_name': _dataformat_name,
-                'resource_categories': lambda : \
-                    [{'value': x[0], 'text': x[0] + ' - ' + x[1]}
-                     for x in _list_all_categories()['categories']],
+                'resource_categories': lambda: [{'value': x[0],
+                                                 'text': x[0] + ' - ' + x[1]}
+                                                for x in _list_all_categories()[
+                                                        'categories']],
+                'resource_category_items': _list_all_category_metadata,
                 'sourcelist': _make_sourcelist
                 }
 

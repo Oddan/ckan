@@ -2,6 +2,7 @@
 
 {% block metadata_fields %}
   {% set resource_classes = h.resource_categories() %}
+  {% set category_metadata = h.resource_category_items() %}
 
 
   {# ======================= Input purpose and assumptions ======================= #}
@@ -11,7 +12,7 @@
                       value = data.purpose,
                       placeholder = 'Main purpose or intended use',
                       error=errors.purpose,
-                      classes='control-large') }}
+                      classes=['control-large']) }}
     
     <i class="fa fa-info-circle"></i>
     <i>Explain any important assumptions to be aware of when using the data</i>
@@ -19,7 +20,7 @@
                   value = data.assumptions,
                   placeholder = 'List assumptions here',
                   error=errors.assumptions,
-                  classes='control-large') }}
+                  classes=['control-large']) }}
     
   {# =============================== Input sources ============================== #}
   <i class="fa fa-info-circle"></i>
@@ -31,7 +32,7 @@
                   value=data.sources,
                   placeholder=
                   '<source 1 name> , <source 1 URI>\n<source 2 name> , <source 2 URI>',
-                  error=errors.sources, classes='control-large') }}           
+                  error=errors.sources, classes=['control-large']) }}           
   
   {# ============================= Input data format ============================= #}
 
@@ -40,7 +41,7 @@
   <div class="col-md-6">  
     {{ form.select('dataformat', id='field-dataformat', label=_('Data format'),  
                    options=formats, selected=data.dataformat or formats[0],  
-                   error=errors.dataformat, classes='control-large') }}  
+                   error=errors.dataformat, classes=['control-large']) }}  
   </div>  
 
   <div style="clear: both;"></div>
@@ -49,12 +50,56 @@
   <i>Choose as specific as possible.  For an overview of the classifcation,
     click <a href="{{ h.url_for('cdsmetadata.resource_categories') }}" target="_blank">here</a>.
   </i>
-    
+
+  <div onclick="activate_only_selected()">
   {{ form.select('category', id='field-category', label=_('Resource category'),
                  options=resource_classes, 
                  selected=data.category or resource_classes[0].value,
                  error=errors.category,
-                 classes='control-large') }}
-  
+                 classes=['control-large']) }}
+  </div>
+
+  {# ------------------------------ Category items ------------------------------ #}
+
+  <script>
+    function disable_all_category_metadata() {
+      var items = document.getElementsByClassName('category-metadata');
+      for (var i = 0; i < items.length; i++) {
+        items[i].style.display='none';
+        var ctrls = items[i].getElementsByClassName('form-control');
+        for (var j = 0; j < ctrls.length; j++) {
+          ctrls[j].setAttribute('disabled', 'true');
+        }
+      }
+    }
+
+    function activate_category_metadata_code(code) {
+      var items = document.getElementsByClassName(code);
+      for (var i = 0; i < items.length; i++) {
+        items[i].style.display='block';
+        var ctrls = items[i].getElementsByClassName('form-control');
+        for (var j = 0; j < ctrls.length; j++) {
+          ctrls[j].removeAttribute('disabled');
+        }
+      }
+    }
+
+    function selected_code() {
+      return document.getElementById('field-category').value
+    }
     
+    function activate_only_selected() {
+      disable_all_category_metadata();
+      activate_category_metadata_code(selected_code());
+    }
+    
+    window.onload = activate_only_selected
+  </script>
+  
+  
+  {% for md in category_metadata %}
+    {{form.input(md[1].lower(), id='field-' + md[1].lower(), label=_(md[1]),
+                 classes=['control-medium', 'category-metadata', md[0]]) }}
+  {% endfor %}
+  
 {% endblock %}

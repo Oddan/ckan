@@ -130,9 +130,9 @@
                 {% endif %}
 
               {% for key, value in h.format_resource_items(res.items()) %}  
-                {% if key == 'size' %}  
+                {# {% if key == 'size' %}   #}
                   <tr class="toggle-more"><th scope="row">{{ key }}</th><td>{{ value }}</td></tr>  
-                {% endif %}  
+                {# {% endif %}   #}
               {% endfor %}  
             </tbody>
           </table>
