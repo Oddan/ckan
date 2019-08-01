@@ -39,6 +39,10 @@ org_contributor_dataset_association_table = None # contributor (Organization) wi
 dataset_publication_association_table = None # Associate publications with datasets
 dataset_dataset_association_table = None # Associate related datasets
 
+category_metadata_datatypes = [
+    'STRING', 'INTEGER', 'INTEGERLIST', 'FLOAT', 'FLOATLIST', 'ENUM'
+]
+
 
 class Person(model.domain_object.DomainObject):
     def __init__(self, first_name, last_name, email):
@@ -927,24 +931,55 @@ def _data_format_show(context, data_dict):
 
 
 def _category_metadata_show(context, data_dict):
-    # @@ unimplemented
-    return {}
+
+    cmd = context['session'].\
+          query(ResourceCategoryMetadataItem).get(data_dict['id'])
+    if cmd is None:
+        raise tk.ObjectNotFound
+
+    return {'title': cmd.title,
+            'category': cmd.category,
+            'datatype': cmd.datatype,
+            'description': cmd.description}
 
 
 def _category_metadata_create(context, data_dict):
-    # @@ unimplemented
-    pass
+    tk.check_access('edit_metadata', context, data_dict)
+
+    new_item = ResourceCategoryMetadataItem(data_dict['title'],
+                                            data_dict['category'],  # @@
+                                            data_dict['datatype'],
+                                            data_dict['description'])
+    new_item.save()
+    context['session'].commit()
 
 
 def _category_metadata_update(context, data_dict):
-    # @@ unimplemented
-    pass
+
+    tk.check_access('edit_metadata', context, data_dict)
+    item = context['session'].query(
+        ResourceCategoryMetadataItem).get(data_dict['id'])
+    if item is None:
+        raise tk.ObjectNotFound
+
+    item.title = data_dict['title']
+    item.category_id = data_dict['category']
+    item.datatype = data_dict['datatype']
+    item.description = data_dict['description']
+
+    item.save()
 
 
 def _category_metadata_delete(context, data_dict):
-    # @@ unimplemented
-    pass
+    tk.check_access('edit_metadata', context, data_dict)
+    
+    item = context['session'].query(
+        ResourceCategoryMetadataItem).get(data_dict['id'])
+    if item is None:
+        raise tk.ObjectNotFound
 
+    item.delete()
+    context['session'].commit()
 
 def _edit_person():
     return _edit_metadata(Person, "edit_person")
@@ -1116,6 +1151,17 @@ def _dataformat_name(dataformat_id):
     return _("Unknown")
 
 
+
+def _resource_category_metadata_map():
+
+    categories = Session.query(ResourceCategory).all()
+
+    result_map = {}
+    for c in categories:
+        result_map[c.code] = sorted(c.metadata_item, key=lambda x: x.title)
+
+    return result_map
+
 def _extra_info(mclass, data):
     if mclass == Person:
         data = data or {}  # avoid problem with referencing NoneType below
@@ -1127,6 +1173,10 @@ def _extra_info(mclass, data):
                 _dsetlist([x[0] for x in data.get('contact_dataset', [])]),
                 'dsetlist_contributor':
                 _dsetlist([x[0] for x in data.get('contributor_dataset', [])])}
+    elif mclass == ResourceCategoryMetadataItem:
+        return {'available_datatypes':
+                [{'value': x, 'text': x} for x in category_metadata_datatypes],
+                'current_mapping': _resource_category_metadata_map()}
     else:
         return {DataFormat: None,
                 License: None,
