@@ -83,11 +83,12 @@
       {% if md[2] == "ENUM" %}
         {{form.select(md[1].lower(), id='field-' + md[1].lower(), label=_(md[1]),
                       options=md[4],
-                      selected=md[4][0],
+                      selected=data[md[1].lower()] or md[4][0],
                       attrs={'code': md[0], 'class': 'form-control'},
                       classes=['control-medium']) }}
       {% else %} 
         {{form.input(md[1].lower(), id='field-' + md[1].lower(), label=_(md[1]),
+                     placeholder=md[2], value = data[md[1].lower()],
                      attrs={'code': md[0], 'class': 'form-control'},
                      classes=['control-medium']) }}
       {% endif %}
