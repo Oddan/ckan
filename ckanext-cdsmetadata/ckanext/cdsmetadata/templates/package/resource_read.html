@@ -55,7 +55,7 @@
       <section class="module">
         {% block resource_additional_information_inner %}
         <div class="module-content">
-          <h2>{{ _('Additional Information') }}</h2>
+          <h2>{{ _('Additional information') }}</h2>
           <table class="table table-striped table-bordered table-condensed">
             <thead>
               <tr>
@@ -78,7 +78,7 @@
               </tr>
 
               <tr>
-                <th scope="row">{{ _('Category') }} </th>
+                <th scope="row">{{ _('Data category') }} </th>
                 <td> {{res.category}} - {{ h.category_name(res.category) }} </td>
               </tr>
 
@@ -130,12 +130,42 @@
                 {% endif %}
 
               {% for key, value in h.format_resource_items(res.items()) %}  
-                {# {% if key == 'size' %}   #}
+                {% if key == 'size' %}   
                   <tr class="toggle-more"><th scope="row">{{ key }}</th><td>{{ value }}</td></tr>  
-                {# {% endif %}   #}
+                {% endif %}   
               {% endfor %}  
             </tbody>
           </table>
+          {# ======================= Category-specific information ======================= #}
+
+          {% set cat_spec_metaitems = h.category_items_for(res.category, preformat=True) %}
+
+          {% macro sentence_case(text) %}
+            {# Macro for capitalizing first letter, leaving all the rest intact #}
+            {{ text[0]|upper}}{{text[1:] }}
+          {% endmacro %}
+          
+          {% if cat_spec_metaitems %}
+            <h2>{{ _('Specific information for category ')  + res.category}}</h2>
+            <table class="table table-striped table-bordered table-condensed">
+              <thead>
+                <tr>
+                  <th scope="col">{{ _('Field') }}</th>
+                  <th scope="col">{{ _('Value') }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for key, value in h.format_resource_items(res.items()) %} 
+                {# {% for key, value in res.items() %} #}
+                  {% if key in cat_spec_metaitems %}
+                    <tr class="toggle-more"><th scope="row">
+                        {{ sentence_case(key) }}</th><td>{{ value }}</td>
+                    </tr>
+                  {% endif %}
+                {% endfor %}
+              </tbody>
+            </table>
+          {% endif %}
         </div>
         {% endblock %}
       </section>

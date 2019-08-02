@@ -1,0 +1,15 @@
+{% ckan_extends %}
+
+{% block resource_item_title %}
+  {% if res.category %}
+    {% set catname = res.category + " - " + h.category_name(res.category) %}
+  {% else %}
+    {% set catname = "category not specified" %}
+  {% endif %}
+  <a class="heading" href="{{ url }}" title="{{ res.name or res.description }}">
+    {{ h.resource_display_name(res) + " (" + catname + ")" | truncate(50) }}
+
+    <span class="format-label" property="dc:format" data-format="{{ res.format.lower() or 'data' }}">{{ h.get_translated(res, 'format') }}</span>
+    {{ h.popular('views', res.tracking_summary.total, min=10) }}
+  </a>
+{% endblock %}

@@ -16,6 +16,7 @@ from ckan.lib.navl.dictization_functions import Invalid, Missing
 from ckan.lib.base import abort, render
 from resource_category import ResourceCategory, ResourceCategoryMetadataItem, category_metadata_datatypes
 from ckan.lib import helpers as h
+from plugin2 import get_required_metadata_fields
 import re
 
 
@@ -1384,6 +1385,21 @@ def _list_all_category_metadata():
         key=lambda tup: tup[0])
 
 
+def _list_category_metadata_items_for(code, preformat=False):
+
+    if code is None:
+        return None
+
+    items = get_required_metadata_fields(code)
+    # items = Session.query(ResourceCategoryMetadataItem).\
+    #         filter_by(category_id=code)
+
+    if preformat:
+        return [x.title.replace('_', ' ') for x in items]
+    else:
+        return [x.title for x in items]
+
+
 def _edit_metadata(mclass, template_name):
 
     check_edit_metadata()  # check authorization
@@ -1835,6 +1851,7 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
                                                 for x in _list_all_categories()[
                                                         'categories']],
                 'resource_category_items': _list_all_category_metadata,
+                'category_items_for': _list_category_metadata_items_for,
                 'sourcelist': _make_sourcelist
                 }
 

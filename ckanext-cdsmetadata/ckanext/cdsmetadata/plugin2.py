@@ -96,7 +96,7 @@ def _code_hierarchy_of(code):
 
     return all_codes
         
-def _get_required_metadata_fields(code):
+def get_required_metadata_fields(code):
 
     all_codes = _code_hierarchy_of(code)
 
@@ -111,14 +111,14 @@ def _get_required_metadata_fields(code):
 
 def _validate_category_metadata(resource, current=None):
 
-    #pdb.set_trace()
+    pdb.set_trace()
     errors = {}
     category = resource.get('category', None)
     if category is None:
         _add_error(errors, 'category', 'Category not chosen.')
 
         
-    metadata_fields = _get_required_metadata_fields(category)
+    metadata_fields = get_required_metadata_fields(category)
     
     for entry in metadata_fields:
         field_value = resource.get(entry.title, None)
@@ -133,8 +133,8 @@ def _validate_category_metadata(resource, current=None):
             # For some reason, the full link disappears in the resource object,
             # which can lead to a cycle of errors.  We reinstate the full link here
             # for now.  @@ Is there a better way?
-            
-            resource['url'] = current['url']
+            # resource['url'] = current['url']
+            pass
 
         raise ValidationError(errors, error_summary=_make_summary(errors))
     
