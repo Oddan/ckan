@@ -9,66 +9,39 @@
 {% set available_datatypes = g.extra['available_datatypes'] %}
 {% set current_mapping = g.extra['current_mapping'] %}
 
-
 {% set category = g.cur_item['category'] or None %}
 {% if category  %}
   {% set category_id = category['code'] %}
 {% endif %}
 
-{# {% block styles %} #}
-{#   {{ super() }} #}
-{#   {% resource "cdsmetadata/category_metadata.js" %} #}
-{# {% endblock %} #}
-
-
+{% block styles %} 
+  {{ super() }} 
+  {% resource "cdsmetadata/category_metadata.js" %}
+  {% resource "cdsmetadata/init_edit_category_metadata.js" %}
+{% endblock %} 
 
 {% block dataformat_subheading %}
   <h2>Edit Category Metadata</h2>
-  {# <h5><a href="{{h.url_for('cdsmetadata.dataformat_list')}}">Click here for full (noneditable) list</a></h5> #}
 {% endblock %} 
 
 {% block metadata_form_fields %}
 
-  <script>
-    function set_enum_input_visibility() {
-      var dtype = document.getElementById('field-datatype').value;
-      var target = document.getElementById('enum-input');
-      if (dtype == 'ENUM') {
-        target.style.display='block';
-      } else {
-        target.style.display='none';
-      }
-    }
-    function activate_relevant_table() {
-      var ca = document.getElementsByClassName('cat_atts'); 
-        for (var i = 0; i < ca.length; i++) {
-          ca[i].style.display='none';
-        }
-      document.getElementById(document.getElementById('field-category').value).style.display='block';
-    }
-    function init() {
-      set_enum_input_visibility();
-      activate_relevant_table();
-    }
-    window.onload = init;
-  </script>
-
-  <div id='category_select_form'
-       onclick="activate_relevant_table()">
-    
-  {{ form.select('category', id='field-category', label=_('Resource category'),
-                 options=resource_classes, 
-                 selected=category_id or category or resource_classes[0].value,
-                 error=errors.category,
-                 classes='control-large')
-  }}
+  <div id='category_select_form'>
+       
+       {{ form.select('category', id='field-category', label=_('Resource category'),
+       options=resource_classes, 
+       selected=category_id or category or resource_classes[0].value,
+       error=errors.category,
+       attrs={'onchange': 'activate_relevant_tables()', 'class': 'form-control'},
+       classes=['control-large'])
+       }}
   </div>
   
   {% for c in current_mapping %}
     <div id={{c}} class='cat_atts' style='display: none;'>
       {% if current_mapping[c] %}
         <p> <i class="fa fa-info-circle"> Currently defined attributes for category {{c}} are: </i></p>
-
+        
         <table class="table table-striped table-bordered table-condensed">
           <thead>
           </thead>
@@ -89,18 +62,19 @@
     </div>
   {% endfor %}
   <br>
-
-
+  
   {{ form.input('title', id='field-title', label=_('Attribute title'),
                 value=title, error=errors.title, classes=['control-full'])
   }} 
 
   
-  <div id='datatype_select_form' onclick="set_enum_input_visibility()">
+  <div id='datatype_select_form'>
 
     {{ form.select('datatype', id='field-datatype', label=_('Attribute datatype'),
        options=available_datatypes, selected=datatype or available_datatypes[0],
-       error=errors.available_datatypes, classes='control-large') 
+       attrs={'onchange': 'set_enum_input_visibility()', 'class': 'form-control'},
+       error=errors.available_datatypes,
+       classes='control-large') 
     }}
   </div>
 
@@ -119,5 +93,6 @@
                    label=_('Attribute documentation'), error=errors.description, 
                    classes='control-large') 
   }} 
+
   
 {% endblock %} 

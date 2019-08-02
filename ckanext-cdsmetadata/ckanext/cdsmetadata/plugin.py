@@ -1188,15 +1188,22 @@ def _resource_category_metadata_validator(data_dict):
     if data_dict['title'] == '':
         title_errors.append("Empty attribute title not allowed.")
 
-    # check that attribute title is unique
-    matches = Session.query(ResourceCategoryMetadataItem).\
-        filter_by(category_id=data_dict['category']).\
-        filter_by(title=data_dict['title']).\
-        filter(ResourceCategoryMetadataItem.id != data_dict.get('id', None))
+    # check that attribute title is unique (including inherited attributes)
+    cur_cat = list(data_dict['category'])
+    for i in [3,2,1]:
+        if i != 3: # we will check a superclass
+            cur_cat[2*i] = '0'
+        cur_id = "".join(cur_cat)
+    
+        matches = Session.query(ResourceCategoryMetadataItem).\
+                  filter_by(category_id=cur_id).\
+                  filter_by(title=data_dict['title']).\
+                  filter(ResourceCategoryMetadataItem.id != data_dict.get('id', None))
 
-    if matches.count() > 0:
-        title_errors.append("An attribute with the same name \
-                             already exists for this category")
+        if matches.count() > 0:
+            title_errors.append("An attribute with the same name \
+                                 already exists for this category")
+            break
 
     # check that title does not contain unallowed characters
     if re.search('[^-_a-zA-Z0-9]', data_dict['title']):

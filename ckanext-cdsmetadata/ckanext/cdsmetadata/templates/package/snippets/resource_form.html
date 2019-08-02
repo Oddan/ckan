@@ -1,5 +1,6 @@
 {% ckan_extends %}
 
+
 {% block metadata_fields %}
   {% set resource_classes = h.resource_categories() %}
   {% set category_metadata = h.resource_category_items() %}
@@ -51,54 +52,56 @@
     click <a href="{{ h.url_for('cdsmetadata.resource_categories') }}" target="_blank">here</a>.
   </i>
 
-  <div onclick="activate_only_selected()">
+  <div>
   {{ form.select('category', id='field-category', label=_('Resource category'),
                  options=resource_classes, 
                  selected=data.category or resource_classes[0].value,
                  error=errors.category,
+                 attrs={'onchange': "activate_relevant_input()", 'class': 'form-control'},
                  classes=['control-large']) }}
   </div>
 
   {# ------------------------------ Category items ------------------------------ #}
 
-  <script>
-    function disable_all_category_metadata() {
-      var items = document.getElementsByClassName('category-metadata');
-      for (var i = 0; i < items.length; i++) {
-        items[i].style.display='none';
-        var ctrls = items[i].getElementsByClassName('form-control');
-        for (var j = 0; j < ctrls.length; j++) {
-          ctrls[j].setAttribute('disabled', 'true');
-        }
-      }
-    }
+  {# <script> #}
+  {#   function disable_all_category_metadata() { #}
+  {#     var items = document.getElementsByClassName('category-metadata'); #}
+  {#     for (var i = 0; i < items.length; i++) { #}
+  {#       items[i].style.display='none'; #}
+  {#       var ctrls = items[i].getElementsByClassName('form-control'); #}
+  {#       for (var j = 0; j < ctrls.length; j++) { #}
+  {#         ctrls[j].setAttribute('disabled', 'true'); #}
+  {#       } #}
+  {#     } #}
+  {#   } #}
 
-    function activate_category_metadata_code(code) {
-      var items = document.getElementsByClassName(code);
-      for (var i = 0; i < items.length; i++) {
-        items[i].style.display='block';
-        var ctrls = items[i].getElementsByClassName('form-control');
-        for (var j = 0; j < ctrls.length; j++) {
-          ctrls[j].removeAttribute('disabled');
-        }
-      }
-    }
+  {#   function activate_category_metadata_code(code) { #}
+  {#     var items = document.getElementsByClassName(code); #}
+  {#     for (var i = 0; i < items.length; i++) { #}
+  {#       items[i].style.display='block'; #}
+  {#       var ctrls = items[i].getElementsByClassName('form-control'); #}
+  {#       for (var j = 0; j < ctrls.length; j++) { #}
+  {#         ctrls[j].removeAttribute('disabled'); #}
+  {#       } #}
+  {#     } #}
+  {#   } #}
 
-    function selected_code() {
-      return document.getElementById('field-category').value
-    }
+  {#   function selected_code() { #}
+  {#     return document.getElementById('field-category').value #}
+  {#   } #}
     
-    function activate_only_selected() {
-      disable_all_category_metadata();
-      activate_category_metadata_code(selected_code());
-    }
+  {#   function activate_only_selected() { #}
+  {#     disable_all_category_metadata(); #}
+  {#     activate_category_metadata_code(selected_code()); #}
+  {#   } #}
     
-    window.onload = activate_only_selected
-  </script>
+  {#   window.onload = activate_only_selected #}
+  {# </script> #}
   
   
   {% for md in category_metadata %}
     {{form.input(md[1].lower(), id='field-' + md[1].lower(), label=_(md[1]),
+                 attrs={'code': md[0], 'class': 'form-control'},
                  classes=['control-medium', 'category-metadata', md[0]]) }}
   {% endfor %}
   
