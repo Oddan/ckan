@@ -1,0 +1,8 @@
+{% ckan_extends %}
+
+{% block styles %} 
+  {{ super() }} 
+  {% resource "cdsmetadata/category_metadata.js" %}
+  {% resource "cdsmetadata/init_resource_edit.js" %}
+{% endblock %} 
+
