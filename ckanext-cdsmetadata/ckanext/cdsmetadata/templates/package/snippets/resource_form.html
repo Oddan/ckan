@@ -1,6 +1,18 @@
 {% ckan_extends %}
 
 
+{% block basic_fields_format %}
+  {# ------------------- Same as parent, except changed label ------------------- #}
+  {% set format_attrs = {'data-module': 'autocomplete', 'data-module-source': '/api/2/util/resource/format_autocomplete?incomplete=?'} %}
+  {% call form.input('format', id='field-format', label=_('Download storage format'), placeholder=_('eg. CSV, XML or JSON'), value=data.format, error=errors.format, classes=['control-medium'], attrs=format_attrs) %}
+    <span class="info-block info-block-small">
+      <i class="fa fa-info-circle"></i>
+      {{ _('This will be guessed automatically. Leave blank if you wish') }}
+    </span>
+  {% endcall %}
+  
+{% endblock %}
+
 {% block metadata_fields %}
   {% set resource_classes = h.resource_categories() %}
   {% set category_metadata = h.resource_category_items() %}
@@ -63,46 +75,23 @@
 
   {# ------------------------------ Category items ------------------------------ #}
 
-  {# <script> #}
-  {#   function disable_all_category_metadata() { #}
-  {#     var items = document.getElementsByClassName('category-metadata'); #}
-  {#     for (var i = 0; i < items.length; i++) { #}
-  {#       items[i].style.display='none'; #}
-  {#       var ctrls = items[i].getElementsByClassName('form-control'); #}
-  {#       for (var j = 0; j < ctrls.length; j++) { #}
-  {#         ctrls[j].setAttribute('disabled', 'true'); #}
-  {#       } #}
-  {#     } #}
-  {#   } #}
-
-  {#   function activate_category_metadata_code(code) { #}
-  {#     var items = document.getElementsByClassName(code); #}
-  {#     for (var i = 0; i < items.length; i++) { #}
-  {#       items[i].style.display='block'; #}
-  {#       var ctrls = items[i].getElementsByClassName('form-control'); #}
-  {#       for (var j = 0; j < ctrls.length; j++) { #}
-  {#         ctrls[j].removeAttribute('disabled'); #}
-  {#       } #}
-  {#     } #}
-  {#   } #}
-
-  {#   function selected_code() { #}
-  {#     return document.getElementById('field-category').value #}
-  {#   } #}
-    
-  {#   function activate_only_selected() { #}
-  {#     disable_all_category_metadata(); #}
-  {#     activate_category_metadata_code(selected_code()); #}
-  {#   } #}
-    
-  {#   window.onload = activate_only_selected #}
-  {# </script> #}
-  
   
   {% for md in category_metadata %}
-    {{form.input(md[1].lower(), id='field-' + md[1].lower(), label=_(md[1]),
-                 attrs={'code': md[0], 'class': 'form-control'},
-                 classes=['control-medium', 'category-metadata', md[0]]) }}
+    <div class='category-metadata'>
+      <i class="fa fa-info-circle"></i>
+      <i>{{md[3]}}</i>
+      {% if md[2] == "ENUM" %}
+        {{form.select(md[1].lower(), id='field-' + md[1].lower(), label=_(md[1]),
+                      options=md[4],
+                      selected=md[4][0],
+                      attrs={'code': md[0], 'class': 'form-control'},
+                      classes=['control-medium']) }}
+      {% else %} 
+        {{form.input(md[1].lower(), id='field-' + md[1].lower(), label=_(md[1]),
+                     attrs={'code': md[0], 'class': 'form-control'},
+                     classes=['control-medium']) }}
+      {% endif %}
+    </div>
   {% endfor %}
   
 {% endblock %}

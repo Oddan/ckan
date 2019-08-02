@@ -1377,8 +1377,9 @@ def _list_all_category_metadata():
 
     return sorted(
         [(x.category_id, x.title, x.datatype, x.description,
-          None if x.enum_items is None else map(unicode.strip,
-                                                x.enum_items.split(',')))
+          None if x.enum_items is None else
+          [{'value': y, 'text': y}
+           for y in map(unicode.strip, x.enum_items.split(','))])
          for x in data_items],
         key=lambda tup: tup[0])
 
