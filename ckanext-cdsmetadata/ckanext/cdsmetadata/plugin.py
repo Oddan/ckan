@@ -401,44 +401,7 @@ def prepare_organization_extra_table():
         ensure_table_created(organization_extra_table)
 
 
-# def prepare_resource_extra_table():
 
-#     global resource_extra_table
-#     if resource_extra_table is None:
-#         resource_extra_table = Table(
-#             'resource_extra', meta.metadata,
-#             Column('id', UnicodeText, primary_key=True, default=make_uuid),
-#             Column('resource_id', UnicodeText, ForeignKey('resource.id')),
-#             Column('category_id', UnicodeText, ForeignKey('resource_category.code')),
-#             Column('purpose', UnicodeText),
-#             Column('assumptions', UnicodeText),
-#             Column('sources', UnicodeText),
-#             Column('dataformat_id', UnicodeText, ForeignKey('data_format.id'))
-#         )
-
-#         meta.mapper(ResourceExtra, resource_extra_table,
-#                     properties = {'resource':
-#                                   orm.relation(model.resource.Resource,
-#                                                backref=orm.backref(
-#                                                    'extra',
-#                                                    uselist=False,
-#                                                    cascade='all, delete, delete-orphan')),
-#                                   'category':
-#                                   orm.relation(ResourceCategory,
-#                                                backref=orm.backref(
-#                                                    'resources',
-#                                                    cascade='save-update, merge')),
-#                                   'dataformat':
-#                                   orm.relation(DataFormat,
-#                                                backref=orm.backref(
-#                                                    'resources',
-#                                                    cascade='save-update, merge'))})
-
-#         # create table
-#         ensure_table_created(resource_extra_table)
-                                  
-                    
-        
 def ensure_table_created(table):
 
     # if table.exists():
@@ -454,7 +417,6 @@ def ensure_table_created(table):
             # Session.execute('DROP TABLE ' + table.fullname)
             # Session.commit()
 
-# @@ this will have to change
 
 def _organization_modif_wrapper(action_name):
 
@@ -493,36 +455,6 @@ def _organization_modif_wrapper(action_name):
         return result_dict
 
     return _wrapper
-
-# def _resource_modif_wrapper(action_name):
-
-#     action = tk.get_action(action_name)
-
-#     def _wrapper(context, data_dict):
-
-#         result_dict = action(context, data_dict)
-
-#         category = data_dict.get('category', None)
-#         purpose = data_dict.get('purpose', 'Not specified')
-#         assumptions = data_dict.get('assumptions', 'Not specified')
-#         sources = data_dict.get('sources', 'Not specified')
-#         data_format = data_dict.get('data_format', None)
-        
-#         extra = model.Resource.get(result_dict['id']).extra
-#         if extra is None:
-#             extra = ResourceExtra(result_dict['id'], category, purpose,
-#                                   assumptions, sources, data_format)
-#         else:
-#             extra.category_id = category
-#             extra.purpose = purpose
-#             extra.assumptions = assumptions
-#             extra.sources = sources
-#             extra.dataformat_id = data_format
-
-#         extra.save()
-            
-#         return result_dict
-#     return _wrapper
 
 
 def _organization_show_wrapper():
@@ -565,33 +497,6 @@ def _organization_show_wrapper():
 
     return _wrapper
 
-
-# def _resource_show_wrapper():
-
-#     action = tk.get_action('resource_show')
-
-#     def _wrapper(context, data_dict):
-#         result_dict = action(context, data_dict)
-
-#         # recovering extra information
-#         extra = model.Resource.get(result_dict['id']).extra
-        
-#         if extra is None:
-#             result_dict['category'] = None
-#             result_dict['purpose'] = ''
-#             result_dict['assumptions'] = ''
-#             result_dict['sources'] = ''
-#             result_dict['data_format'] = None
-#         else:
-#             result_dict['category'] = extra.category_id
-#             result_dict['purpose'] = extra.purpose
-#             result_dict['assumptions'] = extra.assumptions
-#             result_dict['sources'] = extra.sources
-#             result_dict['data_format'] = extra.dataformat_id
-
-#         return result_dict
-    
-#     return _wrapper
 
 
 def _edit_metadata_auth(context, data_dict=None):
@@ -1361,6 +1266,12 @@ def _display_resource_categories():
     return render('view_categories.html', data)
 
 
+def _category_dict():
+
+    categories = Session.query(ResourceCategory).all()
+
+    return {x.code: x.title for x in categories}
+
 def _list_all_categories():
 
     categories = Session.query(ResourceCategory).all()
@@ -1707,8 +1618,35 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
     plugins.implements(plugins.IValidators)
     plugins.implements(plugins.IAuthFunctions)
     plugins.implements(plugins.IRoutes)
+    plugins.implements(plugins.IFacets)
     plugins.implements(plugins.IPackageController, inherit=True)
     plugins.implements(plugins.IDatasetForm, inherit=True)
+
+    # ================================== IFacets ==============================
+
+    def dataset_facets(self, facets_dict, package_type):
+
+        # remove facets we don't use (or that we have redefined)
+        facets_dict.pop('groups')  # we do not use groups
+        facets_dict.pop('license_id')  # we have redefined licenses
+        facets_dict.pop('res_format')  # we have redefined formats
+
+        # add new facets
+        facets_dict['project_type'] = _('Project type')
+        #facets_dict['res_extras_category'] = _('Data category')
+
+        # link = h.url_for('cdsmetadata.resource_categories')
+        # html_link = '<a href="' + link + '" target = _blank>' + _('here') + '</a>'
+        # facets_dict['category'] = _('Data category  (full list ') + html_link + ')'
+
+        facets_dict['category'] = _('Data category')
+        
+        return facets_dict
+
+    def organization_facets(self, facets_dict,
+                            organization_type, package_type):
+        return self.dataset_facets(facets_dict, package_type)
+
 
     # ================================== IRoutes ==============================
     def before_map(self, map):
@@ -1860,6 +1798,13 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
         # prepares all the necessary data tables
         setup_model()
 
+        # register the new resource fields
+        tk.get_action('config_option_update')({'ignore_auth': True},
+            {'ckan.extra_resource_fields':
+             'category purpose sources assumptions dataformat'})
+
+
+
     # ================================ IConfigurer ============================
 
     def update_config(self, config_):
@@ -1867,6 +1812,13 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
         tk.add_template_directory(config_, 'templates')
         tk.add_resource('fanstatic', 'cdsmetadata')
         # tk.add_public_directory(config_, 'public')
+
+    def update_config_schema(self, schema):
+
+        ignore_missing = tk.get_validator('ignore_missing')
+        schema.update({'ckan.extra_resource_fields': [ignore_missing]})
+        return schema
+
 
     # ============================ IPackageController =========================
 
@@ -1879,6 +1831,31 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
     def before_view(self, pkg_dict):
         return _package_before_view(pkg_dict)
 
+    def after_search(self, search_results, search_params):
+
+        # fixing display names of the category search facets
+
+        try:
+            category_facets = search_results['search_facets']['category']['items']
+        except KeyError:
+            # the category was not found, set to empty dictionary
+            category_facets = {}
+
+        cdict = _category_dict()
+
+        for c in category_facets:
+            key = c['display_name']
+            c['display_name'] = key + ' - ' + cdict[key]
+
+        #pdb.set_trace()
+        return search_results
+    
+    def before_index(self, pkg_dict):
+
+        pkg_dict['category'] = pkg_dict.get('res_extras_category', '')
+        return pkg_dict
+
+    
     # ================================ IValidators ============================
 
     def get_validators(self):
@@ -1917,70 +1894,3 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
         return _show_package_schema(schema)
 
 
-# def _package_show_wrapper():
-#     action = tk.get_action('package_show')
-
-#     def _wrapper(context, data_dict):
-
-#         result_dict = action(context, data_dict)
-
-#         # Including information on contact persons and contributors
-#         id = data_dict.get('id', None)
-#         pkg = model.package.Package.get(id)
-#         if pkg is not None:
-#             result_dict['contact_person'] = \
-#                 [(x.id, x.name, x.email) for x in pkg.contact_person]
-
-#             result_dict['person_contributor'] = \
-#                 [(x.id, x.name, x.email) for x in pkg.person_contributor]
-
-#             result_dict['org_contributor'] = \
-#                 [(x.organization.id, x.organization.title)
-#                  for x in pkg.org_contributor]
-
-#             result_dict['publications'] = \
-#                 [(x.id, x.name, x.doi) for x in pkg.publications]
-
-#         return result_dict
-
-#     return _wrapper
-
-
-# def _package_modif_wrapper(action_name):
-
-#     action = tk.get_action(action_name)
-
-#     def _wrapper(context, data_dict):
-
-#         result_dict = action(context, data_dict)
-
-#         # updating the extra information
-#         pkg = model.Package.get(result_dict['id'])
-
-#         # contact person
-#         pkg.contact_person = \
-#             _list_people(context['session'],
-#                          data_dict.get('contact_person', []))
-
-#         # contributor person
-#         pkg.person_contributor = \
-#             _list_people(context['session'],
-#                          data_dict.get('person_contributor', []))
-
-#         # contributor organization
-#         orgs = _list_orgs(context['session'],
-#                           data_dict.get('org_contributor', []))
-
-#         pkg.org_contributor = [x.extra for x in orgs]
-
-#         # associated publications
-
-#         pkg.publications = \
-#             _list_pubs(context['session'],
-#                        data_dict.get('publications', []))
-        
-#         pkg.save()
-
-#         return result_dict
-
-#     return _wrapper
