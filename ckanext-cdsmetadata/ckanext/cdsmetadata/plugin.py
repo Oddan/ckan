@@ -98,7 +98,6 @@ def setup_model():
     prepare_license_table()
     prepare_publication_table()
     prepare_person_table()
-    #prepare_resource_extra_table()
 
     # association tables
     prepare_affiliation_association_table()
@@ -108,6 +107,7 @@ def setup_model():
     prepare_org_contributor_dataset_association_table()
     prepare_dataset_publication_association_table()
     prepare_dataset_dataset_association_table()
+
 
 def prepare_dataset_dataset_association_table():
 
@@ -498,7 +498,6 @@ def _organization_show_wrapper():
     return _wrapper
 
 
-
 def _edit_metadata_auth(context, data_dict=None):
     user_name = context.get('user', None)
     if user_name is None:
@@ -874,6 +873,7 @@ def _category_metadata_delete(context, data_dict):
     item.delete()
     context['session'].commit()
 
+
 def _edit_person():
     return _edit_metadata(Person, "edit_person")
 
@@ -965,7 +965,7 @@ def _dsetlist(selected_ids, omit_ids=[]):
     # removing items that should be omitted
     omit_ids = _ensure_list(omit_ids)
     dsetlist = filter(lambda x: x['value'] not in omit_ids, dsetlist)
-    
+
     # set selection
     for d in dsetlist:
         if d['value'] in selected_ids:
@@ -1006,12 +1006,14 @@ def _dataformatlist():
     return [{'value': x.id, 'text': x.name, 'selected': False}
             for x in model.Session.query(DataFormat).all()]
 
-def  _get_license(id):
+
+def _get_license(id):
     try:
         lic = model.Session.query(License).get(id)
         return lic
     except:
         return None
+
 
 def _datasets_with_license(license_id):
 
@@ -1025,6 +1027,7 @@ def _datasets_with_license(license_id):
             result.append(d)
 
     return result
+
 
 def _category_name(category_id):
 
@@ -1044,7 +1047,6 @@ def _dataformat_name(dataformat_id):
     return _("Unknown")
 
 
-
 def _resource_category_metadata_map():
 
     categories = Session.query(ResourceCategory).all()
@@ -1054,6 +1056,7 @@ def _resource_category_metadata_map():
         result_map[c.code] = sorted(c.metadata_item, key=lambda x: x.title)
 
     return result_map
+
 
 def _extra_info(mclass, data):
     if mclass == Person:
@@ -1096,15 +1099,15 @@ def _resource_category_metadata_validator(data_dict):
 
     # check that attribute title is unique (including inherited attributes)
     cur_cat = list(data_dict['category'])
-    for i in [3,2,1]:
-        if i != 3: # we will check a superclass
+    for i in [3, 2, 1]:
+        if i != 3:  # we will check a superclass
             cur_cat[2*i] = '0'
         cur_id = "".join(cur_cat)
-    
+
         matches = Session.query(ResourceCategoryMetadataItem).\
-                  filter_by(category_id=cur_id).\
-                  filter_by(title=data_dict['title']).\
-                  filter(ResourceCategoryMetadataItem.id != data_dict.get('id', None))
+            filter_by(category_id=cur_id).\
+            filter_by(title=data_dict['title']).\
+            filter(ResourceCategoryMetadataItem.id != data_dict.get('id', None))
 
         if matches.count() > 0:
             title_errors.append("An attribute with the same name \
@@ -1142,6 +1145,7 @@ def _validation_function(mclass):
     if mclass == ResourceCategoryMetadataItem:
         return _resource_category_metadata_validator
     return None
+
 
 def _extract_metadata_form_data(form, mclass):
     data_dict = {}
@@ -1227,10 +1231,10 @@ def _display_publication_list():
                              currently registered in the portal."}
 
     return render('view_metadata_list.html', data)
-    
-    
+
+
 def _display_license_list():
-    
+
     itemlist = [(x.id,
                 x.name,
                 h.url_for('cdsmetadata.view_license', id=x.id))
@@ -1271,6 +1275,7 @@ def _category_dict():
     categories = Session.query(ResourceCategory).all()
 
     return {x.code: x.title for x in categories}
+
 
 def _list_all_categories():
 
@@ -1393,29 +1398,30 @@ def _show_package_schema(schema):
         'access_level': [tk.get_converter('convert_from_extras'),
                          tk.get_validator('access_level_validator')],
         'release_date': [tk.get_converter('convert_from_extras')],
-        'temporal_coverage_start' : [tk.get_converter('convert_from_extras'),
-                                     tk.get_validator('temporal_coverage_nonnegative')],
-        'temporal_coverage_end' : [tk.get_converter('convert_from_extras')],
-        'cdslicense' : [tk.get_converter('convert_from_extras'),
-                        tk.get_validator('ignore_missing') ],
-        'location' : [tk.get_converter('convert_from_extras'),
-                      tk.get_validator('wgs84-validator')]
+        'temporal_coverage_start': [
+            tk.get_converter('convert_from_extras'),
+            tk.get_validator('temporal_coverage_nonnegative')],
+        'temporal_coverage_end': [tk.get_converter('convert_from_extras')],
+        'cdslicense': [tk.get_converter('convert_from_extras'),
+                       tk.get_validator('ignore_missing')],
+        'location': [tk.get_converter('convert_from_extras'),
+                     tk.get_validator('wgs84-validator')]
     })
     schema['resources'].update({
         'category': [tk.get_validator('category_exists')],
-        'purpose' : [tk.get_validator('ignore_missing')],
-        'sources' : [tk.get_validator('ignore_missing'),
-                     tk.get_validator('validate_sources')],
+        'purpose': [tk.get_validator('ignore_missing')],
+        'sources': [tk.get_validator('ignore_missing'),
+                    tk.get_validator('validate_sources')],
         'assumptions': [tk.get_validator('ignore_missing')],
         'dataformat': [tk.get_validator('ignore_missing'),
                        tk.get_validator('dataformat_exists')]
     })
-    
+
     return schema
 
 
 def _modif_package_schema(schema):
-    
+
     # reusing the schema from _show_package_schema, with certain modifications
     schema = _show_package_schema(schema)
 
@@ -1430,15 +1436,17 @@ def _modif_package_schema(schema):
                               tk.get_converter('convert_to_extras')]
     schema['release_date'] = [tk.get_converter('convert_to_extras')]
 
-    schema['temporal_coverage_start'] = [tk.get_validator('temporal_coverage_nonnegative'),
-                                         tk.get_converter('convert_to_extras')]
-    schema['temporal_coverage_end'] = [tk.get_validator('temporal_coverage_nonnegative'),
-                                       tk.get_converter('convert_to_extras')]
+    schema['temporal_coverage_start'] = \
+        [tk.get_validator('temporal_coverage_nonnegative'),
+         tk.get_converter('convert_to_extras')]
+    schema['temporal_coverage_end'] = \
+        [tk.get_validator('temporal_coverage_nonnegative'),
+         tk.get_converter('convert_to_extras')]
     schema['cdslicense'] = [tk.get_validator('ignore_missing'),
                             tk.get_converter('convert_to_extras')]
     schema['location'] = [tk.get_validator('wgs84-validator'),
                           tk.get_converter('convert_to_extras')]
-    
+
     # for now, there is no difference between the show and the modif schemas
     return schema
 
@@ -1475,7 +1483,6 @@ def _package_after_update(context, pkg_dict):
                        pkg_dict.get('related_dataset', []))
 
 
-
 def _package_before_view(pkg_dict):
 
     pkg = model.package.Package.get(pkg_dict['id'])
@@ -1500,6 +1507,7 @@ def _package_before_view(pkg_dict):
 
 # ========================= Validator implementations =========================
 
+
 def _check_doi(value, context):
     if value is None:
         return None
@@ -1513,27 +1521,28 @@ def _check_doi(value, context):
 
 
 def _project_type_validator(value, context):
-    
+
     if value is None:
-        return None # normally shouldn't happen
-    if not value in CdsmetadataPlugin.project_types:
+        return None  # normally shouldn't happen
+    if value not in CdsmetadataPlugin.project_types:
         raise Invalid(_('Invalid project type.  Valid types are: "' +
                         '", "'.join(CdsmetadataPlugin.project_types) + '".'))
     return value
 
 
 def _access_level_validator(value, context):
-    
+
     if value is None:
-        return None # normally shouldn't happen
-    if not value in CdsmetadataPlugin.access_levels:
+        return None  # normally shouldn't happen
+    if value not in CdsmetadataPlugin.access_levels:
         raise Invalid(_('Invalid access level.  Valid types are: "' +
                         '", "'.join(CdsmetadataPlugin.access_levels) + '".'))
     return value
 
+
 def _temporal_coverage_nonnegative(key, data, errors, context):
 
-    start = data.get(('temporal_coverage_start',),None)
+    start = data.get(('temporal_coverage_start',), None)
     end = data.get(('temporal_coverage_end',), None)
 
     if start and end:
@@ -1541,11 +1550,12 @@ def _temporal_coverage_nonnegative(key, data, errors, context):
         end_date = dateutil.parser.parse(end)
 
         if start_date > end_date:
-            raise Invalid(_("Invalid date range; start date is after end date."))
+            raise Invalid(
+                _("Invalid date range; start date is after end date."))
 
 def _wgs84_validator(value, context):
 
-    if type(value)==list and len(value)==2:
+    if type(value) == list and len(value) == 2:
         # this is likely a data object that has been previously validated
         lon, lat = value
     else:
@@ -1570,11 +1580,12 @@ def _category_exists_validator(value, context):
         return u'1.0.0'
     elif context['session'].query(ResourceCategory).get(value) is None:
         raise Invalid("Chosen resource category does not exist.")
-    
+
     return value
 
+
 def _dataformat_exists_validator(value, context):
-    
+
     found = context['session'].query(DataFormat).get(value)
 
     if not found:
@@ -1585,7 +1596,7 @@ def _dataformat_exists_validator(value, context):
 def _sources_validator(value):
 
     # check if a source list can be made, but do not use it
-    dummy = _make_sourcelist(value)
+    _make_sourcelist(value)
 
     return value
 
@@ -1603,9 +1614,6 @@ def _make_sourcelist(value):
         result.append([name, uri])
 
     return result
-        
-
-
 
 
 class CdsmetadataPlugin(plugins.SingletonPlugin,
@@ -1642,8 +1650,8 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
                             organization_type, package_type):
         return self.dataset_facets(facets_dict, package_type)
 
-
     # ================================== IRoutes ==============================
+
     def before_map(self, map):
         map.connect('edit_dataformat', '/metadata/dataformat',
                     action='edit_dataformat', controller='cdsmetadata')
@@ -1716,7 +1724,6 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
         blueprint.add_url_rule('/metadata/person_list',
                                u'person_list',
                                view_func=_display_person_list)
-        
         return blueprint
 
     # ================================= IActions ==============================
@@ -1795,10 +1802,8 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
 
         # register the new resource fields
         tk.get_action('config_option_update')({'ignore_auth': True},
-            {'ckan.extra_resource_fields':
-             'category purpose sources assumptions dataformat'})
-
-
+                        {'ckan.extra_resource_fields':
+                         'category purpose sources assumptions dataformat'})
 
     # ================================ IConfigurer ============================
 
@@ -1813,7 +1818,6 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
         ignore_missing = tk.get_validator('ignore_missing')
         schema.update({'ckan.extra_resource_fields': [ignore_missing]})
         return schema
-
 
     # ============================ IPackageController =========================
 
@@ -1831,7 +1835,8 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
         # fixing display names of the category search facets
 
         try:
-            category_facets = search_results['search_facets']['category']['items']
+            category_facets = \
+                search_results['search_facets']['category']['items']
         except KeyError:
             # the category was not found, set to empty dictionary
             category_facets = {}
@@ -1845,7 +1850,6 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
         return search_results
 
     def before_index(self, pkg_dict):
-        #pdb.set_trace()
 
         dataformat_names = []
         dformats = pkg_dict.get('res_extras_dataformat', [])
@@ -1863,21 +1867,23 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
 
     def get_validators(self):
 
-        return {'check_doi': _check_doi,
-                'project_type_validator': _project_type_validator,
-                'access_level_validator': _access_level_validator,
-                'wgs84-validator' : _wgs84_validator,
-                'category_exists' : _category_exists_validator,
-                'validate_sources': _sources_validator,
-                'dataformat_exists': _dataformat_exists_validator,
-                'temporal_coverage_nonnegative': _temporal_coverage_nonnegative}
-        
+        return {
+            'check_doi': _check_doi,
+            'project_type_validator': _project_type_validator,
+            'access_level_validator': _access_level_validator,
+            'wgs84-validator': _wgs84_validator,
+            'category_exists': _category_exists_validator,
+            'validate_sources': _sources_validator,
+            'dataformat_exists': _dataformat_exists_validator,
+            'temporal_coverage_nonnegative': _temporal_coverage_nonnegative
+        }
+
     # =============================== IDatasetForm ============================
 
     # we store allowed options here, which will be used by specific validators
     project_types = ['Pilot', 'Commercial', 'Other']
     access_levels = ['Open', 'Restricted']
-    
+
     def is_fallback(self):
         return True
 
@@ -1895,5 +1901,3 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
     def show_package_schema(self):
         schema = super(CdsmetadataPlugin, self).show_package_schema()
         return _show_package_schema(schema)
-
-
