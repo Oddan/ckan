@@ -143,6 +143,7 @@ schema. In this case the version should be set to the next CKAN version number.
 
     <!-- The following fields are proper to the cdsmetadata plugin -->
     <field name="category" type="string" indexed="true" stored="true" multiValued="true"/>
+    <field name="dataformat" type="string" indexed="true" stored="true" multiValued="true"/>
     <!-- End of fields related to cdsmetadata plugin -->
 
 

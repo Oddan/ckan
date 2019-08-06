@@ -1,0 +1,7 @@
+{% ckan_extends %}
+
+{# Added this extention of the original template in order to override a broken link #}
+
+{% block breadcrumb_content %}
+  <li class="active">{{ h.nav_link(_(dataset_type.title() + 's'), controller='package', action='search') }}</li>  
+{% endblock %}

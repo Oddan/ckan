@@ -1633,14 +1633,9 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
 
         # add new facets
         facets_dict['project_type'] = _('Project type')
-        #facets_dict['res_extras_category'] = _('Data category')
-
-        # link = h.url_for('cdsmetadata.resource_categories')
-        # html_link = '<a href="' + link + '" target = _blank>' + _('here') + '</a>'
-        # facets_dict['category'] = _('Data category  (full list ') + html_link + ')'
-
         facets_dict['category'] = _('Data category')
-        
+        facets_dict['dataformat'] = _('Data format')
+
         return facets_dict
 
     def organization_facets(self, facets_dict,
@@ -1847,15 +1842,23 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
             key = c['display_name']
             c['display_name'] = key + ' - ' + cdict[key]
 
-        #pdb.set_trace()
         return search_results
-    
-    def before_index(self, pkg_dict):
 
+    def before_index(self, pkg_dict):
+        #pdb.set_trace()
+
+        dataformat_names = []
+        dformats = pkg_dict.get('res_extras_dataformat', [])
+
+        for df in dformats:
+            df_obj = model.Session.query(DataFormat).get(df)
+            if df_obj:
+                dataformat_names.append(df_obj.name)
+
+        pkg_dict['dataformat'] = dataformat_names
         pkg_dict['category'] = pkg_dict.get('res_extras_category', '')
         return pkg_dict
 
-    
     # ================================ IValidators ============================
 
     def get_validators(self):
