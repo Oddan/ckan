@@ -52,8 +52,8 @@ resource_category_table = Table(
     Column('description', UnicodeText)
 )
 
-
 meta.mapper(ResourceCategory, resource_category_table)
+
 
 ITEM_TITLE_MAX = 100
 TYPE_NAME_MAX = 100
@@ -77,10 +77,9 @@ meta.mapper(ResourceCategoryMetadataItem,
                                 'metadata_item',
                                 cascade='all, delete, delete-orphan'))})
 
+
 # ========================= Create and populate table =========================
 
-if not resource_category_metadata_item_table.exists():
-    resource_category_metadata_item_table.create()
 
 if not resource_category_table.exists():
 
@@ -136,7 +135,11 @@ if not resource_category_table.exists():
                                  - other data not elsewhere described
                                  """))
                                  
-    # save all changes
-    Session.commit()
+if not resource_category_metadata_item_table.exists():
+    resource_category_metadata_item_table.create()
+
+
+# save all changes
+Session.commit()
 
     

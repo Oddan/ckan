@@ -9,7 +9,7 @@
     <i class="fa fa-info-circle"></i>
     <i>Format: '&lt;lon&gt;, &lt;lat&gt;', using WGS 84 (SRID 4326)</i>
   {{form.input('location', id='field-location', label=_('Geolocation'),
-    value=data.location or '<lon>, <lat>',
+    value=data.location, placeholder='<lon>, <lat>',
     error=errors.location, classes='control-medium') }}
   </div>
 
