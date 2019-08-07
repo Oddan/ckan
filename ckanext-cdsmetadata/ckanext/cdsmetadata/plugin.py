@@ -1863,7 +1863,7 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
         # check if the search is a simple keyword search, in which case we
         # expand the search to also look in the extras metadata for resources
         q = search_params.get('q', '')
-        is_simple_kws = re.match('^[^:]+:[^:]+$', q)
+        is_simple_kws = re.match('^[^:*]+:[^:]+$', q)
         if is_simple_kws:
             # expand the search to include res_extras
             k, v = q.strip().split(':')
