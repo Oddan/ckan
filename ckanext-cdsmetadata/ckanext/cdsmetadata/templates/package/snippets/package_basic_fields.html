@@ -2,8 +2,7 @@
 
 {% block package_basic_fields_license %}
   {# We do not use the license mechanism of CKAN, due to the apparent lack of #}
-  {# support for adding new licenses.  We therefore change the license input to our #}
-  {# own system. #}
+  {# support for adding new licenses.  We therefore change the license input. #}
   <div class="form-group">
     {% set available_licenses = h.licenselist() %}
     {% set error = errors.cdslicense %} 

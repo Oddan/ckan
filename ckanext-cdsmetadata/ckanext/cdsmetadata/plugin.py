@@ -844,6 +844,9 @@ def _category_metadata_create(context, data_dict):
     new_item.save()
     context['session'].commit()
 
+    # ensure the metadata will be indexable
+    _register_resource_fields()
+
 
 def _category_metadata_update(context, data_dict):
 
@@ -860,6 +863,10 @@ def _category_metadata_update(context, data_dict):
     item.enum_items = data_dict['enum_items']
 
     item.save()
+    context['session'].commit()
+
+    # ensure the metadata will be indexable
+    _register_resource_fields()
 
 
 def _category_metadata_delete(context, data_dict):
@@ -1616,6 +1623,18 @@ def _make_sourcelist(value):
     return result
 
 
+def _register_resource_fields():
+    # register the new resource fields
+
+    mdata = Session.query(ResourceCategoryMetadataItem).all()
+    custom_items = ' '.join([x.title for x in mdata])
+
+    tk.get_action('config_option_update')(
+        {'ignore_auth': True},
+        {'ckan.extra_resource_fields':
+         'category purpose sources assumptions dataformat ' + custom_items})
+
+
 class CdsmetadataPlugin(plugins.SingletonPlugin,
                         tk.DefaultDatasetForm):
     plugins.implements(plugins.IConfigurer)
@@ -1639,10 +1658,21 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
         facets_dict.pop('license_id')  # we have redefined licenses
         facets_dict.pop('res_format')  # we have redefined formats
 
+        # we move the 'tags' facet to the end ('move_to_end' function missing in
+        # Python 2.7, so we must do it the hard way)
+        tags_facet = facets_dict.get('tags', None)
+        facets_dict.pop('tags')
+
         # add new facets
         facets_dict['project_type'] = _('Project type')
         facets_dict['category'] = _('Data category')
         facets_dict['dataformat'] = _('Data format')
+        facets_dict['cdslicense'] = _('License')
+        facets_dict['access_level'] = _('Access level')
+
+        # re-insert tags facet again, this time at end
+        if tags_facet:
+            facets_dict['tags'] = tags_facet
 
         return facets_dict
 
@@ -1801,9 +1831,7 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
         setup_model()
 
         # register the new resource fields
-        tk.get_action('config_option_update')({'ignore_auth': True},
-                        {'ckan.extra_resource_fields':
-                         'category purpose sources assumptions dataformat'})
+        _register_resource_fields()
 
     # ================================ IConfigurer ============================
 
@@ -1830,10 +1858,24 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
     def before_view(self, pkg_dict):
         return _package_before_view(pkg_dict)
 
+    def before_search(self, search_params):
+
+        # check if the search is a simple keyword search, in which case we
+        # expand the search to also look in the extras metadata for resources
+        q = search_params.get('q', '')
+        is_simple_kws = re.match('^[^:]+:[^:]+$', q)
+        if is_simple_kws:
+            # expand the search to include res_extras
+            k, v = q.strip().split(':')
+            res_extras_k = 'res_extras_' + k
+            search_params['q'] = q + ' || ' + res_extras_k + ':' + v
+
+        return search_params
+
+
     def after_search(self, search_results, search_params):
 
         # fixing display names of the category search facets
-
         try:
             category_facets = \
                 search_results['search_facets']['category']['items']
@@ -1845,12 +1887,26 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
 
         for c in category_facets:
             key = c['display_name']
-            c['display_name'] = key + ' - ' + cdict[key]
+            c['display_name'] = key + ' - ' + cdict.get(key, 'unknown')
 
+        # looking up license names
+        try:
+            license_facets = \
+                search_results['search_facets']['cdslicense']['items']
+        except KeyError:
+            license_facets = []
+        
+        for l in license_facets:
+            key = l['display_name']
+            lic = _get_license(key)
+            if lic:
+                l['display_name'] = lic.name
+            
         return search_results
 
     def before_index(self, pkg_dict):
 
+        #pdb.set_trace()
         dataformat_names = []
         dformats = pkg_dict.get('res_extras_dataformat', [])
 
