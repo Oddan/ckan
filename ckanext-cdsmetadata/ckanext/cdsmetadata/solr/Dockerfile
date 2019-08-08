@@ -1,4 +1,4 @@
-from solr812
+from solr82
 # FROM solr:8.1.1
 # MAINTAINER Open Knowledge
 
