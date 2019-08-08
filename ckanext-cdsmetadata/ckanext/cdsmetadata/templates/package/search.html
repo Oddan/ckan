@@ -5,3 +5,25 @@
 {% block breadcrumb_content %}
   <li class="active">{{ h.nav_link(_(dataset_type.title() + 's'), controller='package', action='search') }}</li>  
 {% endblock %}
+
+{# suggest that the reason for a failed search could be related to a spatial filtering across the international date line #}
+{% block form %}
+  {{ super() }}
+  {% if c.query_error %}
+    {% trans %}
+      <p id="search-error"><strong>Suggestion:</strong><em> One reason for this error to occur is if you attempt to do a spatial filter search that spans across the international date line (180 degree longitude).  In that case, we suggest trying again with a modified spatial filter search.</em></p>
+    {% endtrans %}
+  {% endif %}
+{% endblock %}
+
+
+
+{# include the search map provided by the spatial_query plugin #}
+
+{% block secondary_content %}
+
+  {% snippet "spatial/snippets/spatial_query.html" %}
+
+  {{ super() }} 
+  
+{% endblock %}

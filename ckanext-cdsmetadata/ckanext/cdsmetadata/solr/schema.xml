@@ -48,6 +48,15 @@ schema. In this case the version should be set to the next CKAN version number.
     <fieldType name="tlongs" class="solr.LongPointField"  positionIncrementGap="0" multiValued="true"/>
     <fieldType name="tdoubles" class="solr.DoublePointField"  positionIncrementGap="0" multiValued="true"/>
 
+    <!-- for ckanext_spatial -->
+    <fieldType name="location_rpt" class="solr.SpatialRecursivePrefixTreeFieldType"
+	       distErrPct="0.025"
+	       maxDistErr="0.000009"
+	       distanceUnits="degrees" />
+
+	       <!-- autoIndex="true" -->
+               <!-- spatialContextFactory="org.locationtech.spatial4j.context.jts.JtsSpatialContextFactory" -->
+        
     <fieldType name="text" class="solr.TextField" positionIncrementGap="100">
         <analyzer type="index">
             <tokenizer class="solr.WhitespaceTokenizerFactory"/>
@@ -146,7 +155,9 @@ schema. In this case the version should be set to the next CKAN version number.
     <field name="dataformat" type="string" indexed="true" stored="true" multiValued="true"/>
     <!-- End of fields related to cdsmetadata plugin -->
 
-
+    <!-- for ckanext_spatial -->
+    <field name="spatial_geom" type="location_rpt" indexed="true" stored="true" multiValued="true" />
+    <!-- end of fields related to ckanext_spatial -->
     
     <field name="indexed_ts" type="date" indexed="true" stored="true" default="NOW" multiValued="false"/>
 

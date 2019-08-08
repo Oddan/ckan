@@ -1490,6 +1490,7 @@ def _package_after_update(context, pkg_dict):
                        pkg_dict.get('related_dataset', []))
 
 
+
 def _package_before_view(pkg_dict):
 
     pkg = model.package.Package.get(pkg_dict['id'])
@@ -1870,6 +1871,8 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
             res_extras_k = 'res_extras_' + k
             search_params['q'] = q + ' || ' + res_extras_k + ':' + v
 
+        #pdb.set_trace()
+
         return search_params
 
 
@@ -1906,7 +1909,6 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
 
     def before_index(self, pkg_dict):
 
-        #pdb.set_trace()
         dataformat_names = []
         dformats = pkg_dict.get('res_extras_dataformat', [])
 
@@ -1917,6 +1919,18 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
 
         pkg_dict['dataformat'] = dataformat_names
         pkg_dict['category'] = pkg_dict.get('res_extras_category', '')
+
+        # add (or sync) field 'spatial', recognized by the ckanext-spatial
+        # 'spatial_query' extension, which allows geographical searches.
+
+        loc = pkg_dict.get('extras_location', None)
+        if loc:
+            # transform loc from text to numeric array
+            loc = map(float, loc[1:-1].split(','))
+            geojson = '{{"type": "Point", "coordinates": [{0}, {1}] }}'.\
+                          format(loc[0], loc[1])
+            pkg_dict['extras_spatial'] = geojson
+        #pdb.set_trace()
         return pkg_dict
 
     # ================================ IValidators ============================
