@@ -6,8 +6,6 @@ ckan.module('inject_html', function ($) {
             var custom_html = this.options.custom_html;
             var xhttp;
             var elem = this.el[0];
-            // console.log("I'be been initialized for element: ", this.el);
-            // console.log(custom_html);
 
             xhttp = new XMLHttpRequest();
             xhttp.onreadystatechange = function () {
