@@ -38,6 +38,9 @@
     </p>
   {% endblock %}
 </div>
+
+{# This block checks if the logged used has edit-access to the dataset and if positive displays a "View Details" button next to the resource
+  that links to a page containing the details for that resource #}
 {% block resource_item_explore %}
 {% if can_edit and not url_is_edit %}
 <!-- <div style="vertical-align:middle; float:right"> -->

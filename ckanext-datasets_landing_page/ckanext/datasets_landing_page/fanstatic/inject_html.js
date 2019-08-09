@@ -34,7 +34,8 @@ ckan.module('inject_html', function ($) {
 
 function validate_form() {
     var checkboxes = document.querySelectorAll('input[id="resource"]')
-    var checkedOne = Array.prototype.slice.call(checkboxes).some(x => x.checked)
+    //var checkedOne = Array.prototype.slice.call(checkboxes).some(x => x.checked)
+    var checkedOne = Array.prototype.slice.call(checkboxes).some(function (x) {return x.checked;})
     if (checkedOne){
         return true
     }

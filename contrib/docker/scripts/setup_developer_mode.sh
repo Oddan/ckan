@@ -29,6 +29,7 @@ echo "In your configuration file, remember to add 'spatial_metadata' and 'spatia
 ckan-paster --plugin=ckan db init -c "${CKAN_CONFIG}/development.ini"
 
 # setup sysadmin
+
 sleep 8 # wait for database to complete
 cd $CKAN_VENV/src/ckan
 ckan-paster --plugin=ckan user add admin email=admin@localhost name=admin password=passpass -c /etc/ckan/development.ini
