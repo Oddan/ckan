@@ -25,7 +25,7 @@
 
   {% block static_description_page %}
     <div data-module="inject_html"
-         data-module-custom_html="/datasets_custom_html/{{pkg.name}}/{{pkg.name}}.html"></div>
+         data-module-custom_html="/landing_pages/{{pkg.name}}/index.html"></div>
   {% endblock %}
 
     <p> {{pkg.name }} </p>
@@ -39,20 +39,6 @@
   {% block package_additional_info %}
     {% snippet "package/snippets/additional_info.html", pkg_dict=pkg %}
   {% endblock %}
-
-
-  {# {% block package_resources %} #}
-  {#   {% snippet "package/snippets/resources_list.html", pkg=pkg, resources=pkg.resources %} #}
-  {# {% endblock %} #}
-  
-  {# call the javascript function to load the right static .html file for the description.
-    The file is loaded from CKAN public folder and rendered in the 'static_description_page' block above. #}
-  {# {% block custom_javascript %} #}
-  {#   <script type="text/javascript"> #}
-  {#     {% include "custom_include_html.js" %} #}
-  {#     includeHTML(); #}
-  {#   </script> #}
-  {# {% endblock %} #}
 
 {% endblock %}
 
