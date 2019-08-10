@@ -1,0 +1,77 @@
+{# 
+Renders a list of resources with icons and view links.
+
+resources - A list of resources to render
+pkg - A package object that the resources belong to.
+
+Example:
+
+  {% snippet "package/snippets/resources_list.html", pkg=pkg, resources=pkg.resources %}
+
+#}
+
+
+{# This file creates the checkbox form to select multiple resources for download #}
+
+<section id="dataset-resources" class="resources">
+    <h3>{{ _('Download dataset parts') }}</h3>
+    <br>
+    {% block resource_list %}
+      {% if resources %}
+        {% if h.check_access('resource_show', {'id': resources[0]['id']}) %}
+          <ul class="{% block resource_list_class %}resource-list{% endblock %}">
+            {% block resource_list_inner %}
+              {% set can_edit = h.check_access('package_update', {'id':pkg.id }) %}
+              <form action="/multiple_download" method="POST" onsubmit="return validate_form()">
+                
+                {% for resource in resources %}
+                  <div style="white-space: nowrap;">  
+                 
+                    <input  type="checkbox" name="{{ resource.name }}" value="{{ resource.id }}" id="resource">
+                    <div style="display: inline-block; white-space: normal;">
+                      {% snippet 'package/snippets/resource_item.html', pkg=pkg, res=resource, can_edit=can_edit %}
+                    </div>
+                    <br> 
+                  </div>
+                {% endfor %}
+                <br>
+                <input type="checkbox" required> By clicking this I confirm that I have read and accepted this dataset's <a href="{{ pkg.license_url }}" rel="dc:rights">Licence Requirements</a>.<br>
+                
+                <br>
+                <input type="button" value="Select all" onclick="select_all_resources(this)">
+                <input type="submit" value="Download selected" style="float:right">
+              </form>
+            {% endblock %}
+          </ul>
+        {% else %}
+          <p class="empty"> Log in with authorized user in order to access and download dataset components.</p>
+        {% endif %}
+      {% else %}
+        {% if h.check_access('resource_create', {'package_id': pkg['id']}) %}
+            {% trans url=h.url_for(controller='package', action='new_resource', id=pkg.name) %}
+              <p class="empty">This dataset has no data, <a href="{{ url }}">why not add some?</a></p>
+            {% endtrans %}
+        {% else %}
+            <p class="empty">{{ _('This dataset has no data') }}</p>
+        {% endif %}
+      {% endif %}
+    {% endblock %}
+</section>
+
+
+{# {\# This script gets called when the form to download resources is submitted. #}
+{#   It checks that at least one resource has been selected before submitting the request, #}
+{#   and raises a warning otherwise. #\} #}
+{# <script type="text/javascript"> #}
+{#   function validate_form(){ #}
+{#     var checkboxes = document.querySelectorAll('input[id="resource"]') #}
+{#     var checkedOne = Array.prototype.slice.call(checkboxes).some(x => x.checked) #}
+{#     if (checkedOne){ #}
+{#       return true #}
+{#     } #}
+{#     else { #}
+{#       alert("Please select at least one resource to download.") #}
+{#       return false #}
+{#     }} #}
+{# </script> #}
+  
