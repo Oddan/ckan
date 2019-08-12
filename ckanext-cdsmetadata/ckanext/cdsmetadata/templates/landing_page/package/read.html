@@ -24,8 +24,10 @@
 
 
   {% block static_description_page %}
+    /{{h.landing_page_index(pkg.name)}}
     <div data-module="inject_html"
-         data-module-custom_html="/landing_pages/{{pkg.name}}/index.html"></div>
+         data-module-custom_html=/{{h.landing_page_index(pkg.name)}}</div> 
+         {# data-module-custom_html="/landing_pages/{{pkg.name}}/index.html"></div> #}
   {% endblock %}
 
     <p> {{pkg.name }} </p>

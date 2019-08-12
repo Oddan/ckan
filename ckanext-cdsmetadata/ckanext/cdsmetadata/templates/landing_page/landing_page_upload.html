@@ -17,20 +17,20 @@
 {% set errors = errors or {} %}
 
 <form method="POST"
-      enctype="multipart/form-data" >
-      action="{{ h.url_for('cdslandingpage.landing_page_upload', pkg_name=pkg_name) }}" > 
+      enctype="multipart/form-data"
+      {# action="{{ h.url_for('cdslandingpage.landing_page_upload', pkg_name=pkg_name) }}" >  #}
       {{ form.input('zipfile', id='field-zipfile', label='Landing page zip file',
                      type='file', value='', placeholder='file.zip', error=errors) }}  
 
-      <button class="btn btn-primary" name="save" value={{pkg_name}} type="submit">
+      <button class="btn btn-primary" name="save" value={{pkg_name}} type="submipt">
         {{_('Upload')}}
       </button>
       <button class="btn btn-danger" name="delete" value={{pkg_name}} type="submit">
         {{_('Remove any existing page')}}
       </button>
 
-      <input type="submit" value="upload">
-      <input type="submit" value="delete existing page">
+      {# <input type="submit" value="upload"> #}
+      {# <input type="submit" value="delete existing page"> #}
 
 </form> 
 

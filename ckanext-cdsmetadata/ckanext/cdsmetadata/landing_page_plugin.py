@@ -12,8 +12,14 @@ import ckan.logic as logic
 from os.path import basename
 import ckan.model as model
 import pdb
-
+import os.path as path
+import os
+import shutil
 # abort(403, _('Not authorized to see this page.'))
+
+
+PLUGIN_DIR = path.dirname(__file__)
+LANDING_PAGE_DIR = 'landing_pages'
 
 
 def _only_sysadmin_auth(context, data_dict=None):
@@ -27,28 +33,94 @@ def _package_id_of_resource(context, resource_id):
     return res['package_id']
 
 
+def _verify_landing_page_filelist(flist):
+    index_found = False
+    for fname in flist:
+        if fname == 'index.html':
+            # we identified the index file
+            index_found = True
+        elif len(fname) >= 7 and fname[0:7] == 'static/':
+            # this refers to static content
+            pass
+        else:
+            # there should be no other file in the archive, so this is an error
+            return ["Error: zipped archive contains files other than 'index.html' and 'static/*'"]
+
+    if not index_found:
+        return ["Error: 'index.html' missing from zipped archive."]
+
+
+def _unpack_landing_page_zipfile(afile, pkg_name):
+
+    if afile.content_type != 'application/zip':
+        return ['The file you tried to upload was not a zip-file.']
+
+    input_zip = zipfile.ZipFile(afile)
+
+    # check contents of uploaded zipfile
+    errors = _verify_landing_page_filelist(input_zip.namelist())
+
+    if errors:
+        return errors
+
+    # contents verified.  Extract and process files.
+    root_dir = path.join(PLUGIN_DIR, 'static', LANDING_PAGE_DIR)
+    if not path.exists(root_dir):
+        os.makedirs(root_dir)  # ensure base directory exists
+    
+    target_dir = \
+        path.join(PLUGIN_DIR, 'static', LANDING_PAGE_DIR, pkg_name)
+    tmp_target_dir = \
+        path.join(PLUGIN_DIR, 'static', LANDING_PAGE_DIR, '_' + pkg_name)
+
+    try:
+        if not path.exists(tmp_target_dir):
+            os.makedirs(tmp_target_dir)
+        input_zip.extractall(path=tmp_target_dir)
+    except:
+        # unable to extract archive.  Clean up and return error
+        if path.exists(tmp_target_dir):
+            shutil.rmtree(tmp_target_dir)
+        return ["Error: failed to extract zip-file.  Corrupt?"]
+
+    # extraction went OK.  Move result to target directory
+    if path.exists(target_dir):
+        shutil.rmtree(tmp_target_dir)
+    os.rename(tmp_target_dir, target_dir)
+
+    return []
+
+
 def _landing_page_upload(pkg_name):
 
     # check for permission
-    
     try:
         tk.check_access('only_sysadmin', {'auth_user_obj': g.userobj})
     except logic.NotAuthorized:
         abort(403, _('Only sysadmins are allowed to change landing pages.'))
 
-    if request.method == 'POST':
-        pdb.set_trace()
-        pass
-        
+    # check that requested package exists
     try:
-        pkg_id = convert_package_name_or_id_to_id(pkg_name, {'session': model.Session})
+        pkg_id = convert_package_name_or_id_to_id(pkg_name,
+                                                  {'session': model.Session})
         pkg = model.Package.get(pkg_id)
     except:
         abort(404, 'Requested package not found.')
-        
-    extra_vars = {'pkg': pkg, 'pkg_name': pkg_name}
+
+    errors = []
+    if request.method == 'POST':
+        if 'zipfile' not in request.files or request.files['zipfile'] == '':
+            errors = ['No file chosen.']
+        else:
+            errors = _unpack_landing_page_zipfile(request.files['zipfile'],
+                                                  pkg_name)
+        if len(errors) == 0:
+            # everything went well.
+            return "Success"
+
+    extra_vars = {'pkg': pkg, 'pkg_name': pkg_name, 'errors': errors}
     return render('landing_page_upload.html', extra_vars)
-        
+
 
 def _download_multiple_resources():
 
@@ -89,11 +161,19 @@ class CdsLandingPagePlugin(plugins.SingletonPlugin):
     plugins.implements(plugins.IConfigurer)
     plugins.implements(plugins.IBlueprint)
     plugins.implements(plugins.IAuthFunctions)
+    plugins.implements(plugins.ITemplateHelpers)
+
+    # ITemplateHelpers
+    def get_helpers(self):
+        return {
+            'landing_page_index':
+            lambda pkg_name: LANDING_PAGE_DIR + '/' + pkg_name + '/index.html'
+        }
 
     # IAuthFunctions
     def get_auth_functions(self):
         return {'only_sysadmin': _only_sysadmin_auth}
-    
+
     # IConfigurer
     def update_config(self, config):
         tk.add_template_directory(config, 'templates/landing_page')
