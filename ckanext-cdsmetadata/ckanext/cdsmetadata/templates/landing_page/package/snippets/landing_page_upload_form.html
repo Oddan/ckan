@@ -1,0 +1,42 @@
+{% import 'macros/form.html' as form %}
+
+<p> This is the landing page upload form for package "{{name}}"</p>
+
+<p> Upload a zip file with the following elements:</p>
+<p>
+  <li> A html file named 'index.html' </li>
+  <li> A folder named 'static', containing all images and other static material referenced by the html file</li>
+</p>
+
+{% set data = data or {} %}
+{% set errors = errors or {} %}
+
+<form method="POST" 
+      enctype="multipart/form-data" 
+      action="{{ h.url_for('cdslandingpage.landing_page_upload', pkg_name=name) }}" > 
+      {{ form.input('zipfile', id='field-zipfile', label='Landing page zip file',
+                     type='file', value='', placeholder='file.zip', error=errors) }}  
+      <input type="submit" value="upload"> 
+</form> 
+
+{# <form method="post"  #}
+{#       enctype="multipart/form-data"  #}
+{#       action={{ h.url_for('cdslandingpage.landing_page_upload', pkg_name=name) }}>  #}
+      
+{#   <input id="fileinput" type="file" name="file" class="hidden"/>  #}
+{#   <label for="fileinput" class="btn">Select zip file</label>  #}
+{#   <div id="file-upload-filename"></div>  #}
+
+{#   <input type="submit" value="upload">  #}
+  
+{# </form>  #}
+
+{# <script>  #}
+{#   function showFileName( event ) {  #}
+{#     var input = event.srcElement;  #}
+{#     var filename = input.files[0].name;  #}
+{#     infoArea.innerHTML = "<strong>Chosen:</strong> " + filename;  #}
+{#   }  #}
+{#   var infoArea = document.getElementById('file-upload-filename');  #}
+{#   document.getElementById('fileinput').addEventListener('change', showFileName);  #}
+{# </script>  #}

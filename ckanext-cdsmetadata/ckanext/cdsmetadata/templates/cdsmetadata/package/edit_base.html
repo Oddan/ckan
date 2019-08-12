@@ -4,21 +4,3 @@
   {{ super() }}
   {% resource "cdsmetadata/multiselect_extra.js" %}
 {% endblock %}
-
-{% block secondary_content %}
-  {% if pkg %}
-    <section class="module module-narrow">
-      <div class="module context-info">
-        <div class="module-content">
-          {% block package_info_inner %}
-            {% block heading %}
-              <h1 class="heading"> Editing metadata for dataset: {{ h.dataset_display_name(pkg) }}</h1>
-            {% endblock %}
-          {% endblock %}
-        </div>
-      </div>
-    </section>
-  {% endif %}
-  
-{% endblock %}
-

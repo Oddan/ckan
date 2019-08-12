@@ -8,6 +8,7 @@ import io
 import requests
 from os.path import basename
 import ckan.model as model
+from ckan.lib.base import abort
 import pdb
 
 # abort(403, _('Not authorized to see this page.'))
@@ -17,6 +18,16 @@ def _package_id_of_resource(context, resource_id):
 
     res = tk.get_action('resource_show')(context, {'id': resource_id})
     return res['package_id']
+
+
+def _landing_page_upload(pkg_name):
+    # @@ make sure to check for permission
+    # @@ make sure to check for correct type file
+    return "Hello world"
+    # errors = {'zipfile': ["Bad file input."]}
+    # # @@ make upload directory customizable
+    # pdb.set_trace()
+    # abort(405, 'upload not yet implemented')
 
 
 def _download_multiple_resources():
@@ -68,12 +79,29 @@ class CdsLandingPagePlugin(plugins.SingletonPlugin):
     def get_blueprint(self):
         blueprint = Blueprint(self.name, self.__module__)
         blueprint.template_folder = u'templates'
-        rules = [
-            (u'/multiple_download',
-             u'multiple_download',
-             _download_multiple_resources)
-        ]
-        for rule in rules:
-            blueprint.add_url_rule(*rule, methods=['POST'])
+
+        blueprint.add_url_rule(u'/multiple_download',
+                               u'multiple_download',
+                               _download_multiple_resources,
+                               methods=['POST'])
+        blueprint.add_url_rule(u'/landing_page_upload/<pkg_name>',
+                               u'landing_page_upload',
+                               _landing_page_upload,
+                               methods=['GET'])
+
+        
+        # rules = [
+        #     (u'/multiple_download',
+        #      u'multiple_download',
+        #      _download_multiple_resources),
+        #     (u'/landing_page_upload',
+        #      u'landing_page_upload',
+        #      _landing_page_upload)
+        #     # (u'/landing_page_upload/<pkg_name>',
+        #     #  u'landing_page_upload',
+        #     #  _landing_page_upload)
+        # ]
+        # for rule in rules:
+        #     blueprint.add_url_rule(*rule, methods=['POST'])
 
         return blueprint

@@ -182,7 +182,7 @@
       <li> {{ per[1] }} </li>
     {% endfor %} 
   </div>
-  
+
   <br><br>
 
   {# ================================= Input DOI ================================= #}
@@ -190,12 +190,14 @@
   {{ form.input('doi', id='field-doi', label='Digital Object Identifier (DOI)', error=errors.doi,
                 value=data.doi, classes=['control-medium']) }}
 
-  
+  <br><br>
+
   {# ===================== Old CKAN metadata (only keep 'Source') ===================== #}
   
   {% block package_metadata_fields_url %}
     {{ form.input('url', label=_('Source'), id='field-url', placeholder=_('http://example.com/dataset.json'), value=data.url, error=errors.url, classes=['control-medium']) }}
   {% endblock %}
+
 
   {# {% block package_metadata_fields_version %} #}
   {#   {{ form.input('version', label=_('Version'), id='field-version', placeholder=_('1.0'), value=data.version, error=errors.version, classes=['control-medium']) }} #}
