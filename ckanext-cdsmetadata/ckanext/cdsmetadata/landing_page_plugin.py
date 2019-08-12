@@ -2,16 +2,23 @@ import ckan.plugins as plugins
 import ckan.plugins.toolkit as tk
 from flask import send_file, Blueprint, request, render_template
 import ckan.lib.helpers as h
-from ckan.common import g
+from ckan.lib.base import abort, render
+from ckan.logic.converters import convert_package_name_or_id_to_id
+from ckan.common import g, _, request
 import zipfile
 import io
 import requests
+import ckan.logic as logic
 from os.path import basename
 import ckan.model as model
-from ckan.lib.base import abort
 import pdb
 
 # abort(403, _('Not authorized to see this page.'))
+
+
+def _only_sysadmin_auth(context, data_dict=None):
+    # only sysadmins should have access (and sysamins bypass the login system)
+    return {'success': False, 'msg': 'Only sysadmins are authorized.'}
 
 
 def _package_id_of_resource(context, resource_id):
@@ -21,14 +28,27 @@ def _package_id_of_resource(context, resource_id):
 
 
 def _landing_page_upload(pkg_name):
-    # @@ make sure to check for permission
-    # @@ make sure to check for correct type file
-    return "Hello world"
-    # errors = {'zipfile': ["Bad file input."]}
-    # # @@ make upload directory customizable
-    # pdb.set_trace()
-    # abort(405, 'upload not yet implemented')
 
+    # check for permission
+    
+    try:
+        tk.check_access('only_sysadmin', {'auth_user_obj': g.userobj})
+    except logic.NotAuthorized:
+        abort(403, _('Only sysadmins are allowed to change landing pages.'))
+
+    if request.method == 'POST':
+        pdb.set_trace()
+        pass
+        
+    try:
+        pkg_id = convert_package_name_or_id_to_id(pkg_name, {'session': model.Session})
+        pkg = model.Package.get(pkg_id)
+    except:
+        abort(404, 'Requested package not found.')
+        
+    extra_vars = {'pkg': pkg, 'pkg_name': pkg_name}
+    return render('landing_page_upload.html', extra_vars)
+        
 
 def _download_multiple_resources():
 
@@ -68,7 +88,12 @@ def _download_multiple_resources():
 class CdsLandingPagePlugin(plugins.SingletonPlugin):
     plugins.implements(plugins.IConfigurer)
     plugins.implements(plugins.IBlueprint)
+    plugins.implements(plugins.IAuthFunctions)
 
+    # IAuthFunctions
+    def get_auth_functions(self):
+        return {'only_sysadmin': _only_sysadmin_auth}
+    
     # IConfigurer
     def update_config(self, config):
         tk.add_template_directory(config, 'templates/landing_page')
@@ -87,21 +112,6 @@ class CdsLandingPagePlugin(plugins.SingletonPlugin):
         blueprint.add_url_rule(u'/landing_page_upload/<pkg_name>',
                                u'landing_page_upload',
                                _landing_page_upload,
-                               methods=['GET'])
-
-        
-        # rules = [
-        #     (u'/multiple_download',
-        #      u'multiple_download',
-        #      _download_multiple_resources),
-        #     (u'/landing_page_upload',
-        #      u'landing_page_upload',
-        #      _landing_page_upload)
-        #     # (u'/landing_page_upload/<pkg_name>',
-        #     #  u'landing_page_upload',
-        #     #  _landing_page_upload)
-        # ]
-        # for rule in rules:
-        #     blueprint.add_url_rule(*rule, methods=['POST'])
+                               methods=['GET', 'POST'])
 
         return blueprint
