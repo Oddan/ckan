@@ -1,0 +1,8 @@
+{% ckan_extends %}
+
+
+{# Removes the "groups" and "activity stream" tabs from the package view page #}
+{% block content_primary_nav %}
+
+  {{ h.build_nav_icon('show_statistics', _('Statistics'), id=pkg.name) }}
+{% endblock %}
