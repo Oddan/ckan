@@ -13,7 +13,7 @@ ckan.module('inject_html', function ($) {
                     if (this.status == 200) { elem.innerHTML = this.responseText;}
                     if (this.status == 404) {
                         elem.innerHTML =
-                            "This dataset does not have a description yet."
+                            "<h2>This dataset does not have a dedicated landing page yet.</h2>"
                     }
                 }
             };
