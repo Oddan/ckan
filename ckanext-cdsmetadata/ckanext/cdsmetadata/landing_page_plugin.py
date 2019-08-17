@@ -64,14 +64,14 @@ def _unpack_landing_page_zipfile(afile, pkg_name):
         return errors
 
     # contents verified.  Extract and process files.
-    root_dir = path.join(PLUGIN_DIR, 'static', LANDING_PAGE_DIR)
+    root_dir = path.join(PLUGIN_DIR, 'public', LANDING_PAGE_DIR)
     if not path.exists(root_dir):
         os.makedirs(root_dir)  # ensure base directory exists
     
     target_dir = \
-        path.join(PLUGIN_DIR, 'static', LANDING_PAGE_DIR, pkg_name)
+        path.join(PLUGIN_DIR, 'public', LANDING_PAGE_DIR, pkg_name)
     tmp_target_dir = \
-        path.join(PLUGIN_DIR, 'static', LANDING_PAGE_DIR, '_' + pkg_name)
+        path.join(PLUGIN_DIR, 'public', LANDING_PAGE_DIR, '_' + pkg_name)
 
     try:
         if not path.exists(tmp_target_dir):
@@ -109,14 +109,25 @@ def _landing_page_upload(pkg_name):
 
     errors = []
     if request.method == 'POST':
-        if 'zipfile' not in request.files or request.files['zipfile'] == '':
-            errors = ['No file chosen.']
+
+        if 'save' in request.form:
+            if 'zipfile' not in request.files or request.files['zipfile'] == '':
+                errors = ['No file chosen.']
+            else:
+                errors = _unpack_landing_page_zipfile(request.files['zipfile'],
+                                                      pkg_name)
+                if len(errors) == 0:
+                    # everything went well.
+                    return tk.redirect_to(h.url_for(controller='package',
+                                                    action='read', id=pkg_id))
         else:
-            errors = _unpack_landing_page_zipfile(request.files['zipfile'],
-                                                  pkg_name)
-        if len(errors) == 0:
-            # everything went well.
-            return "Success"
+            # a 'delete' was requested 
+            # removing directory containing landing page
+            target_dir = path.join(PLUGIN_DIR, 'public', LANDING_PAGE_DIR, pkg_name)
+            if path.exists(target_dir):
+                shutil.rmtree(target_dir)
+            return tk.redirect_to(h.url_for(controller='package',
+                                            action='read', id=pkg_id))
 
     extra_vars = {'pkg': pkg, 'pkg_name': pkg_name, 'errors': errors}
     return render('landing_page_upload.html', extra_vars)

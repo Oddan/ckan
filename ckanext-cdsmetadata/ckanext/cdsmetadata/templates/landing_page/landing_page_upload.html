@@ -22,12 +22,15 @@
       {{ form.input('zipfile', id='field-zipfile', label='Landing page zip file',
                      type='file', value='', placeholder='file.zip', error=errors) }}  
 
-      <button class="btn btn-primary" name="save" value={{pkg_name}} type="submipt">
-        {{_('Upload')}}
-      </button>
-      <button class="btn btn-danger" name="delete" value={{pkg_name}} type="submit">
-        {{_('Remove any existing page')}}
-      </button>
+      <div class="form-actions">
+        <button class="btn btn-primary" name="save" value={{pkg_name}} type="submipt">
+          {{_('Upload')}}
+        </button>
+        <button class="btn btn-danger" data-module="confirm-action"
+                name="delete" value={{pkg_name}} type="submit">
+                {{_('Remove any existing page')}}
+        </button>
+      </div>
 
       {# <input type="submit" value="upload"> #}
       {# <input type="submit" value="delete existing page"> #}
