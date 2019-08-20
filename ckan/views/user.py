@@ -18,7 +18,7 @@ import ckan.model as model
 import ckan.plugins as plugins
 from ckan import authz
 from ckan.common import _, config, g, request
-
+import pdb
 log = logging.getLogger(__name__)
 
 # hooks for subclasses
@@ -325,7 +325,7 @@ class RegisterView(MethodView):
                 _(u'User "%s" is now registered but you are still '
                   u'logged in as "%s" from before') % (data_dict[u'name'],
                                                        g.user))
-            if authz.is_sysadmin(g.user):
+            if authz.is_sysadmin(g.user):    
                 # the sysadmin created a new user. We redirect him to the
                 # activity page for the newly created user
                 return h.redirect_to(u'user.activity', id=data_dict[u'name'])
