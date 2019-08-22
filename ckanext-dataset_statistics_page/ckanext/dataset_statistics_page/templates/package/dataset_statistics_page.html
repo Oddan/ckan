@@ -1,15 +1,10 @@
-{% extends "package/read.html" %}
+{% extends "package/read_base.html" %}
 
 {% set can_edit = h.check_access('package_update', {'id':pkg_dict.id }) %}
 
 
-{% block breadcrumb_content %}
-    {{ super() }}
-    <li class="active">Statistics</li>
-{% endblock %}
-
-
-{% block primary %}
+{% block primary_content_inner %}
+<h2>{{ _('Statistics') }}</h2>
 Hello, I just received a call.
     {% if can_edit %}
         <p>Here you are some wonderful statistics for the dataset! WOW!</p>

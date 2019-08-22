@@ -5,6 +5,7 @@ import re
 import ckan.model as model
 from ckan.common import c
 import ckan.logic as logic
+import pdb
 
 
 # This function gets called when a request to show dataset statistics is received
@@ -12,9 +13,7 @@ def show_dataset_statistics():
     context = {'model': model, 'session': model.Session,
                    'user': c.user, 'for_view': True,
                    'auth_user_obj': c.userobj}
-    
-    dataset_name = re.search('(?<=dataset_name=\[).*?(?=\])', request.url)
-    dataset_name = dataset_name.group(0) # convert from re-object to string with the dataset name
+    dataset_name = request.values["id"]
     data_dict = {'id': dataset_name, 'include_tracking': True}
     package_dictionary = logic.action.get.package_show(context, data_dict)
     return render_template(u"package/dataset_statistics_page.html", pkg_dict = package_dictionary)
@@ -25,6 +24,7 @@ def show_dataset_statistics():
 class Dataset_Statistics_PagePlugin(plugins.SingletonPlugin):
     plugins.implements(plugins.IConfigurer)
     plugins.implements(plugins.IBlueprint)
+    plugins.implements(plugins.IRoutes)
 
     # IConfigurer
 
@@ -43,9 +43,20 @@ class Dataset_Statistics_PagePlugin(plugins.SingletonPlugin):
         blueprint.template_folder = u'templates'
         # Add plugin url rules to Blueprint object
         rules = [
-            (u'/statistics', u'statistics', show_dataset_statistics),
+            (u'/statistics', u'show_statistics', show_dataset_statistics),
         ]
         for rule in rules:
             blueprint.add_url_rule(*rule, methods=['GET'])
 
         return blueprint
+
+
+    # IRoutes
+
+    def before_map(self, map):
+        map.connect('show_statistics', '/statistics',
+                    action='show_statistics', controller='package')
+        return map
+
+    def after_map(self, map):
+        return map
