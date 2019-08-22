@@ -84,6 +84,7 @@ setup(
         cdsmetadata_resources=ckanext.cdsmetadata.plugin2:CdsMetadataResourcesPlugin
         cdslandingpage=ckanext.cdsmetadata.landing_page_plugin:CdsLandingPagePlugin
         cdsaccess=ckanext.cdsmetadata.access_plugin:CdsAccessPlugin
+        cdsstats=ckanext.cdsmetadata.cdsstats_plugin:CdsStatsPlugin
 
         [babel.extractors]
         ckan = ckan.lib.extract:extract_ckan

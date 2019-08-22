@@ -1,6 +1,8 @@
 {% ckan_extends %}
 
 {% block content_action %}
+    
+  {{ super() }} 
   {% if h.check_access('package_update', {'id':pkg.id }) %}
     {% link_for _('Manage'), controller='package', action='edit', id=pkg.name, class_='btn btn-default', icon='wrench' %}
     {% link_for _('Set landing page'), named_route='cdslandingpage.landing_page_upload', pkg_name=pkg.name, class_='btn btn-default', icon='wrench' %}
