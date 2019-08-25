@@ -5,6 +5,7 @@ import ckan.lib.helpers as h
 from ckan.lib.base import abort, render
 from ckan.logic.converters import convert_package_name_or_id_to_id
 from ckan.common import g, _, request
+# from ckan.controllers.package import PackageController
 import zipfile
 import io
 import requests
@@ -21,6 +22,7 @@ import shutil
 PLUGIN_DIR = path.dirname(__file__)
 LANDING_PAGE_DIR = 'landing_pages'
 
+# _package_controller = PackageController()
 
 def _only_sysadmin_auth(context, data_dict=None):
     # only sysadmins should have access (and sysamins bypass the login system)
@@ -140,20 +142,28 @@ def _download_multiple_resources():
     if request.method == "POST":
 
         memory_file = io.BytesIO()
+
+        headers = {}
+        if 'Cookie' in request.headers.keys():
+            headers['Cookie'] = request.headers['Cookie']
+
         with zipfile.ZipFile(memory_file, mode='w',
                              compression=zipfile.ZIP_STORED) as zf:
             for res_id in request.form.values():
-
+                #pdb.set_trace()
                 # @@ change when Flask becomes responsible for resources
+                #pdb.set_trace()
+
+                # f = _package_controller.resource_download(
+                #     _package_id_of_resource(context, res_id),
+                #     resource_id=res_id)
+
                 url = h.url_for(controller='package',
                                 action='resource_download',
                                 id=_package_id_of_resource(context, res_id),
                                 resource_id=res_id,
                                 qualified=True)
-
-                f = requests.get(url,
-                                 allow_redirects=True,
-                                 headers={'Cookie': request.headers['cookie']})
+                f = requests.get(url, allow_redirects=True, headers=headers)
 
                 if f.status_code == 404:
                     return render_template(u"package/download_denied.html")

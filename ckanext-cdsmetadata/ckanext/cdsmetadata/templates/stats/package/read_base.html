@@ -1,8 +1,11 @@
 {% ckan_extends %}
 
+{# {% block content_primary_nav %} #}
+{# {% endblock %} #}
+
 {% block content_action %}
   {% if h.check_access('package_update', {'id': pkg.id }) %}
-    {% link_for _('View statistics'), named_route='cdsstats.show_statistics', pkg_name=pkg.name, class_='btn btn-default', icon='wrench' %}
+    {% link_for _('View statistics'), named_route='cdsstats.show_statistics', pkg_name=pkg.name, class_='btn btn-default', icon='sellsy' %}
   {% endif %}
 {% endblock %}
 
