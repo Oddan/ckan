@@ -1,65 +1,81 @@
 {% extends "package/read_base.html" %}
-
+{% import 'macros/form.html' as form %}
 {% set max_initial_rows = 6 %} 
 
 {% block primary_content_inner %}
 
   <h1> {{pkg_dict.name}} - dataset statistics</h1>
 
-  <h3> Overview </h3>
-
-  <table class="table table-striped table-bordered table-condensed">
-    <col style="width:30%">
-    <col>
-    <col>
-    <col>
-    <col style="width:30%">
-    <thead>
-      <th scope="col">Resource name</th>
-      <th scope="col">Total downloads</th>
-      <th scope="col">Number of users</th>
-      <th scope="col">Anonymous downloads</th>
-      <th scope="col">Last download</th>
-    </thead>
-    <tbody>
-      {% for stat in overview_stats %}
-        <tr>
-          <th scope="row">{{stat.name}}</th>
-          <td>{{stat.total}}</td>
-          <td>{{stat.users}}</td>
-          <td>{{stat.anon}}</td>
-          <td>{{stat.date}}</td>
-      {% endfor %} 
-    </tbody>
-  </table>
-  
-
-  {% for item in resource_stats %}
-
-    <h3> {{item}} </h3>
-
-    <table class="table table-striped table-bordered table-condensed" data-module="table-toggle-more">
+  {% if not first_date %} 
+    <p> <em>No recorded downloads yet.</em> </p>
+  {% else %}
+    <p> <em>First recorded download date: {{ first_date }} </em></p>
+    
+    <h3> Overview </h3>
+    
+    <table class="table table-striped table-bordered table-condensed">
+      <col style="width:30%">
+      <col>
+      <col>
+      <col>
+      <col style="width:30%">
       <thead>
-        <th scope="col">User</th>
-        <th scope="col">Last download date</th>
+        <th scope="col">Resource name</th>
+        <th scope="col">Total downloads</th>
+        <th scope="col">Number of users</th>
+        <th scope="col">Anonymous downloads</th>
+        <th scope="col">Last download</th>
       </thead>
       <tbody>
-        {% for entry in resource_stats[item] %}
-
-          {% if loop.index <= max_initial_rows %}
-            <tr>
-          {% else %}
-            <tr class="toggle-more">
-          {% endif %}
-            <th scope="row">{{entry.user}}</th>
-            <td>{{entry.date}}</td>
+        {% for stat in overview_stats %}
+          <tr>
+            <th scope="row">{{stat.name}}</th>
+            <td>{{stat.total}}</td>
+            <td>{{stat.users}}</td>
+            <td>{{stat.anon}}</td>
+            <td>{{stat.date}}</td>
           {% endfor %} 
       </tbody>
     </table>
     
-  {% endfor %}
-  
+    
+    {% for item in resource_stats %}
+      
+      <h3> {{item}} </h3>
+      
+      <table class="table table-striped table-bordered table-condensed" data-module="table-toggle-more">
+        <thead>
+          <th scope="col">User</th>
+          <th scope="col">Last download date</th>
+        </thead>
+        <tbody>
+          {% for entry in resource_stats[item] %}
+            
+            {% if loop.index <= max_initial_rows %}
+              <tr>
+            {% else %}
+              <tr class="toggle-more">
+            {% endif %}
+            <th scope="row">{{entry.user}}</th>
+            <td>{{entry.date}}</td>
+          {% endfor %} 
+        </tbody>
+      </table>
+      
+    {% endfor %}
+  {% endif %}
   <br><br>
-  <a class="btn btn-danger">Reset now</a>
+  <form method="POST"
+        action={{h.url_for('cdsstats.reset_statistics', pkg_name = pkg_dict.name)}},
+        data-module="basic-form">
+        <div class="form-actions">
+          <a href={{h.url_for('cdsstats.reset_statistics', pkg_name=pkg_dict.name)}}
+             class="btn btn-danger pull-right" 
+             data-module="confirm-action"   
+             data-module-content="Are you sure?  All statistics for this dataset will be lost.">
+             Reset now
+          </a>
+        </div>
+  </form> 
   
 {% endblock %}  
