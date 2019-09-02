@@ -1,0 +1,11 @@
+{% ckan_extends %}
+
+{% block user_info %}
+  {{ super() }}
+  <div class="info">
+    <dl>
+      <dt> User affiliation: </dt>
+      <dd> {{ user.affiliation}} </dd>
+    </dl>
+  </div>
+{% endblock %}

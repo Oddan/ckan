@@ -18,7 +18,7 @@ from resource_category import ResourceCategory, ResourceCategoryMetadataItem, ca
 from ckan.lib import helpers as h
 from plugin2 import get_required_metadata_fields
 import re
-
+from ckan.views import user
 
 import copy, datetime, dateutil
 import pdb
@@ -32,6 +32,7 @@ license_table = None
 publication_table = None
 person_table = None
 organization_extra_table = None
+user_extra_table = None
 
 
 affiliation_association_table = None  # associate Person with Organization
@@ -52,6 +53,12 @@ class Person(model.domain_object.DomainObject):
     @property
     def name(self):
         return self.last_name + ", " + self.first_name
+
+
+class UserExtra(model.domain_object.DomainObject):
+    def __init__(self, affiliation, user_id):
+        self.affiliation = affiliation
+        self.user_id = user_id
 
 
 class OrganizationExtra(model.domain_object.DomainObject):
@@ -90,11 +97,31 @@ class Publication(model.domain_object.DomainObject):
         self.doi = doi
 
 
+def _delete_user_override(id):
+    # this is a wrapper of the user.delete method that additionally ensures that
+    # users that delete themselves are properly logged out afterwards
+    # (otherwise, a server error would be generated)
+
+    user_id = None if g.userobj is None else g.userobj.id
+    is_self_delete = user_id == id
+
+    redir = user.delete(id)
+
+    if is_self_delete:
+        # calling the user.logout function directly rather than through a
+        # redirect avoids error caused by user having been marked as deleted
+        logout_redirect = user.logout()
+        return logout_redirect
+
+    return redir
+
+
 def setup_model():
 
     # object tables
     prepare_data_format_table()
     prepare_organization_extra_table()
+    prepare_user_extra_table()
     prepare_license_table()
     prepare_publication_table()
     prepare_person_table()
@@ -400,6 +427,28 @@ def prepare_organization_extra_table():
         # create table
         ensure_table_created(organization_extra_table)
 
+def prepare_user_extra_table():
+
+    global user_extra_table
+    if user_extra_table is None:
+        user_extra_table = Table(
+            'user_extra', meta.metadata,
+            Column('id', UnicodeText, primary_key=True, default=make_uuid),
+            Column('affiliation', UnicodeText),
+            Column('user_id', UnicodeText, ForeignKey('user.id'))
+        )
+
+        meta.mapper(
+            UserExtra,
+            user_extra_table,
+            properties={'user':
+                        orm.relation(model.user.User,
+                                     backref=orm.backref(
+                                         'extra',
+                                         uselist=False,
+                                         cascade='all, delete, delete-orphan'))})
+
+    ensure_table_created(user_extra_table)
 
 
 def ensure_table_created(table):
@@ -417,6 +466,28 @@ def ensure_table_created(table):
             # Session.execute('DROP TABLE ' + table.fullname)
             # Session.commit()
 
+
+def _user_modif_wrapper(action_name):
+
+    action = tk.get_action(action_name)
+
+    def _wrapper(context, data_dict):
+
+        result_dict = action(context, data_dict)
+
+        # updating the extra information (i.e. affiliation)
+        affiliation = data_dict.get('affiliation', '')
+
+        new_extra = model.User.get(result_dict['id']).extra
+        if new_extra is None:
+            new_extra = UserExtra(affiliation, result_dict['id'])
+        else:
+            new_extra.affiliation = affiliation
+
+        new_extra.save()
+        return result_dict
+
+    return _wrapper
 
 def _organization_modif_wrapper(action_name):
 
@@ -457,6 +528,49 @@ def _organization_modif_wrapper(action_name):
     return _wrapper
 
 
+def _user_delete_wrapper():
+    action = tk.get_action('user_delete')
+
+    def _wrapper(context, data_dict):
+
+        # delete user 
+        action(context, data_dict)
+
+        # wiping user information (additional privacy measure)
+        entry = context['session'].query(model.User).get(data_dict['id'])
+        if entry is not None:
+            entry.password = ''
+            entry.fullname = ''
+            entry.email = ''
+            entry.about = ''
+            entry.sysadmin = False
+            entry.save()
+
+        # deleting corresponding UserExtra row
+        user_extra = context['session'].query(UserExtra).\
+                     filter_by(user_id=data_dict.get('id', None)).first()
+
+        if user_extra is not None:
+            user_extra.delete()
+            context['session'].commit()
+
+    return _wrapper
+
+
+def _user_show_wrapper():
+
+    action = tk.get_action('user_show')
+
+    def _wrapper(context, data_dict):
+        result_dict = action(context, data_dict)
+        new_extra = model.User.get(result_dict['id']).extra
+        result_dict['affiliation'] = \
+            '' if new_extra is None else new_extra.affiliation
+
+        return result_dict
+
+    return _wrapper
+
 def _organization_show_wrapper():
 
     action = tk.get_action('organization_show')
@@ -496,6 +610,22 @@ def _organization_show_wrapper():
         return result_dict
 
     return _wrapper
+
+
+def _user_delete_auth(context, data_dict=None):
+
+    uobj = context.get('auth_user_obj', None)
+    if uobj is None:
+        return {'success': False, 'msg': 'User not logged in.'}
+
+    if data_dict.get('id', None) == uobj.id:
+        return {'success': True, 'msg': 'User allowed to delete him/herself.'}
+
+    return {'success': False, 'msg': 'User not allowed to delete anyone else.'}
+
+
+def _user_list_auth(context, data_dict=None):
+    return {'success': False, 'msg': 'Only sysadmins can access the user list'}
 
 
 def _edit_metadata_auth(context, data_dict=None):
@@ -1636,6 +1766,10 @@ def _register_resource_fields():
          'category purpose sources assumptions dataformat ' + custom_items})
 
 
+def _user_agreement():
+    return render(u'user_agreement.html')
+
+
 class CdsmetadataPlugin(plugins.SingletonPlugin,
                         tk.DefaultDatasetForm):
     plugins.implements(plugins.IConfigurer)
@@ -1701,13 +1835,27 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
 
     # ============================== IAuthFunctions ===========================
     def get_auth_functions(self):
-        return{'edit_metadata': _edit_metadata_auth}
+        return{'edit_metadata': _edit_metadata_auth,
+               'user_delete': _user_delete_auth,
+               'user_list': _user_list_auth}
 
     # ================================ IBlueprint =============================
 
     def get_blueprint(self):
         blueprint = Blueprint(self.name, self.__module__)
         blueprint.template_folder = u'templates'
+
+        # We override the user.delete route, to ensure users that delete
+        # themselves get properly logged out.
+        blueprint.add_url_rule('/user/delete/<id>',
+                               view_func=_delete_user_override,
+                               methods=(u'POST',)) # @@@@@
+        
+        # ---------------------------- user signup ----------------------------
+        blueprint.add_url_rule('/user_agreement',
+                               u'user_agreement',
+                               view_func=_user_agreement)
+
         # -------------------------- edit metadata functions ------------------
         blueprint.add_url_rule('/metadata/dataformat',
                                view_func=_edit_dataformat,
@@ -1769,6 +1917,11 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
         for aname in ['organization_create', 'organization_update']:
             result[aname] = _organization_modif_wrapper(aname)
         result['organization_show'] = _organization_show_wrapper()
+
+        for aname in ['user_create', 'user_update']:
+            result[aname] = _user_modif_wrapper(aname)
+        result['user_show'] = _user_show_wrapper()
+        result['user_delete'] = _user_delete_wrapper()
 
         result['dataformat_create'] = _data_format_create
         result['dataformat_update'] = _data_format_update
