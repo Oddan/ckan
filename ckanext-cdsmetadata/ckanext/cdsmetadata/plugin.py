@@ -14,7 +14,8 @@ from six import text_type
 from ckan.views import api
 from ckan.lib.navl.dictization_functions import Invalid, Missing
 from ckan.lib.base import abort, render
-from resource_category import ResourceCategory, ResourceCategoryMetadataItem, category_metadata_datatypes
+from resource_category import ResourceCategory, ResourceCategoryMetadataItem
+from resource_category import category_metadata_datatypes
 from ckan.lib import helpers as h
 from plugin2 import get_required_metadata_fields
 import re
