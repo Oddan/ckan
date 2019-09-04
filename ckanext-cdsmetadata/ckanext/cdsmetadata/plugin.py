@@ -97,7 +97,12 @@ class Publication(model.domain_object.DomainObject):
         self.citation = citation
         self.doi = doi
 
-
+def _ensure_date_format(somedate):
+    
+    if type(somedate) == unicode:
+        return dateutil.parser.parse(somedate).date()
+    return somedate.date()
+        
 def _delete_user_override(id):
     # this is a wrapper of the user.delete method that additionally ensures that
     # users that delete themselves are properly logged out afterwards
@@ -1457,7 +1462,7 @@ def _list_category_metadata_items_for(code, preformat=False):
 def _edit_metadata(mclass, template_name):
 
     check_edit_metadata()  # check authorization
-
+    
     context = {'model': model, 'session': model.Session,
                'user': g.user, 'auth_user_obj': g.userobj}
 
@@ -1535,11 +1540,14 @@ def _show_package_schema(schema):
                          tk.get_validator('project_type_validator')],
         'access_level': [tk.get_converter('convert_from_extras'),
                          tk.get_validator('access_level_validator')],
-        'release_date': [tk.get_converter('convert_from_extras')],
+        'release_date': [tk.get_converter('convert_from_extras'),
+                         tk.get_converter('isodate')],
         'temporal_coverage_start': [
             tk.get_converter('convert_from_extras'),
+            tk.get_converter('isodate'),
             tk.get_validator('temporal_coverage_nonnegative')],
-        'temporal_coverage_end': [tk.get_converter('convert_from_extras')],
+        'temporal_coverage_end': [tk.get_converter('convert_from_extras'),
+                                  tk.get_converter('isodate')],
         'cdslicense': [tk.get_converter('convert_from_extras'),
                        tk.get_validator('ignore_missing')],
         'location': [tk.get_converter('convert_from_extras'),
@@ -1572,13 +1580,16 @@ def _modif_package_schema(schema):
 
     schema['access_level'] = [tk.get_validator('access_level_validator'),
                               tk.get_converter('convert_to_extras')]
-    schema['release_date'] = [tk.get_converter('convert_to_extras')]
+    schema['release_date'] = [tk.get_validator('isodate'),
+                              tk.get_converter('convert_to_extras')]
 
     schema['temporal_coverage_start'] = \
-        [tk.get_validator('temporal_coverage_nonnegative'),
+        [tk.get_validator('isodate'),
+         tk.get_validator('temporal_coverage_nonnegative'),
          tk.get_converter('convert_to_extras')]
     schema['temporal_coverage_end'] = \
-        [tk.get_validator('temporal_coverage_nonnegative'),
+        [tk.get_validator('isodate'),
+         tk.get_validator('temporal_coverage_nonnegative'),
          tk.get_converter('convert_to_extras')]
     schema['cdslicense'] = [tk.get_validator('ignore_missing'),
                             tk.get_converter('convert_to_extras')]
@@ -1623,7 +1634,7 @@ def _package_after_update(context, pkg_dict):
 
 
 def _package_before_view(pkg_dict):
-
+    #pdb.set_trace()
     pkg = model.package.Package.get(pkg_dict['id'])
 
     pkg_dict['contact_person'] = \
@@ -1683,12 +1694,12 @@ def _temporal_coverage_nonnegative(key, data, errors, context):
 
     start = data.get(('temporal_coverage_start',), None)
     end = data.get(('temporal_coverage_end',), None)
-
     if start and end:
-        start_date = dateutil.parser.parse(start)
-        end_date = dateutil.parser.parse(end)
-
-        if start_date > end_date:
+        if type(start) == unicode:
+            start = dateutil.parser.parse(start)
+        if type(end) == unicode:
+            end = dateutil.parser.parse(end)
+        if start > end:
             raise Invalid(
                 _("Invalid date range; start date is after end date."))
 
@@ -1967,6 +1978,7 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
                 'dataformatlist': _dataformatlist,
                 'get_license': _get_license,
                 'date_today': lambda: datetime.date.today(),
+                'ensure_date_format': _ensure_date_format,
                 'str_2_date': lambda str: dateutil.parser.parse(str),
                 'datasets_with_license': _datasets_with_license,
                 'category_name': _category_name,

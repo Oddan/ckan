@@ -7,6 +7,7 @@ import ckan.lib.base as base
 import ckan.model as model
 import ckan.logic as logic
 import ckan.exceptions as exceptions
+from .plugin import CdsmetadataPlugin
 from ckan.logic.converters import convert_package_name_or_id_to_id
 import datetime
 
@@ -73,11 +74,12 @@ def everyone(context, data_dict=None):
 
 
 def check_embargoed(package_id):
+    
     context = {}  # since packages are always visible, context does not matter
     pkg_info = toolkit.get_action('package_show')(context, {'id': package_id})
-    embargo_date = pkg_info.get('embargo_date', None)
-    if embargo_date and embargo_date.date() > datetime.date.today():
-        return embargo_date
+    release_date = pkg_info.get('release_date', None)
+    if release_date and release_date.date() > datetime.date.today():
+        return release_date
     return None
 
 
@@ -107,7 +109,6 @@ def has_special_rights(user_id, package_id):
 @toolkit.auth_allow_anonymous_access
 def check_package_restrictions(context, data_dict=None):
 
-    #pdb.set_trace()
     if "package_id" not in data_dict.keys():
         raise exceptions.CkanException('no package id')
     if data_dict is None:
@@ -125,14 +126,15 @@ def check_package_restrictions(context, data_dict=None):
     # check if dataset is embargoed (only sysadmin has access)
     package_id = data_dict['package_id']
     pkg_info = toolkit.get_action('package_show')(context, {'id': package_id})
-    embargo_date = check_embargoed(package_id)
-    if embargo_date:
+    release_date = check_embargoed(package_id)
+    if release_date:
         return {'success': False,
                 'msg': "Dataset is under embargo and is scheduled "
-                "to be released on: {date}".format(date=embargo_date.date())}
+                "to be released on: {date}".format(date=release_date.date())}
 
     # check if restricted (only sysadmin and authorized users have access)
-    if pkg_info.get('is_restricted', False):
+    access_level = pkg_info.get('access_level', False)
+    if access_level and access_level == CdsmetadataPlugin.access_levels[1]:
         user_id = context['auth_user_obj'].id
         if has_special_rights(user_id, package_id):
             return {'success': True}
@@ -163,26 +165,16 @@ def resource_read_patch(function):
     return wrapper
 
 
-def _modify_package_schema(schema):
-    schema.update({
-        'is_restricted': [toolkit.get_validator('ignore_missing'),
-                          toolkit.get_validator('boolean_validator'),
-                          toolkit.get_converter('convert_to_extras')],
-        'embargo_date': [toolkit.get_validator('ignore_missing'),
-                         toolkit.get_validator('isodate'),
-                         toolkit.get_converter('convert_to_extras')]
-    })
-
-    return schema
-
-
 def _grant_user_rights(users, dataset_id):
 
     for u in users:
         user_key = model.User.get(u).id
         data_key = model.Package.get(dataset_id).id
-        rights = SpecialAccessRights(user_id=user_key, package_id=data_key)
-        rights.save()
+
+        if not has_special_rights(user_key, data_key):
+            rights = SpecialAccessRights(user_id=user_key,
+                                         package_id=data_key)
+            rights.save()
 
 
 def _revoke_user_rights(users, dataset_id):
@@ -204,7 +196,6 @@ def _revoke_user_rights(users, dataset_id):
 
 def grant_rights(id):
 
-    #pdb.set_trace()
     context = {'model': model, 'session': model.Session,
                'user': c.user, 'for_view': True, 'auth_user_obj': c.userobj}
 
@@ -243,30 +234,9 @@ def grant_rights(id):
 
     rights_user_ids = [x.id for x in rights_users]
     active_user_ids = [x.id for x in active_users]
-    #pdb.set_trace()
 
     other_users = active_users.filter(~model.User.id.in_(rights_user_ids))
     
-    #other_users = active_users.filter(id.in_(rights_users.id)
-    
-    
-    # rights_users_id = active_users.\
-    #                   filter(id == SpecialAccessRights.user_id).\
-    #                   filter(SpecialAccessRights.package_id == data_key).all()
-    # other_users = active_users.\
-    #     filter(~active_users.id.in_(rights_users_ids)).all()
-    # c.rights_users = [e[0] for e in rights_users]
-    # c.other_users = [e[0] for e in other_users]
-    
-    
-    # rights_users_ids = session.query(model.User.id).\
-    #     filter(model.User.state == u'active').\
-    #     filter(model.User.id == SpecialAccessRights.user_id).\
-    #     filter(SpecialAccessRights.package_id == data_key).all()
-    # rights_users = session.query(model.User.name).\
-    #     filter(model.User.id.in_(rights_users_ids)).all()
-    # other_users = session.query(model.User.name).\
-    #     filter(~model.User.id.in_(rights_users_ids)).all()
     c.rights_users = [e.name for e in rights_users.all()]
     c.other_users = [e.name for e in other_users.all()]
 
@@ -280,7 +250,6 @@ class CdsAccessManagementPlugin(plugins.SingletonPlugin,
     plugins.implements(plugins.IAuthFunctions)
     plugins.implements(plugins.IMiddleware)
     plugins.implements(plugins.IConfigurer)
-    plugins.implements(plugins.IDatasetForm)
     plugins.implements(plugins.IRoutes)
 
     # ================================== IRoutes ==============================
@@ -329,7 +298,7 @@ class CdsAccessManagementPlugin(plugins.SingletonPlugin,
         # to the dataset information itself).
         if app.app_name == 'pylons_app':
             ctrl = app.find_controller('package')
-            #ctrl.resource_read = resource_read_patch(ctrl.resource_read)
+            ctrl.resource_read = resource_read_patch(ctrl.resource_read)
         else:
             assert app.app_name == 'flask_app'
         return app
@@ -342,33 +311,3 @@ class CdsAccessManagementPlugin(plugins.SingletonPlugin,
     def update_config(self, config):
         toolkit.add_template_directory(config, 'templates/access')
 
-    # =============================== IDatasetForm ============================
-
-    def create_package_schema(self):
-        schema = \
-            super(CDSCAccessManagementPlugin, self).create_package_schema()
-        schema = _modify_package_schema(schema)
-        return schema
-
-    def update_package_schema(self):
-        schema = \
-            super(CDSCAccessManagementPlugin, self).update_package_schema()
-        schema = _modify_package_schema(schema)
-        return schema
-
-    def show_package_schema(self):
-        schema = super(CDSCAccessManagementPlugin, self).show_package_schema()
-        schema.update({
-            'is_restricted': [toolkit.get_converter('convert_from_extras'),
-                              toolkit.get_validator('boolean_validator')],
-            'embargo_date': [toolkit.get_converter('convert_from_extras'),
-                             toolkit.get_validator('isodate'),
-                             toolkit.get_validator('ignore_missing')]})
-        return schema
-
-    def is_fallback(self):
-        return False
-
-    def package_types(self):
-        # This plugin does not handle any special package types
-        return []

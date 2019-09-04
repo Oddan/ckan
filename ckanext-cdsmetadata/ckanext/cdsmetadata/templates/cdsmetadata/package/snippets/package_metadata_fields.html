@@ -41,24 +41,33 @@
     <i class="fa fa-info-circle"></i>
     <i>(If a future release date is chosen, the dataset will be in embargo until
     that date.)</i>
-    </span>
+  </span>
+  {% set date_val = h.date_today() if not data.release_date
+  else h.ensure_date_format(data.release_date) %}
+  {{ date_val}}
   {{form.input('release_date', id='field-release_date', label=_('Release date'),
-               value=data.release_date or h.date_today(),
-               type="date", error=errors.release_date, classes='control-medium') }}
+               value=date_val, type="date", error=errors.release_date,
+               classes='control-medium') }}
   
   {# ========================== Input temporal coverage ========================== #}
 
-      <div class="col-xs-6">
+  <div class="col-xs-6">
+
+    {% set date_start = h.date_today() if not data.temporal_coverage_start
+                        else h.ensure_date_format(data.temporal_coverage_start) %}
+    {% set date_end   = h.date_today() if not data.temporal_coverage_end
+                        else h.ensure_date_format(data.temporal_coverage_end) %}
+    
       {{form.input('temporal_coverage_start', id='field-temporal_coverage_start',
                    label=_('Coverage start date'),
-                   value=data.temporal_coverage_start or h.date_today(),
+                   value=date_start,
                    type="date", error=errors.temporal_coverage_start,
                    classes='control-medium') }}
       </div>
       <div class="col-xs-6">
       {{form.input('temporal_coverage_end', id='field-temporal_coverage_end',
                    label=_('Coverage end date'),
-                   value=data.temporal_coverage_end or h.date_today(),
+                   value=date_end,
                    type="date", error=errors.temporal_coverage_end,
                    classes='control-medium') }}
       </div>

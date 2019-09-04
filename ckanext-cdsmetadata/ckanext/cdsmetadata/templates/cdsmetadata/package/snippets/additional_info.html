@@ -61,7 +61,8 @@
           <tr>
             <th scope="row" class="dataset-label">{{ _("Last Updated") }}</th>
             <td class="dataset-details">
-                {% snippet 'snippets/local_friendly_datetime.html', datetime_obj=pkg_dict.metadata_modified %}
+              {% snippet 'snippets/local_friendly_datetime.html',
+              datetime_obj=pkg_dict.metadata_modified %}
             </td>
           </tr>
         {% endif %}
@@ -70,7 +71,8 @@
             <th scope="row" class="dataset-label">{{ _("Created") }}</th>
 
             <td class="dataset-details">
-                {% snippet 'snippets/local_friendly_datetime.html', datetime_obj=pkg_dict.metadata_created %}
+              {% snippet 'snippets/local_friendly_datetime.html',
+              datetime_obj=pkg_dict.metadata_created %}
             </td>
           </tr>
         {% endif %}
@@ -113,8 +115,9 @@
         <tr>
           <th scope="row" class="dataset-label">{{ _("Release date") }}</th>
           <td class="dataset-details">
-            {{ pkg_dict.release_date }}
-            {% if h.str_2_date(pkg_dict.release_date).date() > h.date_today() %}
+            {% snippet 'snippets/local_friendly_date.html',
+                       datetime_obj=pkg_dict.release_date %}
+            {% if h.ensure_date_format(pkg_dict.release_date) > h.date_today() %}
               <i>(Currently embargoed)</i>
             {% endif %}
           </td>
@@ -126,8 +129,11 @@
         <tr>
           <th scope="row" class="dataset-label">{{ _("Period covered by the dataset") }}</th>
           <td class="dataset-details">
-            <b>Start:</b> {{ pkg_dict.temporal_coverage_start }} <br>
-            <b>End:</b>   {{ pkg_dict.temporal_coverage_end }} 
+            
+            <b>Start:</b> {% snippet 'snippets/local_friendly_date.html',
+                             datetime_obj=pkg_dict.temporal_coverage_start %} <br>
+            <b>End:</b>   {% snippet 'snippets/local_friendly_date.html',
+                             datetime_obj=pkg_dict.temporal_coverage_end %}
           </td>
         </tr>
       {% endif %}
