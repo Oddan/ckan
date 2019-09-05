@@ -1540,14 +1540,16 @@ def _show_package_schema(schema):
                          tk.get_validator('project_type_validator')],
         'access_level': [tk.get_converter('convert_from_extras'),
                          tk.get_validator('access_level_validator')],
-        'release_date': [tk.get_converter('convert_from_extras'),
-                         tk.get_converter('isodate')],
+        # (do not use isodate below.  Leads to JSON serialization problems
+        # downstreams when indexing)
+        'release_date': [tk.get_converter('convert_from_extras')],
+                         #tk.get_converter('isodate') 
         'temporal_coverage_start': [
             tk.get_converter('convert_from_extras'),
-            tk.get_converter('isodate'),
+            #tk.get_converter('isodate'),
             tk.get_validator('temporal_coverage_nonnegative')],
-        'temporal_coverage_end': [tk.get_converter('convert_from_extras'),
-                                  tk.get_converter('isodate')],
+        'temporal_coverage_end': [tk.get_converter('convert_from_extras')],
+                                  # tk.get_converter('isodate')],
         'cdslicense': [tk.get_converter('convert_from_extras'),
                        tk.get_validator('ignore_missing')],
         'location': [tk.get_converter('convert_from_extras'),

@@ -9,7 +9,7 @@ import ckan.logic as logic
 import ckan.exceptions as exceptions
 from .plugin import CdsmetadataPlugin
 from ckan.logic.converters import convert_package_name_or_id_to_id
-import datetime
+import datetime, dateutil
 
 from ckan.controllers.package import PackageController
 
@@ -74,12 +74,15 @@ def everyone(context, data_dict=None):
 
 
 def check_embargoed(package_id):
-    
+
     context = {}  # since packages are always visible, context does not matter
     pkg_info = toolkit.get_action('package_show')(context, {'id': package_id})
     release_date = pkg_info.get('release_date', None)
-    if release_date and release_date.date() > datetime.date.today():
-        return release_date
+
+    if release_date:
+        release_date = dateutil.parser.parse(release_date).date()
+        if release_date > datetime.date.today():
+            return release_date
     return None
 
 
@@ -130,7 +133,7 @@ def check_package_restrictions(context, data_dict=None):
     if release_date:
         return {'success': False,
                 'msg': "Dataset is under embargo and is scheduled "
-                "to be released on: {date}".format(date=release_date.date())}
+                "to be released on: {date}".format(date=release_date)}
 
     # check if restricted (only sysadmin and authorized users have access)
     access_level = pkg_info.get('access_level', False)

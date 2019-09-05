@@ -1,0 +1,36 @@
+{#
+    Renders a list of the site's datasets
+
+#}
+
+{% set rendered_list = {'done':False} %}
+
+<div class="box">
+        <header class="module-heading">
+            <h3>Available Datasets</h3>
+        </header>
+        <div align="left">
+            <section class="module-content">
+
+                {% for dataset in h.simple_frontpage_datasets_list() %}
+                    {#<a href="{{ h.url_for('dataset.read', id=dataset.name) }}"><h3>{{ dataset.title }}</h3></a> {# use this line if flask provides the routing #}
+                    <a href="{{ h.url_for(controller='package', action='read', id=dataset.name) }}"><h3>{{ dataset.title }}</h3></a> {# use this line for Pylon #}
+                        
+                        {#<h3>{{ dataset}}</h3> {#use this line to see what attributes dataset has #}
+                        
+                    {% if dataset.notes %}
+                        <p>
+                            {{ h.markdown_extract(dataset.notes, extract_length=80) }}
+                        </p>
+                    {% else %}
+                        <p> {{ _('This dataset has no description') }} </p>
+                    {% endif %}
+                    {% if rendered_list.update({'done':True}) %} {% endif %} {# this is the only suggested way, as bad as it may be #}
+                {% endfor %}
+
+                {% if not rendered_list['done'] %}
+                    <h3> {{ _('Please log in to see the datasets') }} </h3>
+                {% endif %}
+            </section>
+        </div>
+    </div>

@@ -10,7 +10,7 @@ and add link to classification #}
     {% if title and title == _('Data category') %}
       {% set link = h.url_for('cdsmetadata.resource_categories') %}  
       {% set html_link = '<a href="'+ link +'" target=_blank>' + 'here' + '</a>' %}
-      {% set addition = " " + _("full list ") + html_link + ")" %} 
+      {% set addition = " " + _("(full list ") + html_link + ")" %} 
     {% endif %}    
     {% set title = title or h.get_facet_title(name) %}
     {{ title + addition | safe}}

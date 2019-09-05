@@ -81,10 +81,11 @@ setup(
     entry_points='''
         [ckan.plugins]
         cdsmetadata=ckanext.cdsmetadata.plugin:CdsmetadataPlugin
-        cdsmetadata_resources=ckanext.cdsmetadata.plugin2:CdsMetadataResourcesPlugin
+        cdsmetadata_resources=ckanext.cdsmetadata.resources_plugin:CdsMetadataResourcesPlugin
         cdslandingpage=ckanext.cdsmetadata.landing_page_plugin:CdsLandingPagePlugin
         cdsstats=ckanext.cdsmetadata.cdsstats_plugin:CdsStatsPlugin
         cdsaccess=ckanext.cdsmetadata.cdsaccess_plugin:CdsAccessManagementPlugin
+        cdstheme=ckanext.cdsmetadata.cdstheme_plugin:CdsThemePlugin
 
         [babel.extractors]
         ckan = ckan.lib.extract:extract_ckan
