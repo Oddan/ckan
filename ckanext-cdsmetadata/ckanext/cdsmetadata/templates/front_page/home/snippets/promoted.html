@@ -7,10 +7,9 @@
     {% else %}
       <h1 class="page-heading">{{ _("Welcome to the CO2 DataShare prototype portal") }}</h1>
       <p> The CO2 DataShare online portal is an initiative by the CO2 Storage
-          Data Consortium, with the goal to make available datasets on real
-          geological CO2 storage operations.  The current prototype is for
-          invited test users only.  The public launch is scheduled for September
-          2019. </p> {% endif %}
+          Data Consortium, with the goal to make available a curated and
+          well-documented list of downloadable datasets from real geological CO2 storage
+          operations. </p> {% endif %}
   </header>
 
   {% block home_image %}
@@ -21,7 +20,7 @@
         {% endblock %}
       </h2>
       {% block home_image_content %}
-        <a class="media-image" href="#">
+        <a class="media-image" href= {{ h.url_for(controller='package', action='search') }}>
           <img src="/csdc.jpg" alt='CO2 Data Share: The CO2 Storage Data Consortium' width="420" height="270" />
         </a>
       {% endblock %}

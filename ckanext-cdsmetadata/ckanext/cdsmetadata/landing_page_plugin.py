@@ -141,41 +141,56 @@ def _download_multiple_resources():
 
     if request.method == "POST":
 
-        memory_file = io.BytesIO()
-
         headers = {}
         if 'Cookie' in request.headers.keys():
             headers['Cookie'] = request.headers['Cookie']
 
+        def _get_url(res_id):
+            return model.Resource.get(res_id).url
+
+            return h.url_for(controller='package',
+                             action='resource_download',
+                             id=_package_id_of_resource(context, res_id),
+                             resource_id=res_id,
+                             qualified=True)
+
+        def _get_file(url):
+            return requests.get(url, allow_redirects=True, headers=headers)
+
+        def _get_filename(res_id):
+            return basename(model.Resource.get(res_id).url)
+
+        pdb.set_trace()
+        if len(request.form.values()) == 1:
+            res_id = request.form.values()[0]
+            # no need to zip several files together
+            url = _get_url(res_id)
+            f = _get_file(url)
+            if f.status_code == 404:
+                return render_template(u"package/download_denied.html")
+            return send_file(io.BytesIO(f.content),
+                             mimetype='application/octet-stream',
+                             as_attachment=True,
+                             attachment_filename=_get_filename(res_id))
+
+        memory_file = io.BytesIO()
         with zipfile.ZipFile(memory_file, mode='w',
                              compression=zipfile.ZIP_STORED) as zf:
             for res_id in request.form.values():
-                #pdb.set_trace()
                 # @@ change when Flask becomes responsible for resources
-                #pdb.set_trace()
-
-                # f = _package_controller.resource_download(
-                #     _package_id_of_resource(context, res_id),
-                #     resource_id=res_id)
-
-                url = h.url_for(controller='package',
-                                action='resource_download',
-                                id=_package_id_of_resource(context, res_id),
-                                resource_id=res_id,
-                                qualified=True)
-                f = requests.get(url, allow_redirects=True, headers=headers)
-
+                url = _get_url(res_id)
+                f = _get_file(url)
                 if f.status_code == 404:
                     return render_template(u"package/download_denied.html")
-                filename = basename(model.Resource.get(res_id).url)
+                filename = _get_filename(res_id)
                 zf.writestr(filename, f.content)
 
         memory_file.seek(0)
 
-    return send_file(memory_file,
-                     mimetype='application/zip',
-                     as_attachment=True,
-                     attachment_filename='download.zip')
+        return send_file(memory_file,
+                         mimetype='application/zip',
+                         as_attachment=True,
+                         attachment_filename='download.zip')
 
 
 class CdsLandingPagePlugin(plugins.SingletonPlugin):
