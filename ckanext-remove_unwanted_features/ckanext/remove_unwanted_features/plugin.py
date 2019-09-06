@@ -100,13 +100,12 @@ def registration_closed_message():
     message = 'Registration currently limited to test users.  \
     If you are interested in becoming a test user, please contact CO2 \
     DataShare administrator.'
-    
+
     return base.render(u'error_document_template.html',
                        {'code': [], u'content': message})
 
 
 def _check_if_override():
-    #pdb.set_trace()
     if is_flask_request():
         rule_str = request.url_rule.rule
         args = request.view_args

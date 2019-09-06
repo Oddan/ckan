@@ -35,8 +35,17 @@ Example:
                   </div>
                 {% endfor %}
                 <br>
-                <input type="checkbox" required> By clicking this I confirm that I have read and accepted this dataset's <a href="{{ pkg.license_url }}" rel="dc:rights">Licence Requirements</a>.<br>
-                
+                {% set license = h.get_license(pkg.cdslicense) %}
+                <input type="checkbox" required>
+                By clicking this I confirm that I have read and accepted this dataset's
+                {% if license %}
+                  <a target=_blank href="{{ h.url_for('cdsmetadata.view_license', id=license.id) }}" rel="dc:rights">
+                    Licence Requirements.
+                  </a>
+                {% else %}
+                  license requirements.
+                {% endif %}
+                <br>
                 <br>
                 <input type="button" value="Select all" onclick="select_all_resources(this)">
                 <input type="submit" value="Download selected" style="float:right">
