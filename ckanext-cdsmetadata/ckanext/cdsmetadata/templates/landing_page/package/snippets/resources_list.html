@@ -13,8 +13,23 @@ Example:
 
 {# This file creates the checkbox form to select multiple resources for download #}
 
+{# Check the presence of any externally stored dataset components #}
+
+{% set foundExternal = {'flag': False} %}
+
+{% if resources %}
+  {% for resource in resources %}
+    {% if not resource.url_type %}
+      {% if foundExternal.update({'flag': True})%}{% endif %}
+    {% endif %}
+  {% endfor %}
+{% endif %}
+
 <section id="dataset-resources" class="resources">
-    <h3>{{ _('Download dataset parts') }}</h3>
+  <h3>{{ _('Download dataset parts') }}</h3>
+  {% if foundExternal.flag %}
+    <p><em>NB: Dataset parts without adjacent checkboxes are stored outside the portal and must be downloaded separately.  Click on an item to download directly from its informational page.</em></p>
+  {% endif %}
     <br>
     {% block resource_list %}
       {% if resources %}
@@ -26,8 +41,14 @@ Example:
                 
                 {% for resource in resources %}
                   <div style="white-space: nowrap;">  
-                 
-                    <input  type="checkbox" name="{{ resource.name }}" value="{{ resource.id }}" id="resource">
+                    <input  type="checkbox"
+                            name="{{ resource.name }}"
+                            value="{{ resource.id }}"
+                            id="resource"
+                            {% if not resource.url_type == "upload" %}
+                              disabled
+                            {% endif %}
+                            >
                     <div style="display: inline-block; white-space: normal;">
                       {% snippet 'package/snippets/resource_item.html', pkg=pkg, res=resource, can_edit=can_edit %}
                     </div>
@@ -40,7 +61,7 @@ Example:
                 By clicking this I confirm that I have read and accepted this dataset's
                 {% if license %}
                   <a target=_blank href="{{ h.url_for('cdsmetadata.view_license', id=license.id) }}" rel="dc:rights">
-                    Licence Requirements.
+                    licence requirements.
                   </a>
                 {% else %}
                   license requirements.

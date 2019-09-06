@@ -146,8 +146,6 @@ def _download_multiple_resources():
             headers['Cookie'] = request.headers['Cookie']
 
         def _get_url(res_id):
-            return model.Resource.get(res_id).url
-
             return h.url_for(controller='package',
                              action='resource_download',
                              id=_package_id_of_resource(context, res_id),
@@ -160,7 +158,6 @@ def _download_multiple_resources():
         def _get_filename(res_id):
             return basename(model.Resource.get(res_id).url)
 
-        pdb.set_trace()
         if len(request.form.values()) == 1:
             res_id = request.form.values()[0]
             # no need to zip several files together

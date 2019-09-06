@@ -46,8 +46,10 @@ function validate_form() {
 function select_all_resources(elem) {
     var i
     var checkboxes = document.querySelectorAll('input[id="resource"]')
-    for (i = 0; i != checkboxes.length; i++) {
-        checkboxes[i].checked = true;
+    for (i = 0; i != checkboxes.length; i++){
+        if (!checkboxes[i].hasAttribute('disabled')) {
+            checkboxes[i].checked = true;
+        }
     }
     elem.setAttribute("onclick", "deselect_all_resources(this)")
     elem.value="Deselect all";
