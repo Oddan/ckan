@@ -7,12 +7,29 @@
 
   {% block resource_read_url %}
     {% if res.url and h.is_url(res.url) %}
-      <a class="btn btn-primary" href="{{ res.url }}" name="direct_download">Direct download</a>
+      <a class="btn btn-primary" href="{{ res.url }}" id="direct_download" disabled="">Direct download</a>
     {% elif res.url %}
       <p> Download link unavailable </p>
     {% endif %}
     <br>
-    <input type="checkbox" id="" name="license_accepted">    I confirm that I have read and accepted this dataset's license requirements.</input>
+    {% set pkg_license = h.get_license(pkg.cdslicense) %}
+    <input type="checkbox"
+           id=""
+           onchange="(function(el) {
+             if (el.checked) {
+               document.getElementById('direct_download').removeAttribute('disabled')
+             } else { 
+               document.getElementById('direct_download').setAttribute('disabled', '')}})(this)"
+           name="license_accepted">
+           I confirm that I have read and accepted this dataset's
+           {% if pkg_license %}
+             <a target=_blank href="{{ h.url_for('cdsmetadata.view_license', id=pkg_license.id) }}" rel="dc:rights">
+               licence requirements.
+             </a>
+           {% else %}
+             license requirements.
+           {% endif %}
+    </input>
 
   {% endblock %}
   
