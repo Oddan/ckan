@@ -1,10 +1,11 @@
 import ckan.plugins as plugins
 import ckan.plugins.toolkit as tk
-from flask import send_file, Blueprint, request, render_template
+from flask import send_file, Blueprint, render_template
+#from flask import request
 import ckan.lib.helpers as h
 from ckan.lib.base import abort, render
 from ckan.logic.converters import convert_package_name_or_id_to_id
-from ckan.common import g, _, request
+from ckan.common import g, _, request, config
 # from ckan.controllers.package import PackageController
 import zipfile
 import io
@@ -21,6 +22,7 @@ import shutil
 
 PLUGIN_DIR = path.dirname(__file__)
 LANDING_PAGE_DIR = 'landing_pages'
+DEFAULT_MAX_ZIPFILE_SIZE = 1e9; # one gigabyte
 
 # _package_controller = PackageController()
 
@@ -113,7 +115,8 @@ def _landing_page_upload(pkg_name):
     if request.method == 'POST':
 
         if 'save' in request.form:
-            if 'zipfile' not in request.files or request.files['zipfile'] == '':
+            if 'zipfile' not in request.files \
+               or request.files['zipfile'] == '':
                 errors = ['No file chosen.']
             else:
                 errors = _unpack_landing_page_zipfile(request.files['zipfile'],
@@ -123,9 +126,10 @@ def _landing_page_upload(pkg_name):
                     return tk.redirect_to(h.url_for(controller='package',
                                                     action='read', id=pkg_id))
         else:
-            # a 'delete' was requested 
+            # a 'delete' was requested
             # removing directory containing landing page
-            target_dir = path.join(PLUGIN_DIR, 'public', LANDING_PAGE_DIR, pkg_name)
+            target_dir = path.join(PLUGIN_DIR, 'public',
+                                   LANDING_PAGE_DIR, pkg_name)
             if path.exists(target_dir):
                 shutil.rmtree(target_dir)
             return tk.redirect_to(h.url_for(controller='package',
@@ -138,7 +142,8 @@ def _landing_page_upload(pkg_name):
 def _download_multiple_resources():
 
     context = {'model': model, 'user': g.user, 'auth_user_obj': g.userobj}
-
+    max_zipfile_size = float(config.get('ckan.cdsmetadata.max_zipfile_size',
+                                        DEFAULT_MAX_ZIPFILE_SIZE))
     if request.method == "POST":
 
         headers = {}
@@ -158,6 +163,12 @@ def _download_multiple_resources():
         def _get_filename(res_id):
             return basename(model.Resource.get(res_id).url)
 
+        def _combined_size(res_ids):
+            sz = 0L
+            for res_id in res_ids:
+                sz = sz + model.Resource.get(res_id).size
+            return sz
+        
         if len(request.form.values()) == 1:
             res_id = request.form.values()[0]
             # no need to zip several files together
@@ -170,9 +181,16 @@ def _download_multiple_resources():
                              as_attachment=True,
                              attachment_filename=_get_filename(res_id))
 
+        # check if size limit is surpassed for creation of intermediary zip-files
+        if _combined_size(request.form.values()) > max_zipfile_size:
+            # do something nicer than abort here
+            abort('do something nicer here')
+
         memory_file = io.BytesIO()
         with zipfile.ZipFile(memory_file, mode='w',
                              compression=zipfile.ZIP_STORED) as zf:
+
+            # combined size is acceptable.  Let us create the zipfile
             for res_id in request.form.values():
                 # @@ change when Flask becomes responsible for resources
                 url = _get_url(res_id)
@@ -181,7 +199,7 @@ def _download_multiple_resources():
                     return render_template(u"package/download_denied.html")
                 filename = _get_filename(res_id)
                 zf.writestr(filename, f.content)
-
+                
         memory_file.seek(0)
 
         return send_file(memory_file,
