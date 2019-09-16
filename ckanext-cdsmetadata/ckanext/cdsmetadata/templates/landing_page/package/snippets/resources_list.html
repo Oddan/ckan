@@ -27,9 +27,20 @@ Example:
 
 <section id="dataset-resources" class="resources">
   <h3>{{ _('Download dataset parts') }}</h3>
+  {# {% if c.size_error_occured %} #}
+  {#   <div id="size_warning_message"> #}
+  {#     <p class="text-warning"> #}
+  {#       <i class="fa fa-warning"></i> #}
+  {#       Error: Combined sizpe of multiple download items must not exceed {{c.zipfile_size_limit}}.  Please #}
+  {#       reduce the number of selected items and try again, or download the desired #}
+  {#       items individually. #}
+  {#     </p> #}
+  {#   </div> #}
+  {# {% endif %} #}
   {% if foundExternal.flag %}
-    <p><em>NB: Dataset parts without adjacent checkboxes are stored outside the portal and must be downloaded separately.  Click on an item to download directly from its informational page.</em></p>
-  {% endif %}
+    <p><em>NB: Dataset parts without adjacent checkboxes are stored outside the
+  portal and must be downloaded separately.  Click on an item to download
+  directly from its informational page.</em></p>  {% endif %}
     <br>
     {% block resource_list %}
       {% if resources %}
@@ -37,18 +48,18 @@ Example:
           <ul class="{% block resource_list_class %}resource-list{% endblock %}">
             {% block resource_list_inner %}
               {% set can_edit = h.check_access('package_update', {'id':pkg.id }) %}
-              <form action="/multiple_download" method="POST" onsubmit="return validate_form()">
+              <form action="/screen_download_request" method="POST">
                 
                 {% for resource in resources %}
                   <div style="white-space: nowrap;">  
-                    <input  type="checkbox"
-                            name="{{ resource.name }}"
-                            value="{{ resource.id }}"
-                            id="resource"
-                            {% if not resource.url_type == "upload" %}
-                              disabled
-                            {% endif %}
-                            >
+                    {# <input  type="checkbox" #}
+                    {#         name="{{ resource.name }}" #}
+                    {#         value="{{ resource.id }}" #}
+                    {#         id="resource" #}
+                    {#         {% if not resource.url_type == "upload" %} #}
+                    {#           disabled #}
+                    {#         {% endif %} #}
+                    {#         > #}
                     <div style="display: inline-block; white-space: normal;">
                       {% snippet 'package/snippets/resource_item.html', pkg=pkg, res=resource, can_edit=can_edit %}
                     </div>
@@ -68,9 +79,12 @@ Example:
                 {% endif %}
                 <br>
                 <br>
-                <input type="button" value="Select all" onclick="select_all_resources(this)"
-                       style="float:left">
-                <input type="submit" value="Download selected" style="float:right">
+                <div style="text-align: center;">
+                  <input type="button" value="Select all" onclick="select_all_resources(this)"
+                         style="width:150px;">
+                         <br><br>
+                         <input type="submit" value="Download selected" style="width:150px;"]>
+                </div>
               </form>
             {% endblock %}
           </ul>
@@ -89,20 +103,3 @@ Example:
     {% endblock %}
 </section>
 
-
-{# {\# This script gets called when the form to download resources is submitted. #}
-{#   It checks that at least one resource has been selected before submitting the request, #}
-{#   and raises a warning otherwise. #\} #}
-{# <script type="text/javascript"> #}
-{#   function validate_form(){ #}
-{#     var checkboxes = document.querySelectorAll('input[id="resource"]') #}
-{#     var checkedOne = Array.prototype.slice.call(checkboxes).some(x => x.checked) #}
-{#     if (checkedOne){ #}
-{#       return true #}
-{#     } #}
-{#     else { #}
-{#       alert("Please select at least one resource to download.") #}
-{#       return false #}
-{#     }} #}
-{# </script> #}
-  

@@ -1,5 +1,25 @@
 {% ckan_extends %}
 
+{% block resource_item_description %}
+    {# show file size #}
+    {% set size_entry = h.format_resource_items( [("size", res['size'])] ) %}
+    <p class="description"> Size: {{size_entry[0][1]}}</p>
+    {# show description #}
+    {% if res.description %}
+      <p class="description" style="width: auto">
+        {{ h.markdown_extract(h.get_translated(res, 'description'), extract_length=80) }}
+      </p>
+    {% endif %}
+    <input type="checkbox"
+           name="{{ res.name }}"
+           value="{{ res.id }}"
+           id="resource"
+           {% if not res.url_type == "upload" %}
+             disabled
+           {% endif %}
+           >
+  {% endblock %}
+
 {% block resource_item_explore %}
 
   {# Remove content of this block, as download is managed by the plugin #}

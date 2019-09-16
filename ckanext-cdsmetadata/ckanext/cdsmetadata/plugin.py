@@ -2039,8 +2039,6 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
             res_extras_k = 'res_extras_' + k
             search_params['q'] = q + ' || ' + res_extras_k + ':' + v
 
-        #pdb.set_trace()
-
         return search_params
 
 

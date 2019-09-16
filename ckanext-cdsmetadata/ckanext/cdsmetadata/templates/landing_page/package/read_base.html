@@ -1,13 +1,48 @@
 {% ckan_extends %}
 
+{% block styles %}
+    {{ super() }}
+    <link rel="stylesheet" href="/base/css/modal.css" />
+{% endblock %}
+
 {% block content_action %}
-    
+
   {{ super() }} 
   {% if h.check_access('package_update', {'id':pkg.id }) %}
     {% link_for _('Manage'), controller='package', action='edit', id=pkg.name, class_='btn btn-default', icon='wrench' %}
     {% link_for _('Set landing page'), named_route='cdslandingpage.landing_page_upload', pkg_name=pkg.name, class_='btn btn-default', icon='wrench' %}
   {% endif %}
 
+  {# Error message in the case user requested too much to download at once #}
+  {% if c.size_error_occured %}
+    <div class="divModalDialog">
+      <div class="modalErrorMessage">
+        <p class="text-warning">
+          <i class="fa fa-warning"></i>
+          Error: Combined size of multiple download items must not exceed {{c.zipfile_size_limit}}.  Please
+          reduce the number of selected items and try again, or download the desired
+          items individually.
+        </p>
+        <a href={{h.url_for(controller='package', action='read', id=pkg.name)}} class="btn btn-primary">OK</a>
+      </div>
+    </div>
+  {% elif c.selected_resource_ids %}
+    <div class="divModalDialog">
+      <div class="modalDownloadForm">
+        <h1> Data download</h1>
+        <p> You are downloading the following dataset component(s)</p>
+        <ul>
+          <li> comp 1</li>
+          <li> comp 2</li>
+          <li> comp 3</li>
+        </ul>
+        <h2>For this download, we would appreciate you let us know your country and affiliation</h2>
+        <p>Form goes here</p>
+        <a href={{h.url_for(controller='package', action='read', id=pkg.name)}} class="btn btn-primary">OK</a>        
+      </div>
+    </div>
+  {% endif %} 
+  
 {% endblock %} 
 
 
