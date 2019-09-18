@@ -146,11 +146,14 @@ def _landing_page_upload(pkg_name):
 def _download_multiple_resources():
 
     context = {'model': model, 'user': g.user, 'auth_user_obj': g.userobj}
-    headers = {}
-    if 'Cookie' in request.headers.keys():
-        headers['Cookie'] = request.headers['Cookie']
         
     res_ids = request.form.getlist('res_id')
+    country = request.form.get('country', 'unspecified')
+    affiliation = request.form.get('affiliation', 'unspecified')
+
+    headers = {'country': country, 'affiliation': affiliation}
+    if 'Cookie' in request.headers.keys():
+        headers['Cookie'] = request.headers['Cookie']
 
     if len(res_ids) == 0:
         # this should never happen (form should always contain at least one resource id

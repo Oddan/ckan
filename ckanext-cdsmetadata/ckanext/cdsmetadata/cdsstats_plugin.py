@@ -24,13 +24,17 @@ dataset_statistics_table = Table(
     Column('id', UnicodeText, primary_key=True, default=make_uuid),
     Column('user_id', UnicodeText, ForeignKey('user.id')),
     Column('resource_id', UnicodeText, ForeignKey('resource.id')),
+    Column('country', UnicodeText),
+    Column('affiliation', UnicodeText),
     Column('date', types.DateTime),
     )
 
 class DatasetStatistics(model.domain_object.DomainObject):
-    def __init__(self, user_id, resource_id):
+    def __init__(self, user_id, resource_id, country, affiliation):
         self.user_id = user_id
         self.resource_id = resource_id
+        self.country = country
+        self.affiliation = affiliation.upper() # avoid case-related ambiguities when counting affiliations
         self.date = datetime.now()
 
 meta.mapper(DatasetStatistics, dataset_statistics_table,
@@ -49,6 +53,9 @@ if not dataset_statistics_table.exists():
 def resource_download_patch(fn):
     @wraps(fn)
     def wrapper(*args, **kwargs):
+
+        country = request.headers.get('country', 'unspecified')
+        affiliation = request.headers.get('affiliation', 'unspecified') or 'unspecified'
         
         resource_id = kwargs['resource_id']
         package_id = \
@@ -65,7 +72,7 @@ def resource_download_patch(fn):
             #@@ doesn't work'
             user_id = g.userobj.id
 
-        entry = DatasetStatistics(user_id, resource_id)
+        entry = DatasetStatistics(user_id, resource_id, country, affiliation)
         entry.save()
 
         return result
@@ -84,7 +91,9 @@ def _compute_stats(context, pkg_id):
 
     query = model.Session.query
     overview_stats = []
-    resource_stats = {}
+    resource_user_stats = {}
+    resource_country_stats = {}
+    resource_affiliation_stats = {}
 
     # we presume no download found
     first_download_date = None
@@ -138,11 +147,41 @@ def _compute_stats(context, pkg_id):
                 username = user['display_name']
             user_list.append({'user': username, 'date': date})
 
-        resource_stats[res_name] = user_list
+        resource_user_stats[res_name] = user_list
+
+        unique_countries = query(DatasetStatistics.country,
+                                 func.count(DatasetStatistics.country),
+                                 func.max(DatasetStatistics.date)).\
+                                 filter_by(resource_id=res['id']).\
+                                 group_by(DatasetStatistics.country).all()
+        country_list = []
+        for u in unique_countries:
+            date = None if u[2] is None else u[2].ctime()
+            country = u[0]
+            count = u[1]
+            country_list.append({'country': country, 'count': count, 'date': date})
+        
+        resource_country_stats[res_name] = country_list
+
+        unique_affiliations = query(DatasetStatistics.affiliation,
+                                    func.count(DatasetStatistics.affiliation),
+                                    func.max(DatasetStatistics.date)).\
+                                    filter_by(resource_id=res['id']).\
+                                    group_by(DatasetStatistics.affiliation).all()
+        affiliation_list = []
+        for a in unique_affiliations:
+            date = None if a[2] is None else a[2].ctime()
+            affiliation = a[0]
+            count = a[1]
+            affiliation_list.append({'affiliation': affiliation,
+                                     'count': count, 'date': date})
+        resource_affiliation_stats[res_name] = affiliation_list
+
         
     overview_stats = sorted(overview_stats, key = lambda x: x['name'])
                                    
-    return (first_download_date, overview_stats, resource_stats)
+    return (first_download_date, overview_stats, resource_user_stats,
+            resource_country_stats, resource_affiliation_stats)
     
 
 # This function gets called when a request to show dataset statistics is received
@@ -160,14 +199,18 @@ def show_dataset_statistics(pkg_name):
     except logic.NotAuthorized:
         abort(403, _('Not authorized to see this page.'))
 
-    first_date, overview_stats, resource_stats = _compute_stats(context, pkg_id)
+    first_date, overview_stats, resource_user_stats, \
+        resource_country_stats, resource_affiliation_stats = \
+        _compute_stats(context, pkg_id)
 
     package_dictionary = toolkit.get_action('package_show')(context, data_dict)
     return render(u"package/dataset_statistics_page.html",
                   extra_vars={'pkg_dict': package_dictionary,
                               'first_date': first_date,
                               'overview_stats': overview_stats,
-                              'resource_stats': resource_stats})
+                              'resource_user_stats': resource_user_stats,
+                              'resource_affiliation_stats': resource_affiliation_stats,
+                              'resource_country_stats': resource_country_stats})
 
 def reset_dataset_statistics(pkg_name):
 

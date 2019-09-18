@@ -39,7 +39,7 @@ Example:
             {% set has_access = h.check_access('resource_download', {'id': resources[0]['id']}) %}
             {% set can_edit = h.check_access('package_update', {'id':pkg.id }) %} 
             {# <form action="/screen_download_request" method="POST"> #}
-            <form method="POST"> 
+            <form method="POST" action="{{h.url_for(controller='package', action='read', id=pkg.name)}}"> 
               {% for resource in resources %}
                 <div style="white-space: nowrap;">  
                   <div style="display: inline-block; white-space: normal;">
