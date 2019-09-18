@@ -10,14 +10,16 @@
         {{ h.markdown_extract(h.get_translated(res, 'description'), extract_length=80) }}
       </p>
     {% endif %}
-    <input type="checkbox"
-           name="{{ res.name }}"
-           value="{{ res.id }}"
-           id="resource"
-           {% if not res.url_type == "upload" %}
-             disabled
-           {% endif %}
-           >
+    {% if has_access %}
+      <input type="checkbox"
+             name="{{ res.name }}"
+             value="{{ res.id }}"
+             id="resource"
+             {% if not res.url_type == "upload" %}
+               disabled
+             {% endif %}
+             >
+    {% endif %}
   {% endblock %}
 
 {% block resource_item_explore %}

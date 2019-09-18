@@ -1,50 +1,15 @@
 {% ckan_extends %}
 
 {% block resource_content %}
+
   {% block resource_read_title %}
-    <h1 class="page-heading">{{ h.resource_display_name(res) | truncate(50) }}</h1>
+    {{ super() }} 
   {% endblock %}
 
   {% block resource_read_url %}
-    {% if res.url and h.is_url(res.url) %}
-      <a class="btn btn-primary" href="{{ res.url }}" id="direct_download" disabled="">Direct download</a>
-    {% elif res.url %}
-      <p> Download link unavailable </p>
-    {% endif %}
-    <br>
-    {% set pkg_license = h.get_license(pkg.cdslicense) %}
-    <input type="checkbox"
-           id=""
-           onchange="(function(el) {
-             if (el.checked) {
-               document.getElementById('direct_download').removeAttribute('disabled')
-             } else { 
-               document.getElementById('direct_download').setAttribute('disabled', '')}})(this)"
-           name="license_accepted">
-           I confirm that I have read and accepted this dataset's
-           {% if pkg_license %}
-             <a target=_blank href="{{ h.url_for('cdsmetadata.view_license', id=pkg_license.id) }}" rel="dc:rights">
-               licence requirements.
-             </a>
-           {% else %}
-             license requirements.
-           {% endif %}
-    </input>
-
+    {{ super() }} 
   {% endblock %}
   
-  {# {% block resource_read_url %} #}
-  {#   {% if res.url and h.is_url(res.url) %} #}
-  {#     <p class="text-muted ellipsis"> #}
-  {#       {{ _('URL:') }} #}
-  {#       <a class="resource-url-analytics" href="{{ res.url }}" title="{{ res.url }}"> #}
-  {#         {{ res.url }} #}
-  {#       </a> #}
-  {#     </p> #}
-  {#   {% elif res.url %} #}
-  {#     <p class="text-muted break-word">{{ _('URL:') }} {{ res.url }}</p> #}
-  {#   {% endif %} #}
-  {# {% endblock %} #}
   <div class="prose notes" property="rdfs:label">
     {% if res.description %}
       <h2> Description </h2>

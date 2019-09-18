@@ -1,0 +1,44 @@
+{% import 'macros/form.html' as form %}
+
+<h1> Data download </h1>
+
+{% set num_resources = res_ids | length %}
+
+<p> You are downloading the following dataset {{ ungettext('component', 'components', num_resources) }}:</p>
+
+<div style="width: auto; position: relative; left: 50%; transform: translate(-50%, 0)">
+  <ul style="text-align: left;">
+    {% for res in res_names %}
+      <li> {{res}} </li>
+    {% endfor %}
+  </ul>
+</div>
+
+<h2> Please let us know your country/territory and affiliation</h2> 
+
+<form id="resource-download" class="dataset-form" method="post"
+      action={{ h.url_for('cdslandingpage.multiple_download') }} 
+      data-module="basic-form">
+
+      {% for res in res_ids %}
+        <input type="hidden"
+               name="res_id"
+               value={{ res }}
+               id="resource" >
+      {% endfor %}
+      
+  {{ form.input("affiliation", label="Affiliation", id="affiliation",
+                placeholder="Name of company/institution") }}
+
+  {{ form.select("country", id="country", label="Country/territory", options=countries) }}
+
+      <button class="btn btn-primary"
+              type="submit"
+              onclick="document.getElementById('{{modal_dialog_id}}').style.display='none';"
+              name="download">Download</button>
+      <button type="button"
+              onclick="document.getElementById('{{ modal_dialog_id }}').style.display='none';">
+              Cancel
+      </button>
+</form>
+

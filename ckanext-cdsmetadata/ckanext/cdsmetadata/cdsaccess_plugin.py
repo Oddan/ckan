@@ -148,7 +148,26 @@ def check_package_restrictions(context, data_dict=None):
     return {'success': True}
 
 
-def resource_read_patch(function):
+# def resource_read_patch(function):
+#     @wraps(function)
+#     def wrapper(*args, **kwargs):
+
+#         # check access, forward to controller if OK
+#         context = {'model': model, 'session': model.Session,
+#                    'user': c.user, 'auth_user_obj': c.userobj}
+
+#         id = kwargs.get('id', None)
+#         resource_id = kwargs.get('resource_id', None)
+
+#         try:
+#             logic.check_access('resource_show', context, {'id': resource_id})
+#         except logic.NotAuthorized:
+#             base.abort(403, _('Unauthorized to access this resource.'))
+
+#         return function(*args, id=id, resource_id=resource_id)
+#     return wrapper
+
+def resource_download_patch(function):
     @wraps(function)
     def wrapper(*args, **kwargs):
 
@@ -158,14 +177,16 @@ def resource_read_patch(function):
 
         id = kwargs.get('id', None)
         resource_id = kwargs.get('resource_id', None)
+        filename = kwargs.get('filename', None)
 
         try:
-            logic.check_access('resource_show', context, {'id': resource_id})
+            logic.check_access('resource_download', context, {'id': resource_id})
         except logic.NotAuthorized:
-            base.abort(403, _('Unauthorized to access this resource.'))
+            base.abort(403, _('Unauthorized to download this resource.'))
 
-        return function(*args, id=id, resource_id=resource_id)
+        return function(*args, id=id, resource_id=resource_id, filename=filename)
     return wrapper
+
 
 
 def _grant_user_rights(users, dataset_id):
@@ -286,7 +307,8 @@ class CdsAccessManagementPlugin(plugins.SingletonPlugin,
                 'package_delete': only_admin,
                 'package_show': everyone,
                 'resource_view_list': everyone,
-                'resource_show': check_resource_restrictions}
+                'resource_download': check_resource_restrictions,
+                'resource_show': everyone} #check_resource_restrictions}
 
     # ================================ IMiddleware ============================
 
@@ -301,7 +323,8 @@ class CdsAccessManagementPlugin(plugins.SingletonPlugin,
         # to the dataset information itself).
         if app.app_name == 'pylons_app':
             ctrl = app.find_controller('package')
-            ctrl.resource_read = resource_read_patch(ctrl.resource_read)
+            # ctrl.resource_read = resource_read_patch(ctrl.resource_read)
+            ctrl.resource_download = resource_download_patch(ctrl.resource_download)
         else:
             assert app.app_name == 'flask_app'
         return app

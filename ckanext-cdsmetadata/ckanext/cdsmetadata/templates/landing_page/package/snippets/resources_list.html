@@ -27,16 +27,6 @@ Example:
 
 <section id="dataset-resources" class="resources">
   <h3>{{ _('Download dataset parts') }}</h3>
-  {# {% if c.size_error_occured %} #}
-  {#   <div id="size_warning_message"> #}
-  {#     <p class="text-warning"> #}
-  {#       <i class="fa fa-warning"></i> #}
-  {#       Error: Combined sizpe of multiple download items must not exceed {{c.zipfile_size_limit}}.  Please #}
-  {#       reduce the number of selected items and try again, or download the desired #}
-  {#       items individually. #}
-  {#     </p> #}
-  {#   </div> #}
-  {# {% endif %} #}
   {% if foundExternal.flag %}
     <p><em>NB: Dataset parts without adjacent checkboxes are stored outside the
   portal and must be downloaded separately.  Click on an item to download
@@ -44,29 +34,24 @@ Example:
     <br>
     {% block resource_list %}
       {% if resources %}
-        {% if h.check_access('resource_show', {'id': resources[0]['id']}) %}
-          <ul class="{% block resource_list_class %}resource-list{% endblock %}">
-            {% block resource_list_inner %}
-              {% set can_edit = h.check_access('package_update', {'id':pkg.id }) %}
-              <form action="/screen_download_request" method="POST">
-                
-                {% for resource in resources %}
-                  <div style="white-space: nowrap;">  
-                    {# <input  type="checkbox" #}
-                    {#         name="{{ resource.name }}" #}
-                    {#         value="{{ resource.id }}" #}
-                    {#         id="resource" #}
-                    {#         {% if not resource.url_type == "upload" %} #}
-                    {#           disabled #}
-                    {#         {% endif %} #}
-                    {#         > #}
-                    <div style="display: inline-block; white-space: normal;">
-                      {% snippet 'package/snippets/resource_item.html', pkg=pkg, res=resource, can_edit=can_edit %}
-                    </div>
-                    <br> 
+        <ul class="{% block resource_list_class %}resource-list{% endblock %}">
+          {% block resource_list_inner %}
+            {% set has_access = h.check_access('resource_download', {'id': resources[0]['id']}) %}
+            {% set can_edit = h.check_access('package_update', {'id':pkg.id }) %} 
+            {# <form action="/screen_download_request" method="POST"> #}
+            <form method="POST"> 
+              {% for resource in resources %}
+                <div style="white-space: nowrap;">  
+                  <div style="display: inline-block; white-space: normal;">
+                    {% snippet 'package/snippets/resource_item.html',
+                               pkg=pkg, res=resource, has_access=has_access, can_edit=can_edit %}
                   </div>
-                {% endfor %}
-                <br>
+                  <br> 
+                </div>
+              {% endfor %}
+              <br>
+              
+              {% if has_access %}
                 {% set license = h.get_license(pkg.cdslicense) %}
                 <input type="checkbox" required>
                 By clicking this I confirm that I have read and accepted this dataset's
@@ -85,12 +70,10 @@ Example:
                          <br><br>
                          <input type="submit" value="Download selected" style="width:150px;"]>
                 </div>
-              </form>
-            {% endblock %}
-          </ul>
-        {% else %}
-          <p class="empty"> Log in with authorized user in order to access and download dataset components.</p>
-        {% endif %}
+              {% endif %}
+            </form>
+          {% endblock %}
+        </ul>
       {% else %}
         {% if h.check_access('resource_create', {'package_id': pkg['id']}) %}
             {% trans url=h.url_for(controller='package', action='new_resource', id=pkg.name) %}

@@ -1,5 +1,27 @@
 {% ckan_extends %}
 
+{% block styles %}
+    {{ super() }}
+    <link rel="stylesheet" href="/base/css/modal.css" />
+{% endblock %}
+
+{% block primary %}
+
+  {{ super() }} 
+  {% if c.show_download_dialog %}
+    <div class="divModalDialog" id="modal_dialog">
+      <div class="modalDownloadForm">
+        {% snippet "package/snippets/resource_download_form.html",
+                   modal_dialog_id="modal_dialog",
+                   res_names = c.selected_resource_names,
+                   res_ids = c.selected_resource_ids,
+                   countries = c.country_list %}
+      </div>
+    </div>
+  {% endif %}
+  
+{% endblock %}
+
 {% block resource_actions_inner %}
   {% if h.check_access('package_update', {'id':pkg.id }) %}
     <li>{% link_for _('Manage'),
@@ -14,6 +36,41 @@
   
 {% endblock %}
 
+{% block resource_read_url %}
+  {% if h.check_access("resource_download", {'id': res.id}) %}
+    {% if res.url and h.is_url(res.url) %}
+      <form method="POST">
+        <button class="btn btn-primary" type="submit" value="Download" id="direct_download" disabled="">
+          Direct download
+        </button>
+      </form>
+    {% elif res.url %} 
+      <p> Direct download unavailable </p>
+    {% endif %}
+    <br> 
+    {% set pkg_license = h.get_license(pkg.cdslicense) %} 
+    <input type="checkbox" 
+           id="" 
+           onchange="(function(el) { 
+                     if (el.checked) { 
+                       document.getElementById('direct_download').removeAttribute('disabled') 
+                     } else {  
+                       document.getElementById('direct_download').setAttribute('disabled', '')}})(this)" 
+           name="license_accepted"> 
+           I confirm that I have read and accepted this dataset's 
+           {% if pkg_license %} 
+             <a target=_blank href="{{ h.url_for('cdsmetadata.view_license', id=pkg_license.id) }}" rel="dc:rights"> 
+               licence requirements. 
+             </a> 
+           {% else %} 
+             license requirements.
+           {% endif %} 
+    </input>
+  {% endif %}
+{% endblock %} 
+
 {% block data_preview %}{% endblock %}
 
 {% block resource_license %}{% endblock %}
+
+

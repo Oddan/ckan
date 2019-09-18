@@ -7,6 +7,7 @@ import ckan.lib.helpers as h
 from ckan.lib.base import abort, render
 from ckan.logic.converters import convert_package_name_or_id_to_id
 from ckan.common import g, _, request, config
+from country_list import iso3166_1
 import ckan.lib.formatters as formatters
 # from ckan.controllers.package import PackageController
 from functools import wraps
@@ -25,10 +26,9 @@ import shutil
 
 PLUGIN_DIR = path.dirname(__file__)
 LANDING_PAGE_DIR = 'landing_pages'
+COUNTRY_OPTION_LIST = [{'name': c[1], 'value': c[0]} for c in iso3166_1]
 DEFAULT_MAX_ZIPFILE_SIZE = 1e9; # A different value can be set using config
                                 # parameter 'ckan.cdsmetadata.max_zipfile_size'
-_SIZE_ERROR_DIRECTIVE = 'size_error'
-_DOWNLOAD_FORM_DIRECTIVE = 'download_form'
 
 def _only_sysadmin_auth(context, data_dict=None):
     # only sysadmins should have access (and sysamins bypass the login system)
@@ -143,142 +143,135 @@ def _landing_page_upload(pkg_name):
     return render('landing_page_upload.html', extra_vars)
 
 
-def _screen_download_request():
-
-    num_selected = len(request.form.values())
-
-    if num_selected == 0:
-        return ('', 204) # no content
-
-    context = {'model': model, 'user': g.user, 'auth_user_obj': g.userobj}
-    package_id = _package_id_of_resource(context, request.form.values()[0])
-    max_zipfile_size = float(config.get('ckan.cdsmetadata.max_zipfile_size',
-                                        DEFAULT_MAX_ZIPFILE_SIZE))
-
-    def _combined_size(res_ids):
-        sz = 0L
-        for res_id in res_ids:
-            sz = sz + model.Resource.get(res_id).size
-        return sz
-
-    if num_selected > 1 and \
-         _combined_size(request.form.values()) > max_zipfile_size:
-        # display overlay error message and let user try again
-        return tk.redirect_to(h.url_for(controller='package',
-                                        action='read', id=package_id,
-                                        data='0',
-                                        download_directive = _SIZE_ERROR_DIRECTIVE))
-
-    # everything is all right.  Redirect user to form to fill-in before download.
-    data = ''.join([rid + "_" for rid in request.form.values()]).strip('_')
-    return tk.redirect_to(h.url_for(controller='package',
-                                    action='read', id=package_id,
-                                    data=data,
-                                    download_directive=_DOWNLOAD_FORM_DIRECTIVE))
-    
-
 def _download_multiple_resources():
 
     context = {'model': model, 'user': g.user, 'auth_user_obj': g.userobj}
-    max_zipfile_size = float(config.get('ckan.cdsmetadata.max_zipfile_size',
-                                        DEFAULT_MAX_ZIPFILE_SIZE))
-    if request.method == "POST":
+    headers = {}
+    if 'Cookie' in request.headers.keys():
+        headers['Cookie'] = request.headers['Cookie']
+        
+    res_ids = request.form.getlist('res_id')
 
-        headers = {}
-        if 'Cookie' in request.headers.keys():
-            headers['Cookie'] = request.headers['Cookie']
+    if len(res_ids) == 0:
+        # this should never happen (form should always contain at least one resource id
+        abort(404, 'Resources not found.')
 
-        if len(request.form.values()) == 0:
-            return None # nothing to do
+    package_id = _package_id_of_resource(context, res_ids[0])
 
-        package_id = _package_id_of_resource(context, request.form.values()[0])
+    def _get_url(res_id):
+        return h.url_for(controller='package',
+                         action='resource_download',
+                         id=package_id,
+                         resource_id=res_id,
+                         qualified=True)
 
-        def _get_url(res_id):
-            return h.url_for(controller='package',
-                             action='resource_download',
-                             id=package_id,
-                             resource_id=res_id,
-                             qualified=True)
+    def _get_file(url):
+        return requests.get(url, allow_redirects=True, headers=headers)
+    
+    def _get_filename(res_id):
+        return basename(model.Resource.get(res_id).url)
+        
+    if len(res_ids) == 1:
+        # no need to zip several files together
+        url = _get_url(res_ids[0])
+        f = _get_file(url)
+        if f.status_code == 403:
+            return render_template(u"package/download_denied.html")
+        elif f.status_code == 404:
+            return render_template(u"package/download_failed.html")
+        
+        return send_file(io.BytesIO(f.content),
+                         mimetype='application/octet-stream',
+                         as_attachment=True,
+                         attachment_filename=_get_filename(res_ids[0]))
 
-        def _get_file(url):
-            return requests.get(url, allow_redirects=True, headers=headers)
+    # if we got here, more than one resource were requested.  We zip them
+    # together to a single download file.
+    memory_file = io.BytesIO()
+    with zipfile.ZipFile(memory_file, mode='w',
+                         compression=zipfile.ZIP_STORED) as zf:
 
-        def _get_filename(res_id):
-            return basename(model.Resource.get(res_id).url)
-
-        def _combined_size(res_ids):
-            sz = 0L
-            for res_id in res_ids:
-                sz = sz + model.Resource.get(res_id).size
-            return sz
-
-        if len(request.form.values()) == 1:
-            res_id = request.form.values()[0]
-            # no need to zip several files together
+        for res_id in res_ids:
+            # @@ change when Flask becomes responsible for resources
             url = _get_url(res_id)
             f = _get_file(url)
-            if f.status_code == 404:
+            if f.status_code == 403:
                 return render_template(u"package/download_denied.html")
+            elif f.status_code == 404:
+                return render_template(u"package/download_denied.html")
+            filename = _get_filename(res_id)
+            zf.writestr(filename, f.content)
             
-            return send_file(io.BytesIO(f.content),
-                             mimetype='application/octet-stream',
-                             as_attachment=True,
-                             attachment_filename=_get_filename(res_id))
-                
-        # check if size limit is surpassed for creation of intermediary zip-files
-        if _combined_size(request.form.values()) > max_zipfile_size:
-            # show error message and do nothing else
-            return tk.redirect_to(h.url_for(controller='package',
-                                            action='read', id=package_id,
-                                            data='0',
-                                            download_directive = _SIZE_ERROR_DIRECTIVE))
+    memory_file.seek(0)
+    
+    return send_file(memory_file,
+                     mimetype='application/zip',
+                     as_attachment=True,
+                     attachment_filename='download.zip')
 
-        memory_file = io.BytesIO()
-        with zipfile.ZipFile(memory_file, mode='w',
-                             compression=zipfile.ZIP_STORED) as zf:
 
-            # combined size is acceptable.  Let us create the zipfile
-            for res_id in request.form.values():
-                # @@ change when Flask becomes responsible for resources
-                url = _get_url(res_id)
-                f = _get_file(url)
-                if f.status_code == 404:
-                    return render_template(u"package/download_denied.html")
-                filename = _get_filename(res_id)
-                zf.writestr(filename, f.content)
-                
-        memory_file.seek(0)
+def _res_combined_size(res_ids):
+    sz = 0L
+    for res_id in res_ids:
+        sz = sz + model.Resource.get(res_id).size
+    return sz
 
-        return send_file(memory_file,
-                         mimetype='application/zip',
-                         as_attachment=True,
-                         attachment_filename='download.zip')
+
+def _resource_names(res_ids):
+    return [model.Resource.get(res_id).name for res_id in res_ids]
+
+
+def _max_zipfile_size():
+    return float(config.get('ckan.cdsmetadata.max_zipfile_size',
+                            DEFAULT_MAX_ZIPFILE_SIZE))
 
 
 def _package_read_patch(function):
 
     @wraps(function)
     def wrapper(*args, **kwargs):
-        id = kwargs.get('id', None)
-        g.zipfile_size_limit = formatters.localised_filesize(
-            int(config.get('ckan.cdsmetadata.max_zipfile_size',
-                           DEFAULT_MAX_ZIPFILE_SIZE)))
 
-        directive = kwargs.get('download_directive', None)
+        if request.method == 'POST':
 
-        g.size_error_occured = False
-        g.selected_resource_ids = None
-        if directive == _SIZE_ERROR_DIRECTIVE:
-            g.size_error_occured = True
-        elif directive == _DOWNLOAD_FORM_DIRECTIVE:
-            g.selected_resource_ids = kwargs.get('data', None)
-            if g.selected_resource_ids is not None:
-                g.selected_resource_ids = g.selected_resource_ids.split('_')
-
-        return function(*args, id=id)
+            # The user has posted request to download dataset components.
+            g.selected_resource_ids = request.params.values()
+            g.selected_resource_names = _resource_names(g.selected_resource_ids)
+            g.max_zipfile_size = \
+                formatters.localised_filesize(int(_max_zipfile_size()))
+            
+            if len(g.selected_resource_ids) == 0:
+                g.handle_request_error = 'no_requested_data'
+            elif len(g.selected_resource_ids) > 1 and \
+                 _res_combined_size(g.selected_resource_ids) > _max_zipfile_size():
+                g.handle_request_error = 'exceeds_max_zipfile_size'
+            else:
+                # request was well formed, display download form
+                g.country_list = COUNTRY_OPTION_LIST
+                g.show_download_dialog = True
+            
+        # call the original controller function
+        return function(*args, id=kwargs.get('id', None))
 
     return wrapper
+
+def _resource_read_patch(function):
+
+    @wraps(function)
+    def wrapper(*args, **kwargs):
         
+        if request.method == 'POST':
+            res_id = kwargs['resource_id']
+            # tell jinja to show the download dialog
+            g.country_list = COUNTRY_OPTION_LIST
+            g.show_download_dialog = True
+            g.selected_resource_ids = [res_id]
+            g.selected_resource_names = _resource_names([res_id])
+
+        return function(*args,
+                        id=kwargs.get('id', None),
+                        resource_id=kwargs.get('resource_id', None))
+
+    return wrapper
     
 class CdsLandingPagePlugin(plugins.SingletonPlugin):
     plugins.implements(plugins.IConfigurer)
@@ -286,17 +279,6 @@ class CdsLandingPagePlugin(plugins.SingletonPlugin):
     plugins.implements(plugins.IAuthFunctions)
     plugins.implements(plugins.ITemplateHelpers)
     plugins.implements(plugins.IMiddleware)
-    plugins.implements(plugins.IRoutes)
-
-    # IRoutes
-    def before_map(self, map):
-        # add functionality to package.read function through local wrapper
-        map.connect('/dataset/{id}/{data}/{download_directive}',
-                    controller='package', action='read')
-        return map
-
-    def after_map(self, map):
-        return map
 
     # IMiddleware
     def make_middleware(self, app, config):
@@ -308,6 +290,7 @@ class CdsLandingPagePlugin(plugins.SingletonPlugin):
         if app.app_name == 'pylons_app':
             ctrl = app.find_controller('package')
             ctrl.read = _package_read_patch(ctrl.read)
+            ctrl.resource_read = _resource_read_patch(ctrl.resource_read)
         else:
             assert app.app_name == 'flask_app'
             
@@ -341,10 +324,6 @@ class CdsLandingPagePlugin(plugins.SingletonPlugin):
         blueprint.add_url_rule(u'/multiple_download',
                                u'multiple_download',
                                _download_multiple_resources,
-                               methods=['POST'])
-        blueprint.add_url_rule(u'/screen_download_request',
-                               u'screen_download_request',
-                               _screen_download_request,
                                methods=['POST'])
         blueprint.add_url_rule(u'/landing_page_upload/<pkg_name>',
                                u'landing_page_upload',
