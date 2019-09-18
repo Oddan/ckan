@@ -142,6 +142,9 @@ def check_package_restrictions(context, data_dict=None):
     # check if restricted (only sysadmin and authorized users have access)
     access_level = pkg_info.get('access_level', False)
     if access_level and access_level == CdsmetadataPlugin.access_levels[1]:
+        if not context.get('auth_user_obj', None):
+            return {'success': False,
+                    'msg': 'Dataset has restricted access.'}
         user_id = context['auth_user_obj'].id
         if has_special_rights(user_id, package_id):
             return {'success': True}
