@@ -141,10 +141,13 @@ def _compute_stats(context, pkg_id):
         for u in unique_user_ids:
 
             date = None if u[1] is None else u[1].ctime()
-            username = "<missing>"
-            user = toolkit.get_action('user_show')(context, {'id': u[0]})
-            if user:
+            username = "<anonymous/missing>"
+            try:
+                user = toolkit.get_action('user_show')(context, {'id': u[0]})
                 username = user['display_name']
+            except logic.NotFound:
+                pass
+            
             user_list.append({'user': username, 'date': date})
 
         resource_user_stats[res_name] = user_list

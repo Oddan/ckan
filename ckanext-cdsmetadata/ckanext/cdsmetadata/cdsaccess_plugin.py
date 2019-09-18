@@ -19,7 +19,10 @@ from functools import wraps
 
 import pdb
 
+_REQUIRE_USER_LOGIN = False
+
 _package_controller = PackageController()
+
 
 rights_table_name = 'special_access_rights'
 rights_table = Table(rights_table_name, model.meta.metadata,
@@ -117,10 +120,11 @@ def check_package_restrictions(context, data_dict=None):
     if data_dict is None:
         raise exceptions.CkanException('no data_dict')
 
-    # check if logged in (if not, then package resources will not be available)
-    if context.get('auth_user_obj', None) is None:
-        return {'success': False,
-                'msg': "Dataset resources not available to anonymous users."}
+    if _REQUIRE_USER_LOGIN:
+        # check if logged in (if not, then package resources will not be available)
+        if context.get('auth_user_obj', None) is None:
+            return {'success': False,
+                    'msg': "Dataset resources not available to anonymous users."}
 
     # check if sysadmin (sysadmin has access to everything)
     if is_sysadmin(context):
