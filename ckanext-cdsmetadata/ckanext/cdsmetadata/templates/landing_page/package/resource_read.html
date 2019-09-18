@@ -37,13 +37,23 @@
 {% endblock %}
 
 {% block resource_read_url %}
+
   {% if h.check_access("resource_download", {'id': res.id}) %}
     {% if res.url and h.is_url(res.url) %}
-      <form method="POST">
-        <button class="btn btn-primary" type="submit" value="Download" id="direct_download" disabled="">
-          Direct download
+      {% if res.url_type %}
+        <form method="POST">
+          <button class="btn btn-primary" type="submit" value="Download" id="direct_download" disabled="">
+            Direct download
+          </button>
+        </form>
+      {% else %}
+        {# we are dealing with an external link #}
+        <button class="btn btn-primary" value="Download"
+                onclick="location.href='{{res.url}}';"
+                id="direct_download" disabled="">
+          Download Externally
         </button>
-      </form>
+      {% endif %}
     {% elif res.url %} 
       <p> Direct download unavailable </p>
     {% endif %}
@@ -52,10 +62,10 @@
     <input type="checkbox" 
            id="" 
            onchange="(function(el) { 
-                     if (el.checked) { 
-                       document.getElementById('direct_download').removeAttribute('disabled') 
-                     } else {  
-                       document.getElementById('direct_download').setAttribute('disabled', '')}})(this)" 
+           if (el.checked) { 
+           document.getElementById('direct_download').removeAttribute('disabled') 
+           } else {  
+           document.getElementById('direct_download').setAttribute('disabled', '')}})(this)" 
            name="license_accepted"> 
            I confirm that I have read and accepted this dataset's 
            {% if pkg_license %} 

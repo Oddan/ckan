@@ -1,27 +1,32 @@
 {% ckan_extends %}
 
 {% block resource_item_description %}
-    {# show file size #}
+  {# show file size #}
+  {% set internal = res['url_type'] %}
+  {% if internal %}
     {% set size_entry = h.format_resource_items( [("size", res['size'])] ) %}
     <p class="description"> Size: {{size_entry[0][1]}}</p>
-    {# show description #}
-    {% if res.description %}
-      <p class="description" style="width: auto">
-        {{ h.markdown_extract(h.get_translated(res, 'description'), extract_length=80) }}
-      </p>
-    {% endif %}
-    {% if has_access %}
-      <input type="checkbox"
-             name="{{ res.name }}"
-             value="{{ res.id }}"
-             id="resource"
-             {% if not res.url_type == "upload" %}
-               disabled
-             {% endif %}
-             >
-    {% endif %}
-  {% endblock %}
-
+  {% else %}
+    <p><em>offsite</em></p>
+  {% endif %}
+  {# show description #}
+  {% if res.description %}
+    <p class="description" style="width: auto">
+      {{ h.markdown_extract(h.get_translated(res, 'description'), extract_length=80) }}
+    </p>
+  {% endif %}
+  {% if internal and has_access %}
+    <input type="checkbox"
+           name="{{ res.name }}"
+           value="{{ res.id }}"
+           id="resource"
+           {% if not res.url_type == "upload" %}
+             disabled
+           {% endif %}
+           >
+  {% endif %}
+{% endblock %}
+       
 {% block resource_item_explore %}
 
   {# Remove content of this block, as download is managed by the plugin #}
