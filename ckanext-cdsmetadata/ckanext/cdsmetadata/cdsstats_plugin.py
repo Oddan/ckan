@@ -34,7 +34,7 @@ class DatasetStatistics(model.domain_object.DomainObject):
         self.user_id = user_id
         self.resource_id = resource_id
         self.country = country
-        self.affiliation = affiliation.upper() # avoid case-related ambiguities when counting affiliations
+        self.affiliation = affiliation
         self.date = datetime.now()
 
 meta.mapper(DatasetStatistics, dataset_statistics_table,
@@ -54,8 +54,8 @@ def resource_download_patch(fn):
     @wraps(fn)
     def wrapper(*args, **kwargs):
 
-        country = request.headers.get('country', 'unspecified')
-        affiliation = request.headers.get('affiliation', 'unspecified') or 'unspecified'
+        country = request.headers.get('country', u'unspecified')
+        affiliation = request.headers.get('affiliation', u'unspecified') or u'unspecified'
         
         resource_id = kwargs['resource_id']
         package_id = \

@@ -111,7 +111,6 @@ def get_required_metadata_fields(code):
 
 def _validate_category_metadata(resource, current=None):
 
-    #pdb.set_trace()
     errors = {}
     category = resource.get('category', None)
     if category is None:

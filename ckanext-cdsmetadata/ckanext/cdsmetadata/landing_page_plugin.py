@@ -148,8 +148,9 @@ def _download_multiple_resources():
     context = {'model': model, 'user': g.user, 'auth_user_obj': g.userobj}
         
     res_ids = request.form.getlist('res_id')
-    country = request.form.get('country', 'unspecified')
-    affiliation = request.form.get('affiliation', 'unspecified')
+    country = request.form.get('country', u'unspecified').encode('utf-8')
+    affiliation = \
+        request.form.get('affiliation', u'unspecified').strip().upper().encode('utf-8')
 
     headers = {'country': country, 'affiliation': affiliation}
     if 'Cookie' in request.headers.keys():

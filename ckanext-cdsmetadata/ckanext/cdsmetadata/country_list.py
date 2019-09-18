@@ -1,5 +1,4 @@
-
-# -*- coding: UTF-8 -*-
+# -*- coding: utf-8 -*-
 
 iso3166_1 = [
     ( u"Afghanistan"                                          , u"AF"                            , u"AFG" , u"004"   , u"ISO 3166-2:AF" ),

@@ -1636,7 +1636,7 @@ def _package_after_update(context, pkg_dict):
 
 
 def _package_before_view(pkg_dict):
-    #pdb.set_trace()
+
     pkg = model.package.Package.get(pkg_dict['id'])
 
     pkg_dict['contact_person'] = \
@@ -2096,7 +2096,7 @@ class CdsmetadataPlugin(plugins.SingletonPlugin,
             geojson = '{{"type": "Point", "coordinates": [{0}, {1}] }}'.\
                           format(loc[0], loc[1])
             pkg_dict['extras_spatial'] = geojson
-        #pdb.set_trace()
+
         return pkg_dict
 
     # ================================ IValidators ============================
