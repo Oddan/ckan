@@ -224,7 +224,7 @@ def _revoke_user_rights(users, dataset_id):
             e.delete()
     session.commit()
 
-
+    
 def grant_rights(id):
 
     context = {'model': model, 'session': model.Session,
@@ -300,6 +300,7 @@ class CdsAccessManagementPlugin(plugins.SingletonPlugin,
         blueprint.template_folder = u'templates'
         blueprint.add_url_rule(u'/grant_rights/<id>', u'grant_rights',
                                grant_rights, methods=['GET', 'POST'])
+
         return blueprint
 
     # ============================= ITemplateHelpers ==========================
