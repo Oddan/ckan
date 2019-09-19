@@ -1655,6 +1655,16 @@ def _package_before_view(pkg_dict):
     pkg_dict['related_dataset'] = \
         [(x.id, x.title) for x in pkg.related_dataset]
 
+
+    # add extras field with location data for ckanext-spatial if location has
+    # been specified
+    if 'location' in pkg_dict.keys():
+        loc = pkg_dict.get('location', None)
+        if loc:
+            geojson = '{{"type": "Point", "coordinates": [{0}, {1}] }}'.\
+                          format(loc[0], loc[1])
+            pkg_dict['extras'] = [{'key': 'spatial', 'value': geojson}] 
+    
     return pkg_dict
 
 # ========================= Validator implementations =========================
