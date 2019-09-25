@@ -32,7 +32,7 @@ ENV CKAN_HOME /usr/lib/ckan
 ENV CKAN_VENV $CKAN_HOME/venv
 ENV CKAN_CONFIG /etc/ckan
 ENV CKAN_STORAGE_PATH=/var/lib/ckan
-ENV PROTOTYPE_SCRIPT_PATH $CKAN_VENV/src/ckan/contrib/docker/scripts/prototype_edition
+ENV RELEASE_SCRIPT_PATH $CKAN_VENV/src/ckan/contrib/docker/scripts/release_edition
 
 # Build-time variables specified by docker-compose.yml / .env
 ARG CKAN_SITE_URL
@@ -52,27 +52,25 @@ RUN ckan-pip install -U pip && \
     ckan-pip install --upgrade --no-cache-dir -r $CKAN_VENV/src/ckan/requirement-setuptools.txt && \
     ckan-pip install --upgrade --no-cache-dir -r $CKAN_VENV/src/ckan/requirements.txt && \
     ckan-pip install -e $CKAN_VENV/src/ckan/ && \
+    ckan-pip install -e "git+https://github.com/ckan/ckanext-spatial.git#egg=ckanext-spatial" && \
+    ckan-pip install -r $CKAN_VENV/src/ckanext-spatial/pip-requirements.txt && \
     ln -s $CKAN_VENV/src/ckan/ckan/config/who.ini $CKAN_CONFIG/who.ini && \
     cp -v $CKAN_VENV/src/ckan/contrib/docker/ckan-entrypoint.sh /ckan-entrypoint.sh && \
     chmod +x /ckan-entrypoint.sh && \
     chown -R ckan:ckan $CKAN_HOME $CKAN_VENV $CKAN_CONFIG $CKAN_STORAGE_PATH
 
 # copy in predefined settings for use with prototype, and activate site with Apache
-RUN cp -v $PROTOTYPE_SCRIPT_PATH/apache.wsgi $CKAN_CONFIG/apache.wsgi && \
-    cp -v $PROTOTYPE_SCRIPT_PATH/production.ini.preconf $CKAN_CONFIG/production.ini && \
-    cp -v $PROTOTYPE_SCRIPT_PATH/ckan_default.conf /etc/apache2/sites-available/ckan_default.conf && \
-    cp -v $PROTOTYPE_SCRIPT_PATH/ports.conf /etc/apache2/ports.conf && \
+RUN cp -v $RELEASE_SCRIPT_PATH/apache.wsgi $CKAN_CONFIG/apache.wsgi && \
+    cp -v $RELEASE_SCRIPT_PATH/production.ini.preconf $CKAN_CONFIG/production.ini && \
+    cp -v $RELEASE_SCRIPT_PATH/ckan_default.conf /etc/apache2/sites-available/ckan_default.conf && \
+    cp -v $RELEASE_SCRIPT_PATH/ports.conf /etc/apache2/ports.conf && \
     a2ensite ckan_default && \
     a2dissite 000-default
 
 # activate all CO2DataShare plugins
 RUN . $CKAN_VENV/bin/activate && \
-    cd $CKAN_VENV/src/ckan/ckanext-user_registration && python setup.py develop && \
-    cd $CKAN_VENV/src/ckan/ckanext-simple_frontpage && python setup.py develop && \
-    cd $CKAN_VENV/src/ckan/ckanext-remove_unwanted_features && python setup.py develop && \
-    cd $CKAN_VENV/src/ckan/ckanext-datasets_landing_page && python setup.py develop && \
-    cd $CKAN_VENV/src/ckan/ckanext-CO2Datashare_theme && python setup.py develop && \
-    cd $CKAN_VENV/src/ckan/ckanext-access_management && python setup.py develop
+    cd $CKAN_VENV/src/ckan/ckanext-cdsmetadata && python setup.py develop && \
+    cd $CKAN_VENV/src/ckanext-spatial && python setup.py develop
 
 ENTRYPOINT ["/ckan-entrypoint.sh"]
 

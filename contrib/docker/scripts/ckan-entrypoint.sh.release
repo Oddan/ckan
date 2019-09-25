@@ -38,13 +38,28 @@ set_environment () {
 
 
 write_config () {
+    # make new config file
     ckan-paster make-config --no-interactive ckan "$CONFIG"
+
+    # setup sysadmin
+    cd ${CKAN_VENV}/src/ckan
+    ckan-paster db init -c ${CONFIG}
+    ckan-paster user add admin email=admin@localhost name=admin password=${CKAN_ADMIN_PASSWORD} -c ${CONFIG}
+    ckan-paster sysadmin add admin -c ${CONFIG}
 }
+
+# wait for postgreSQL
+while ! pg_isready -h db -U postgres; do
+    sleep 1;
+done
 
 # If we don't already have a config file, bootstrap
 if [ ! -e "$CONFIG" ]; then
   write_config
 fi
+
+
+
 
 # Get or create CKAN_SQLALCHEMY_URL
 if [ -z "$CKAN_SQLALCHEMY_URL" ]; then
@@ -66,7 +81,6 @@ fi
 set_environment
 #pkexec --user www-data service apache2 start && service apache reload
 
-ckan-paster --plugin=ckan db init -c "${CKAN_CONFIG}/production.ini"
-ckan-paster --plugin=ckanext-access_management access_table ensure_tables_exists -c "${CKAN_CONFIG}/production.ini"
+#ckan-paster --plugin=ckan db init -c "${CKAN_CONFIG}/production.ini"
 
 exec "$@"
