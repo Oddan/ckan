@@ -13,7 +13,7 @@ should be taken:
 Dockerfile in the subdirectory `8.2` by commenting out the line towards the end
 of the script saying `VOLUME /var/solr`.
 - Create a Solr base image using the modified Dockerfile, and give the image the
-name `solr82`.
+name `solr:82`.
 
 After carrying out these steps, you should be able to run `docker-compose up` in
 the `ckan/contrib/docker` folder.

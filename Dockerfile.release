@@ -61,7 +61,6 @@ RUN ckan-pip install -U pip && \
 
 # copy in predefined settings for use with prototype, and activate site with Apache
 RUN cp -v $RELEASE_SCRIPT_PATH/apache.wsgi $CKAN_CONFIG/apache.wsgi && \
-    cp -v $RELEASE_SCRIPT_PATH/production.ini.preconf $CKAN_CONFIG/production.ini && \
     cp -v $RELEASE_SCRIPT_PATH/ckan_default.conf /etc/apache2/sites-available/ckan_default.conf && \
     cp -v $RELEASE_SCRIPT_PATH/ports.conf /etc/apache2/ports.conf && \
     a2ensite ckan_default && \
