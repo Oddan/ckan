@@ -21,6 +21,8 @@ import pdb
 import os.path as path
 import os
 import shutil
+import fileinput
+from exceptions import IOError
 # abort(403, _('Not authorized to see this page.'))
 
 
@@ -58,6 +60,21 @@ def _verify_landing_page_filelist(flist):
         return ["Error: 'index.html' missing from zipped archive."]
 
 
+def _update_static_links(target_dir, replacement):
+
+    # Replace references to 'static/' in the landing page HTML file with the
+    # actual path used.  This solution is quick-and-dirty, a more rigorous
+    # treatment might be considered.
+    fname = path.join(target_dir, 'index.html')
+    if not os.path.exists(fname):
+        raise IOError('index.html not found')
+    
+    f = fileinput.FileInput(fname, inplace=True)
+    for line in f:
+        print(line.replace('./static/', '/' + replacement + '/'))
+    f.close()
+
+
 def _unpack_landing_page_zipfile(afile, pkg_name):
 
     if afile.content_type != 'application/zip':
@@ -85,6 +102,8 @@ def _unpack_landing_page_zipfile(afile, pkg_name):
         if not path.exists(tmp_target_dir):
             os.makedirs(tmp_target_dir)
         input_zip.extractall(path=tmp_target_dir)
+        _update_static_links(tmp_target_dir,
+                             path.join(LANDING_PAGE_DIR, pkg_name, 'static'))
     except:
         # unable to extract archive.  Clean up and return error
         if path.exists(tmp_target_dir):
@@ -93,7 +112,7 @@ def _unpack_landing_page_zipfile(afile, pkg_name):
 
     # extraction went OK.  Move result to target directory
     if path.exists(target_dir):
-        shutil.rmtree(tmp_target_dir)
+        shutil.rmtree(target_dir)
     os.rename(tmp_target_dir, target_dir)
 
     return []
