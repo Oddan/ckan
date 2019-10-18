@@ -30,11 +30,11 @@ beaker.session.key = ckan
 # This is the secret token that the beaker library uses to hash the cookie sent
 # to the client. `paster make-config` generates a unique value for this each
 # time it generates a config file.
-beaker.session.secret = 9TWEdunAIKo6WLlx+V8K6U8/r
+beaker.session.secret = zvpQC/MJhiNiq7C/l60/0gbLj
 
 # `paster make-config` generates a unique value for this each time it generates
 # a config file.
-app_instance_uuid = bc2b7c5a-d421-4646-9582-8ea3f4d27aa2
+app_instance_uuid = 8ea54556-987c-4414-9201-be05c2658a5e
 
 # repoze.who config
 who.config_file = %(here)s/who.ini
@@ -45,8 +45,7 @@ who.log_file = %(cache_dir)s/who_log.ini
 # who.timeout = 86400
 
 ## Database Settings
-#sqlalchemy.url = postgresql://ckan_default:pass@localhost/ckan_default
-sqlalchemy.url = postgresql://ckan:ckan@db/ckan
+sqlalchemy.url = postgresql://ckan_default:pass@localhost/ckan_default
 
 #ckan.datastore.write_url = postgresql://ckan_default:pass@localhost/datastore_default
 #ckan.datastore.read_url = postgresql://datastore_default:pass@localhost/datastore_default
@@ -58,8 +57,7 @@ ckan.datastore.default_fts_index_method = gist
 
 ## Site Settings
 
-#ckan.site_url = http://192.168.240.6
-#ckan.site_url = https://portal.co2.sigma2.no
+ckan.site_url = https://portal.co2.sigma2.no
 #ckan.use_pylons_response_cleanup_middleware = true
 
 ## Authorization Settings
@@ -74,20 +72,19 @@ ckan.auth.user_delete_organizations = false
 ckan.auth.create_user_via_api = false
 ckan.auth.create_user_via_web = false
 ckan.auth.roles_that_cascade_to_sub_groups = admin
-ckan.auth.public_user_details = false
+
 
 ## Search Settings
 
 ckan.site_id = default
 #solr_url = http://127.0.0.1:8983/solr
-solr_url=http://solr:8983/solr/ckan
 
 
 ## Redis Settings
 
 # URL to your Redis instance, including the database to be used.
 #ckan.redis.url = redis://localhost:6379/0
-ckan.redis.url = redis://redis:6379/1
+
 
 ## CORS Settings
 
@@ -104,13 +101,13 @@ ckan.redis.url = redis://redis:6379/1
 #       Add ``datapusher`` to enable DataPusher
 #		Add ``resource_proxy`` to enable resorce proxying and get around the
 #		same origin policy
-ckan.plugins = stats text_view image_view recline_view CO2Datashare_theme access_management datasets_landing_page remove_unwanted_features simple_frontpage user_registration
+ckan.plugins = stats text_view image_view recline_view cdsaccess cdslandingpage cdstheme cdsmetadata cdsmetadata_resources spatial_metadata spatial_query cdsstats
 
+ckanext.spatial.search_backend = solr-spatial-fields
+ckan.cdsmetadata.max_zipfile_size = 5000000000
 # Define which views should be created by default
 # (plugins must be loaded in ckan.plugins)
 ckan.views.default_views = image_view text_view recline_view
-
-
 
 # Customize which text formats the text_view plugin will show
 #ckan.preview.json_formats = json
@@ -126,10 +123,10 @@ ckan.views.default_views = image_view text_view recline_view
 #ckan.base_public_folder = public-bs2
 #ckan.base_templates_folder = templates-bs2
 
-ckan.site_title = CO2 DataShare
+ckan.site_title = CO2DataShare
 ckan.site_logo = /base/images/ckan-logo.png
 ckan.site_description =
-ckan.favicon = /base/images/co2-favicon.ico
+ckan.favicon = /base/images/ckan.ico
 ckan.gravatar_default = identicon
 ckan.preview.direct = png jpg gif
 ckan.preview.loadable = html htm rdf+xml owl+xml xml n3 n-triples turtle plain atom csv tsv rss txt json
@@ -147,7 +144,7 @@ ckan.display_timezone = server
 ## Internationalisation Settings
 ckan.locale_default = en
 ckan.locale_order = en pt_BR ja it cs_CZ ca es fr el sv sr sr@latin no sk fi ru de pl nl bg ko_KR hu sa sl lv
-ckan.locales_offered = en
+ckan.locales_offered =
 ckan.locales_filtered_out = en_GB
 
 ## Feeds Settings
@@ -160,7 +157,7 @@ ckan.feeds.author_link =
 ## Storage Settings
 
 ckan.storage_path = /var/lib/ckan
-ckan.max_resource_size = 5000
+ckan.max_resource_size = 10000
 #ckan.max_image_size = 2
 
 ## Datapusher settings
