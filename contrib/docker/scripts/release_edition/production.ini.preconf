@@ -103,7 +103,7 @@ ckan.site_id = default
 #		same origin policy
 ckan.plugins = stats text_view image_view recline_view cdsaccess cdslandingpage cdstheme cdsmetadata cdsmetadata_resources spatial_metadata spatial_query cdsstats
 
-ckanext.spatial.search_backend = solr-spatial-fields
+ckanext.spatial.search_backend = solr-spatial-field
 ckan.cdsmetadata.max_zipfile_size = 5000000000
 # Define which views should be created by default
 # (plugins must be loaded in ckan.plugins)
