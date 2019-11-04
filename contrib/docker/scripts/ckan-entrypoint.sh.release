@@ -40,11 +40,12 @@ set_environment () {
 write_config () {
     # make new config file
     ckan-paster make-config --no-interactive ckan "$CONFIG"
-
+    
     ckan-paster --plugin=ckan db init -c "${CONFIG}"
-    # ckan-paster --plugin=ckan user add admin email=admin@localhost name=admin password=${CKAN_ADMIN_PASSWORD} -c "${CONFIG}"
-    # ckan-paster --plugin=ckan sysadmin add admin -c ${CONFIG}
 
+    # Once the database has been initialized with the standard tables,
+    # we can switch to the pre-made config file with the plugin information.
+    cp "${CKAN_CONFIG}/production.ini.tmp" "${CONFIG}"
 }
 
 
