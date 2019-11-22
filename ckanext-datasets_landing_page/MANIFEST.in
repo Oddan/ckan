@@ -1,4 +1,0 @@
-include README.rst
-include LICENSE
-include requirements.txt
-recursive-include ckanext/datasets_landing_page *.html *.json *.js *.less *.css *.mo
