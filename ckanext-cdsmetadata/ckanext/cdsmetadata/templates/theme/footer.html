@@ -1,6 +1,11 @@
 {% ckan_extends %}
 
-{{ super() }}
+{% block styles %}
+    {{ super() }}
+    <link rel="stylesheet" href="/base/css/CO2Datashare_main.css" />
+{% endblock %}
+
+{# {{ super() }} #}
 
 {# Remove the links to CKAN API and CKAN ASSOCIATION from the footer of the pages
     and invert the position of the language selector and the attribution #}
@@ -22,7 +27,7 @@
           </ul>
         {% endblock %}
       </div>
-      <div class="col-md-4 attribution">
+      <div class="col-md-2 attribution">
           {# the following blocks were reversed in order before #}
         {% block footer_lang %}
         {% endblock %}
@@ -30,5 +35,11 @@
           <p>{% trans %}<strong>Powered by</strong> <a class="hide-text ckan-footer-logo" href="http://ckan.org">CKAN</a>{% endtrans %}</p>
         {% endblock %}
       </div>
+      <div class="col-md-2 attribution"> 
+          {# the following blocks were reversed in order before #} 
+        {% block footer_attribution_2 %} 
+          <p>{% trans %}<strong>Hosted by</strong> <a class="hide-text sigma2-footer-logo" href="http://www.sigma2.no">Sigma2</a>{% endtrans %}</p> 
+        {% endblock %} 
+      </div> 
     </div>
     {% endblock %}
