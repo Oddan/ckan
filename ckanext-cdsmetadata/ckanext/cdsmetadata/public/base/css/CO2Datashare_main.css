@@ -5,3 +5,13 @@
       background-repeat: repeat-xy;
     }
   }
+
+.attribution .sigma2-footer-logo {
+  display: block;
+  width: 120px;
+  height: 21px;
+  margin-top: 2px;
+  background: url("../../../base/images/sigma2-footer.png") no-repeat top left;
+  text-indent: -900em;
+
+}
