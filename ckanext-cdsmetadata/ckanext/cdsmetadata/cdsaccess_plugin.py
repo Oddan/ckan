@@ -155,25 +155,6 @@ def check_package_restrictions(context, data_dict=None):
     return {'success': True}
 
 
-# def resource_read_patch(function):
-#     @wraps(function)
-#     def wrapper(*args, **kwargs):
-
-#         # check access, forward to controller if OK
-#         context = {'model': model, 'session': model.Session,
-#                    'user': c.user, 'auth_user_obj': c.userobj}
-
-#         id = kwargs.get('id', None)
-#         resource_id = kwargs.get('resource_id', None)
-
-#         try:
-#             logic.check_access('resource_show', context, {'id': resource_id})
-#         except logic.NotAuthorized:
-#             base.abort(403, _('Unauthorized to access this resource.'))
-
-#         return function(*args, id=id, resource_id=resource_id)
-#     return wrapper
-
 def resource_download_patch(function):
     @wraps(function)
     def wrapper(*args, **kwargs):
@@ -193,7 +174,6 @@ def resource_download_patch(function):
 
         return function(*args, id=id, resource_id=resource_id, filename=filename)
     return wrapper
-
 
 
 def _grant_user_rights(users, dataset_id):

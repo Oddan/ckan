@@ -459,9 +459,6 @@ def prepare_user_extra_table():
 
 def ensure_table_created(table):
 
-    # if table.exists():
-    #     table.drop() # @@@@
-    #     Session.commit()
 
     if not table.exists():
         try:
