@@ -63,7 +63,7 @@ RUN ckan-pip install -U pip && \
 RUN cp -v $RELEASE_SCRIPT_PATH/apache.wsgi $CKAN_CONFIG/apache.wsgi && \
     cp -v $RELEASE_SCRIPT_PATH/ckan_default.conf /etc/apache2/sites-available/ckan_default.conf && \
     cp -v $RELEASE_SCRIPT_PATH/ports.conf /etc/apache2/ports.conf && \
-    cp -v $RELEASE_SCRIPT_PATH/production.ini /etc/ckan/production.ini.tmp && \
+    cp -v $RELEASE_SCRIPT_PATH/production.ini.preconf /etc/ckan/production.ini.tmp && \
     cp -v $RELEASE_SCRIPT_PATH/apache.conf /etc/apache2/apache.conf && \
     a2ensite ckan_default && \
     a2dissite 000-default
