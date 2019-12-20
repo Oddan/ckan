@@ -6,10 +6,9 @@
       {{ h.render_markdown(intro) }}
     {% else %}
       <h1 class="page-heading">{{ _("Welcome to the CO2 DataShare prototype portal") }}</h1>
-      <p> The CO2 DataShare online portal is an initiative by the CO2 Storage
-          Data Consortium, with the goal to make available a curated and
-          well-documented list of downloadable datasets from real geological CO2 storage
-          operations. </p> {% endif %}
+      <p> The CO<sub>2</sub> DataShare online portal is an initiative by the
+          international CO<sub>2</sub> Storage Data Consortium, with the goal to make
+          available curated and well-documented datasets from CO<sub>2</sub> storage projects. </p> {% endif %}
   </header>
 
   {% block home_image %}
@@ -27,20 +26,3 @@
     </section>
   {% endblock %}
 </div>
-
-
-
-
-
-{# {% ckan_extends %} #}
-
-{# {% block home_image_caption %} #}
-{#     {{ _('CO2 Data Share: The online platform of the CO2 Storage Data Consortium') }} #}
-{# {% endblock %} #}
-
-{# {\# This block replaces the promoted image on the frontpage with a custom one #\} #}
-{# {% block home_image_content %} #}
-{#     <a class="media-image" href="#"> #}
-{#         <img src="/CSDC_4.jpg" alt='CO2 Data Share: The CO2 Storage Data Consortium' width="420" height="270" /> #}
-{#     </a> #}
-{# {% endblock %} #}
