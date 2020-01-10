@@ -57,7 +57,7 @@ ckan.datastore.default_fts_index_method = gist
 
 ## Site Settings
 
-ckan.site_url = https://portal.co2.sigma2.no
+ckan.site_url = https://co2datashare.org
 #ckan.use_pylons_response_cleanup_middleware = true
 
 ## Authorization Settings
