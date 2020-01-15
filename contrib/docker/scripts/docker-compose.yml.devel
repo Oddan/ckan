@@ -42,11 +42,11 @@ services:
       - /tmp/.X11-unix:/tmp/.X11-unix 
       # last line above is to enable use of X
       
-  datapusher:
-    container_name: datapusher
-    image: clementmouchet/datapusher
-    ports:
-      - "8800:8800"
+  # datapusher:
+  #   container_name: datapusher
+  #   image: clementmouchet/datapusher
+  #   ports:
+  #     - "8800:8800"
 
   db:
     container_name: db
