@@ -20,9 +20,8 @@ from ckan.lib import helpers as h
 from plugin2 import get_required_metadata_fields
 import re
 from ckan.views import user
-
-import copy, datetime, dateutil
 import pdb
+import copy, datetime, dateutil
 
 TITLE_MAX_L = 100
 NAME_MAX_L = 100
@@ -1781,10 +1780,18 @@ def _register_resource_fields():
     mdata = Session.query(ResourceCategoryMetadataItem).all()
     custom_items = ' '.join([x.title for x in mdata])
 
-    tk.get_action('config_option_update')(
-        {'ignore_auth': True},
-        {'ckan.extra_resource_fields':
-         'category purpose sources assumptions dataformat ' + custom_items})
+    all_items = \
+        'category purpose sources assumptions dataformat ' + custom_items
+
+    old_items = \
+        tk.get_action('config_option_show')(
+            {'ignore_auth': True}, {'key': 'ckan.extra_resource_fields'})
+    
+    if all_items != old_items:
+        tk.get_action('config_option_update')(
+            {'ignore_auth': True},
+            {'ckan.extra_resource_fields':
+             'category purpose sources assumptions dataformat ' + custom_items})
 
 
 def _user_agreement():
