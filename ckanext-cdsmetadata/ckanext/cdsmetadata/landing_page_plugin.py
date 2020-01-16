@@ -197,16 +197,17 @@ def _download_multiple_resources():
     if len(res_ids) == 1:
         # no need to zip several files together
         url = _get_url(res_ids[0])
-        f = _get_file(url)
-        if f.status_code == 403:
-            return render_template(u"package/download_denied.html")
-        elif f.status_code == 404:
-            return render_template(u"package/download_failed.html")
+        return h.redirect_to(url)
+        # f = _get_file(url)
+        # if f.status_code == 403:
+        #     return render_template(u"package/download_denied.html")
+        # elif f.status_code == 404:
+        #     return render_template(u"package/download_failed.html")
         
-        return send_file(io.BytesIO(f.content),
-                         mimetype='application/octet-stream',
-                         as_attachment=True,
-                         attachment_filename=_get_filename(res_ids[0]))
+        # return send_file(io.BytesIO(f.content),
+        #                  mimetype='application/octet-stream',
+        #                  as_attachment=True,
+        #                  attachment_filename=_get_filename(res_ids[0]))
 
     # if we got here, more than one resource were requested.  We zip them
     # together to a single download file.
