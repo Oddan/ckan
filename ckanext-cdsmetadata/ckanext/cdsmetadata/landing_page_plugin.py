@@ -181,19 +181,20 @@ def _download_multiple_resources():
 
     package_id = _package_id_of_resource(context, res_ids[0])
 
-    def _get_url(res_id):
-        return h.url_for(controller='package',
-                         action='resource_download',
-                         id=package_id,
-                         resource_id=res_id,
-                         qualified=True)
-
     def _get_file(url):
         return requests.get(url, allow_redirects=True, headers=headers)
     
     def _get_filename(res_id):
         return basename(model.Resource.get(res_id).url)
         
+    def _get_url(res_id):
+        return h.url_for(controller='package',
+                         action='resource_download',
+                         id=package_id,
+                         resource_id=res_id,
+                         filename=_get_filename(res_id),
+                         qualified=True)
+
     if len(res_ids) == 1:
         # no need to zip several files together
         url = _get_url(res_ids[0])
