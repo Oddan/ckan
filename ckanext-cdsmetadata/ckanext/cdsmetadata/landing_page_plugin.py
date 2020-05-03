@@ -23,7 +23,7 @@ import os
 import shutil
 import fileinput
 from exceptions import IOError
-# abort(403, _('Not authorized to see this page.'))
+
 
 
 PLUGIN_DIR = path.dirname(__file__)
@@ -163,15 +163,15 @@ def _landing_page_upload(pkg_name):
 
 
 def _download_multiple_resources():
-
     context = {'model': model, 'user': g.user, 'auth_user_obj': g.userobj}
-        
+
     res_ids = request.form.getlist('res_id')
     country = request.form.get('country', u'unspecified').encode('utf-8')
     affiliation = \
         request.form.get('affiliation', u'unspecified').strip().upper().encode('utf-8')
 
     headers = {'country': country, 'affiliation': affiliation}
+    headers = {}
     if 'Cookie' in request.headers.keys():
         headers['Cookie'] = request.headers['Cookie']
 
@@ -182,6 +182,7 @@ def _download_multiple_resources():
     package_id = _package_id_of_resource(context, res_ids[0])
 
     def _get_file(url):
+        #return requests.get(url)
         return requests.get(url, allow_redirects=True, headers=headers)
     
     def _get_filename(res_id):
@@ -193,12 +194,20 @@ def _download_multiple_resources():
                          id=package_id,
                          resource_id=res_id,
                          filename=_get_filename(res_id),
-                         qualified=True)
+                         qualified=True,
+                         country=country,
+                         affiliation=affiliation)
 
     if len(res_ids) == 1:
         # no need to zip several files together
         url = _get_url(res_ids[0])
+
+        # HTTP code 307: temporary redirect, do not change the HTTP method
+        #return _flask_redirect(url, code=307)
+        #return _flask_redirect(url)
+        #return h.redirect_to(url, headers=headers)
         return h.redirect_to(url)
+        
         # f = _get_file(url)
         # if f.status_code == 403:
         #     return render_template(u"package/download_denied.html")
