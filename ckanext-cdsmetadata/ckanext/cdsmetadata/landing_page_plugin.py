@@ -170,7 +170,6 @@ def _download_multiple_resources():
     affiliation = \
         request.form.get('affiliation', u'unspecified').strip().upper().encode('utf-8')
 
-    headers = {'country': country, 'affiliation': affiliation}
     headers = {}
     if 'Cookie' in request.headers.keys():
         headers['Cookie'] = request.headers['Cookie']
