@@ -9,7 +9,6 @@ from ckan.logic.converters import convert_package_name_or_id_to_id
 from ckan.common import g, _, request, config
 from country_list import iso3166_1
 import ckan.lib.formatters as formatters
-# from ckan.controllers.package import PackageController
 from functools import wraps
 import zipfile
 import io
@@ -201,29 +200,14 @@ def _download_multiple_resources():
         # no need to zip several files together
         url = _get_url(res_ids[0])
 
-        # HTTP code 307: temporary redirect, do not change the HTTP method
-        #return _flask_redirect(url, code=307)
-        #return _flask_redirect(url)
-        #return h.redirect_to(url, headers=headers)
         return h.redirect_to(url)
         
-        # f = _get_file(url)
-        # if f.status_code == 403:
-        #     return render_template(u"package/download_denied.html")
-        # elif f.status_code == 404:
-        #     return render_template(u"package/download_failed.html")
-        
-        # return send_file(io.BytesIO(f.content),
-        #                  mimetype='application/octet-stream',
-        #                  as_attachment=True,
-        #                  attachment_filename=_get_filename(res_ids[0]))
-
     # if we got here, more than one resource were requested.  We zip them
     # together to a single download file.
     memory_file = io.BytesIO()
     with zipfile.ZipFile(memory_file, mode='w',
                          compression=zipfile.ZIP_STORED) as zf:
-
+        # pdb.set_trace()
         for res_id in res_ids:
             # @@ change when Flask becomes responsible for resources
             url = _get_url(res_id)

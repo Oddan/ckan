@@ -11,7 +11,6 @@ from .plugin import CdsmetadataPlugin
 from ckan.logic.converters import convert_package_name_or_id_to_id
 import datetime, dateutil
 
-from ckan.controllers.package import PackageController
 
 from ckan.common import _, c, request
 
@@ -20,8 +19,6 @@ from functools import wraps
 import pdb
 
 _REQUIRE_USER_LOGIN = False
-
-_package_controller = PackageController()
 
 
 rights_table_name = 'special_access_rights'
