@@ -1,22 +1,13 @@
-from solr:8.2
-# FROM solr:8.1.1
-# MAINTAINER Open Knowledge
+FROM solr:8.2
+MAINTAINER Open Knowledge
 
 # Enviroment
 ENV SOLR_CORE ckan
 
-#USER root
-
-# Create Directories
-# RUN mkdir -p /var/solr/data/$SOLR_CORE/conf
-# RUN mkdir -p /var/solr/data/$SOLR_CORE/data
-
-# RUN mkdir -p /var/solr/data/ckan/data
-# RUN mkdir -p /var/solr/data/ckan/conf
-
-RUN mkdir -p /var/solr/data/$SOLR_CORE/data && \
-    mkdir -p /var/solr/data/$SOLR_CORE/conf && \
-    echo name=$SOLR_CORE > /var/solr/data/$SOLR_CORE/core.properties
+ENV CKAN_TMPDIR /tmp/ckan_tmp
+RUN mkdir -p $CKAN_TMPDIR/data && \
+    mkdir -p $CKAN_TMPDIR/conf && \
+    echo name=$SOLR_CORE > $CKAN_TMPDIR/core.properties
 
 # Adding Files
 ADD ./ckanext-cdsmetadata/ckanext/cdsmetadata/solr/solrconfig.xml \
@@ -26,18 +17,13 @@ https://raw.githubusercontent.com/apache/lucene-solr/releases/lucene-solr/6.6.2/
 https://raw.githubusercontent.com/apache/lucene-solr/releases/lucene-solr/6.6.2/solr/server/solr/configsets/basic_configs/conf/stopwords.txt \
 https://raw.githubusercontent.com/apache/lucene-solr/releases/lucene-solr/6.6.2/solr/server/solr/configsets/basic_configs/conf/protwords.txt \
 https://raw.githubusercontent.com/apache/lucene-solr/releases/lucene-solr/6.6.2/solr/server/solr/configsets/data_driven_schema_configs/conf/elevate.xml \
-/var/solr/data/$SOLR_CORE/conf/
+$CKAN_TMPDIR/conf/
 
-# Create Core.properties
-#RUN echo name=$SOLR_CORE > /var/solr/data/$SOLR_CORE/core.properties
+ADD ./contrib/docker/solr/initscript.sh /docker-entrypoint-initdb.d/
 
 # Giving ownership to Solr
-
 USER root
-#RUN chown -R $SOLR_USER:$SOLR_USER /var/solr/
-RUN chown -R $SOLR_USER:$SOLR_USER /var/solr/data/$SOLR_CORE
-#RUN chown -R $SOLR_USER:$SOLR_USER /var/solr/data/ckan/core.properties
-#RUN chown -R $SOLR_USER:$SOLR_USER /var/solr/data/$SOLR_CORE/core.properties
+RUN chown -R $SOLR_USER:$SOLR_USER $CKAN_TMPDIR
 
 # User
 USER $SOLR_USER:$SOLR_USER
