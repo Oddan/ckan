@@ -54,8 +54,10 @@ def resource_download_patch(fn):
     @wraps(fn)
     def wrapper(*args, **kwargs):
 
-        country = request.headers.get('country', u'unspecified')
-        affiliation = request.headers.get('affiliation', u'unspecified') or u'unspecified'
+        country = request.params.get('country', u'unspecified').encode('utf-8')
+        affiliation = request.params.get('affiliation', u'unspecified').strip().upper().encode('utf-8')
+        # country = request.headers.get('country', u'unspecified')
+        # affiliation = request.headers.get('affiliation', u'unspecified') or u'unspecified'
         
         resource_id = kwargs['resource_id']
         package_id = \

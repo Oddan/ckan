@@ -9,7 +9,6 @@ from ckan.logic.converters import convert_package_name_or_id_to_id
 from ckan.common import g, _, request, config
 from country_list import iso3166_1
 import ckan.lib.formatters as formatters
-# from ckan.controllers.package import PackageController
 from functools import wraps
 import zipfile
 import io
@@ -23,7 +22,7 @@ import os
 import shutil
 import fileinput
 from exceptions import IOError
-# abort(403, _('Not authorized to see this page.'))
+
 
 
 PLUGIN_DIR = path.dirname(__file__)
@@ -163,15 +162,14 @@ def _landing_page_upload(pkg_name):
 
 
 def _download_multiple_resources():
-
     context = {'model': model, 'user': g.user, 'auth_user_obj': g.userobj}
-        
+
     res_ids = request.form.getlist('res_id')
     country = request.form.get('country', u'unspecified').encode('utf-8')
     affiliation = \
         request.form.get('affiliation', u'unspecified').strip().upper().encode('utf-8')
 
-    headers = {'country': country, 'affiliation': affiliation}
+    headers = {}
     if 'Cookie' in request.headers.keys():
         headers['Cookie'] = request.headers['Cookie']
 
@@ -182,6 +180,7 @@ def _download_multiple_resources():
     package_id = _package_id_of_resource(context, res_ids[0])
 
     def _get_file(url):
+        #return requests.get(url)
         return requests.get(url, allow_redirects=True, headers=headers)
     
     def _get_filename(res_id):
@@ -193,29 +192,22 @@ def _download_multiple_resources():
                          id=package_id,
                          resource_id=res_id,
                          filename=_get_filename(res_id),
-                         qualified=True)
+                         qualified=True,
+                         country=country,
+                         affiliation=affiliation)
 
     if len(res_ids) == 1:
         # no need to zip several files together
         url = _get_url(res_ids[0])
-        return h.redirect_to(url)
-        # f = _get_file(url)
-        # if f.status_code == 403:
-        #     return render_template(u"package/download_denied.html")
-        # elif f.status_code == 404:
-        #     return render_template(u"package/download_failed.html")
-        
-        # return send_file(io.BytesIO(f.content),
-        #                  mimetype='application/octet-stream',
-        #                  as_attachment=True,
-        #                  attachment_filename=_get_filename(res_ids[0]))
 
+        return h.redirect_to(url)
+        
     # if we got here, more than one resource were requested.  We zip them
     # together to a single download file.
     memory_file = io.BytesIO()
     with zipfile.ZipFile(memory_file, mode='w',
                          compression=zipfile.ZIP_STORED) as zf:
-
+        # pdb.set_trace()
         for res_id in res_ids:
             # @@ change when Flask becomes responsible for resources
             url = _get_url(res_id)
