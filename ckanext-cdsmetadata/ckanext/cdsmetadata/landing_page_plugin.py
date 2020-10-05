@@ -16,20 +16,22 @@ import requests
 import ckan.logic as logic
 from os.path import basename
 import ckan.model as model
-import pdb
 import os.path as path
 import os
 import shutil
 import fileinput
 from exceptions import IOError
 
+import pdb
 
+# PLUGIN_DIR = path.dirname(__file__)
+LANDING_PAGE_DIR = path.join(plugins.toolkit.config.get('ckan.storage_path'),
+                             'landing_pages')
 
-PLUGIN_DIR = path.dirname(__file__)
-LANDING_PAGE_DIR = 'landing_pages'
 COUNTRY_OPTION_LIST = [{'name': c[1], 'value': c[0]} for c in iso3166_1]
-DEFAULT_MAX_ZIPFILE_SIZE = 1e9; # A different value can be set using config
+DEFAULT_MAX_ZIPFILE_SIZE = 1e9  # A different value can be set using config
                                 # parameter 'ckan.cdsmetadata.max_zipfile_size'
+
 
 def _only_sysadmin_auth(context, data_dict=None):
     # only sysadmins should have access (and sysamins bypass the login system)
@@ -67,7 +69,7 @@ def _update_static_links(target_dir, replacement):
     fname = path.join(target_dir, 'index.html')
     if not os.path.exists(fname):
         raise IOError('index.html not found')
-    
+
     f = fileinput.FileInput(fname, inplace=True)
     for line in f:
         print(line.replace('./static/', '/' + replacement + '/'))
@@ -88,21 +90,17 @@ def _unpack_landing_page_zipfile(afile, pkg_name):
         return errors
 
     # contents verified.  Extract and process files.
-    root_dir = path.join(PLUGIN_DIR, 'public', LANDING_PAGE_DIR)
-    if not path.exists(root_dir):
-        os.makedirs(root_dir)  # ensure base directory exists
-    
-    target_dir = \
-        path.join(PLUGIN_DIR, 'public', LANDING_PAGE_DIR, pkg_name)
-    tmp_target_dir = \
-        path.join(PLUGIN_DIR, 'public', LANDING_PAGE_DIR, '_' + pkg_name)
+    # if not path.exists(LANDING_PAGE_DIR):
+    #     os.makedirs(LANDING_PAGE_DIR)  # ensure base directory exists
+
+    target_dir = path.join(LANDING_PAGE_DIR, pkg_name)
+    tmp_target_dir = path.join(LANDING_PAGE_DIR, '_' + pkg_name)
 
     try:
         if not path.exists(tmp_target_dir):
             os.makedirs(tmp_target_dir)
         input_zip.extractall(path=tmp_target_dir)
-        _update_static_links(tmp_target_dir,
-                             path.join(LANDING_PAGE_DIR, pkg_name, 'static'))
+        _update_static_links(tmp_target_dir, path.join(pkg_name, 'static'))
     except:
         # unable to extract archive.  Clean up and return error
         if path.exists(tmp_target_dir):
@@ -150,8 +148,8 @@ def _landing_page_upload(pkg_name):
         else:
             # a 'delete' was requested
             # removing directory containing landing page
-            target_dir = path.join(PLUGIN_DIR, 'public',
-                                   LANDING_PAGE_DIR, pkg_name)
+            target_dir = path.join(LANDING_PAGE_DIR, pkg_name)
+
             if path.exists(target_dir):
                 shutil.rmtree(target_dir)
             return tk.redirect_to(h.url_for(controller='package',
@@ -320,7 +318,7 @@ class CdsLandingPagePlugin(plugins.SingletonPlugin):
     def get_helpers(self):
         return {
             'landing_page_index':
-            lambda pkg_name: LANDING_PAGE_DIR + '/' + pkg_name + '/index.html'
+            lambda pkg_name: pkg_name + '/index.html'
         }
 
     # IAuthFunctions
@@ -332,6 +330,10 @@ class CdsLandingPagePlugin(plugins.SingletonPlugin):
         tk.add_template_directory(config, 'templates/landing_page')
         tk.add_public_directory(config, 'public')
         tk.add_resource('fanstatic/landing_page', 'cdslandingpage')
+
+        if not path.exists(LANDING_PAGE_DIR):
+            os.makedirs(LANDING_PAGE_DIR)  # ensure base directory exists
+        tk.add_public_directory(config, LANDING_PAGE_DIR)
 
     # IBlueprint
     def get_blueprint(self):
