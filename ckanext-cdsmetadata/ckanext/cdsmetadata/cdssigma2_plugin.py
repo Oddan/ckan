@@ -12,18 +12,42 @@ from flask import Blueprint
 import pdb
 
 def extract_sigma2_metadata(pkg_info):
+
+    # mandatory metadata
+    description = pkg_info['notes']
     title = pkg_info['title']
     rights_holder = pkg_info.get('organization')
     if rights_holder:
         rights_holder = rights_holder['title']
-    description = pkg_info['notes']
-    date_published = pkg_info['release_date']
+    identifier = pkg_info['doi']
+    language = 'English'  # always English
+    access_rights = ''
+    category = ''
+    contributor = ''
+    created_on = ''
+    creator = ''
+    data_manager = ''
+    journal = ''
+    license = ''
+    rights = ''
+    subject = 'geological CO2 storage'  # always, for now
 
-
-    return {'Title': title,
-            'Description': description,
-            'DatePublished': date_published,
-            'RightsHolder': rights_holder}
+    mandatory_items = {'Access Rights': access_rights,
+                       'Category': category,
+                       'Contributor': contributor,
+                       'Created On': created_on,
+                       'Data Manager': data_manager,
+                       'Description': description,
+                       'Journal': journal,
+                       'Language': language,
+                       'Licence': license,
+                       'Rights': rights,
+                       'Rights Holder': rights_holder,
+                       'Creator': creator,
+                       'Subject': subject,
+                       'Identifier': identifier,
+                       'Title': title}
+    return mandatory_items
 
 
 def export_package(pkg_name):
