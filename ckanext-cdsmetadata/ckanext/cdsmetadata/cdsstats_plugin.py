@@ -268,7 +268,6 @@ class CdsStatsPlugin(plugins.SingletonPlugin):
     def make_error_log_middleware(self, app, config):
         return app
 
-        
     # IConfigurer
     def update_config(self, config):
         toolkit.add_template_directory(config, 'templates/stats')

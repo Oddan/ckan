@@ -101,7 +101,7 @@ ckan.site_id = default
 #       Add ``datapusher`` to enable DataPusher
 #		Add ``resource_proxy`` to enable resorce proxying and get around the
 #		same origin policy
-ckan.plugins = stats text_view image_view recline_view cdsaccess cdslandingpage cdstheme cdsmetadata cdsmetadata_resources spatial_metadata spatial_query cdsstats
+ckan.plugins = stats text_view image_view recline_view cdsaccess cdslandingpage cdstheme cdsmetadata cdsmetadata_resources spatial_metadata spatial_query cdsstats cdsexport
 
 ckanext.spatial.search_backend = solr-spatial-field
 ckan.cdsmetadata.max_zipfile_size = 5000000000

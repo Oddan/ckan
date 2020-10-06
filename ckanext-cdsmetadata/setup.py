@@ -86,7 +86,7 @@ setup(
         cdsstats=ckanext.cdsmetadata.cdsstats_plugin:CdsStatsPlugin
         cdsaccess=ckanext.cdsmetadata.cdsaccess_plugin:CdsAccessManagementPlugin
         cdstheme=ckanext.cdsmetadata.cdstheme_plugin:CdsThemePlugin
-        cdssigma2=ckanext.cdsmetadata.cdssigma2_plugin:CdsSigma2Plugin
+        cdsexport=ckanext.cdsmetadata.cdssigma2_plugin:CdsSigma2Plugin
 
         [babel.extractors]
         ckan = ckan.lib.extract:extract_ckan

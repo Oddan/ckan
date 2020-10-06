@@ -1,18 +1,17 @@
 import ckan.plugins as plugins
-from ckan import model
 from ckan.model import Session
-from ckan.model import meta, Session
-from resource_category import ResourceCategory, ResourceCategoryMetadataItem
+from resource_category import ResourceCategoryMetadataItem
 from ckan.logic import ValidationError
 
-import pdb
+# import pdb
+
 
 def _add_error(error_dict, key, message):
 
     # ensure there is a list associated with this key
-    if not key in error_dict:
-        error_dict[key] = [] 
-        
+    if key not in error_dict:
+        error_dict[key] = []
+
     error_dict[key].append(message)
 
 
@@ -24,6 +23,7 @@ def _validator_fun(datatype):
             'FLOATLIST': _float_list_validator,
             'ENUM': _enum_validator}[datatype]
 
+
 def _string_validator(code, title, value, errors):
     # for strings, anything is currently accepted
     pass
@@ -32,7 +32,7 @@ def _string_validator(code, title, value, errors):
 def _integer_validator(code, title, value, errors):
     # check that value is convertible to integer
     try:
-        dummy = int(value)
+        int(value)
     except ValueError:
         _add_error(errors, title, 'Provided value not convertible to integer.')
 
@@ -40,16 +40,16 @@ def _integer_validator(code, title, value, errors):
 def _integer_list_validator(code, title, value, errors):
     # check that value is convertible to a list of integers
     try:
-        dummy = map(int, value.split(','))
+        map(int, value.split(','))
     except ValueError:
         _add_error(errors, title,
                    'Provided value not convertible to list of integers.')
 
-        
+
 def _float_validator(code, title, value, errors):
     # check that value is convertible to float
     try:
-        dummy = float(value)
+        float(value)
     except ValueError:
         _add_error(errors, title, 'Provided value not convertible to float.')
 
@@ -57,7 +57,7 @@ def _float_validator(code, title, value, errors):
 def _float_list_validator(code, title, value, errors):
     # check that value is convertible to a list of float
     try:
-        dummy = map(float, value.split(','))
+        map(float, value.split(','))
     except ValueError:
         _add_error(errors, title,
                    'Provided value not convertible to list of float.')
@@ -77,11 +77,12 @@ def _enum_validator(code, title, value, errors):
                    'more than one instance of the metadata item found')
             item = list(item)[0]
             break
-    
+
     enum_allowed_values = map(unicode.strip, item.enum_items.split(','))
 
-    if not value in enum_allowed_values:
+    if value not in enum_allowed_values:
         _add_error(errors, title, 'Illegal value provided for enumeration.')
+
 
 def _code_hierarchy_of(code):
     # determine codes for class and its superclasses
@@ -95,7 +96,8 @@ def _code_hierarchy_of(code):
         all_codes.append(''.join(lcode))
 
     return all_codes
-        
+
+
 def get_required_metadata_fields(code):
 
     all_codes = _code_hierarchy_of(code)
@@ -107,7 +109,7 @@ def get_required_metadata_fields(code):
         result = result + [x for x in fields]
 
     return result
-        
+
 
 def _validate_category_metadata(resource, current=None):
 
@@ -116,40 +118,43 @@ def _validate_category_metadata(resource, current=None):
     if category is None:
         _add_error(errors, 'category', 'Category not chosen.')
 
-        
     metadata_fields = get_required_metadata_fields(category)
-    
+
     for entry in metadata_fields:
         field_value = resource.get(entry.title, None)
         if field_value is None or field_value == u'':
             _add_error(errors, entry.title, 'Field should not be empty.')
             continue
 
-        _validator_fun(entry.datatype)(category, entry.title, field_value, errors)
-        
+        _validator_fun(entry.datatype)(category,
+                                       entry.title,
+                                       field_value,
+                                       errors)
+
     if len(errors) > 0:
         if current:
             # For some reason, the full link disappears in the resource object,
-            # which can lead to a cycle of errors.  We reinstate the full link here
-            # for now.  @@ Is there a better way?
+            # which can lead to a cycle of errors.  We reinstate the full link
+            # here for now.  @@ Is there a better way?
             # resource['url'] = current['url']
             pass
 
         raise ValidationError(errors, error_summary=_make_summary(errors))
-    
-    
+
+
 def _make_summary(errors):
-    return {key: "There was an error with category-specific field  '{0}'".format(key)
+    return {key: "There was an error with category-specific field  '{0}'".
+            format(key)
             for key in errors}
 
-    
+
 class CdsMetadataResourcesPlugin(plugins.SingletonPlugin):
     plugins.implements(plugins.IResourceController)
 
     def before_create(self, context, resource):
         u'''
         Extensions will receive this before a resource is created.
-        
+
         :param context: The context object of the current request, this
             includes for example access to the ``model`` and the ``user``.
         :type context: dictionary
