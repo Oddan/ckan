@@ -1,24 +1,65 @@
 import ckan.plugins as plugins
-import ckan.lib.helpers as h
 import ckan.plugins.toolkit as tk
 import ckan.lib.uploader as upl
+import ckan.model as model
+import ckan.logic as logic
+from ckan.lib.base import abort
+from ckan.logic.converters import convert_package_name_or_id_to_id
+from ckan.common import g
+import json
 from flask import Blueprint
 
 import pdb
+
+def extract_sigma2_metadata(pkg_info):
+    title = pkg_info['title']
+    rights_holder = pkg_info.get('organization')
+    if rights_holder:
+        rights_holder = rights_holder['title']
+    description = pkg_info['notes']
+    date_published = pkg_info['release_date']
+
+
+    return {'Title': title,
+            'Description': description,
+            'DatePublished': date_published,
+            'RightsHolder': rights_holder}
 
 
 def export_package(pkg_name):
 
     # check credentials
-    return "Hello world"
-    # identify location of all package resources
+    context = {'model': model, 'session': model.Session,
+               'user': g.user, 'for_view': True,
+               'auth_user_obj': g.userobj}
 
+    pkg_id = convert_package_name_or_id_to_id(pkg_name, context)
+    data_dict = {'id': pkg_id, 'include_tracking': True}
+
+    try:
+        tk.check_access('package_update', context, data_dict)
+    except logic.NotAuthorized:
+        abort(403, ('Not authorized to see this page.'))
+
+    pkg_info = tk.get_action('package_show')(context, {'id': pkg_id})
+
+    upload = upl.get_resource_uploader(pkg_info)
+
+    resource_locations = {res['id']: upload.get_path(res['id'])
+                          for res in pkg_info['resources']}
+
+    sigma2_dict = extract_sigma2_metadata(pkg_info)
+
+    export_dict = {'pkg_info': pkg_info,
+                   'sigma2_metadata': sigma2_dict,
+                   'resource_locations': resource_locations}
+
+    return json.dumps(export_dict, sort_keys=False, indent=4)
 
 
 class CdsSigma2Plugin(plugins.SingletonPlugin):
     plugins.implements(plugins.IConfigurer)
     plugins.implements(plugins.IBlueprint)
-    # plugins.implements(plugins.IResourceController)
 
     # IConfigurer
     def update_config(self, config):
@@ -35,31 +76,3 @@ class CdsSigma2Plugin(plugins.SingletonPlugin):
                                export_package, methods=['GET'])
 
         return blueprint
-
-
-
-
-    
-    # def before_create(self, context, resource):
-    #     pass
-    
-    # def after_create(self, context, resource):
-    #     upload = upl.get_resource_uploader(resource)
-    #     filepath = upload.get_path(resource['id'])
-    #     #pdb.set_trace()
-    #     pass
-
-    # def before_update(self, context, current, resource):
-    #     pass
-    
-    # def after_update(self, context, resource):
-    #     pass
-
-    # def before_delete(self, context, resource, resources):
-    #     pass
-
-    # def after_delete(self, context, resources):
-    #     pass
-    
-    # def before_show(self, resource_dict):
-    #     pass
