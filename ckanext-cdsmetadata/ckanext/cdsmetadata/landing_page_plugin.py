@@ -76,6 +76,12 @@ def _update_static_links(target_dir, replacement):
     f.close()
 
 
+def landing_page_location(pkg_name):
+    # point to the designated directory in which the landing page should be
+    # stored
+    return path.join(LANDING_PAGE_DIR, pkg_name)
+
+
 def _unpack_landing_page_zipfile(afile, pkg_name):
 
     if afile.content_type != 'application/zip':
@@ -93,7 +99,7 @@ def _unpack_landing_page_zipfile(afile, pkg_name):
     # if not path.exists(LANDING_PAGE_DIR):
     #     os.makedirs(LANDING_PAGE_DIR)  # ensure base directory exists
 
-    target_dir = path.join(LANDING_PAGE_DIR, pkg_name)
+    target_dir = landing_page_location(pkg_name)
     tmp_target_dir = path.join(LANDING_PAGE_DIR, '_' + pkg_name)
 
     try:
