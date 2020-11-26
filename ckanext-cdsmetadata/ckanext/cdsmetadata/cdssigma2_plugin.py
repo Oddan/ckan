@@ -30,7 +30,7 @@ def extract_sigma2_metadata(pkg_info):
 
     return {'datasets': datasets,
             'persons': sigma2_person_metadata(person_ids),
-            'publications' : sigma2_publication_metadata(pub_ids),
+            'publications': sigma2_publication_metadata(pub_ids),
             'organizations': sigma2_organization_metadata(org_ids),
             'licenses': sigma2_license_metadata(license_ids)}
 
@@ -244,7 +244,7 @@ def sigma2_dataset_component_metadata(pkg_info, parent_dataset):
             description += 'Purpose:\n' + comp['purpose'] + '\n\n'
         if len(comp['assumptions']) > 0:
             description += 'Assumptions:\n' + comp['assumptions'] + '\n\n'
-        if len(comp['dataformat']) > 0:
+        if comp.get('dataformat'):
             description += \
                 'Data format:\n' + _dataformat_text(comp['dataformat']) + '\n\n'
         category = model.Session.query(ResourceCategory).get(comp['category'])
