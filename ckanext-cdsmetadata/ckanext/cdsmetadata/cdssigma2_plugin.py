@@ -336,7 +336,6 @@ def sigma2_publication_metadata(pub_ids):
                            'JournalCitation': pub.citation,
                            'JournalDOI': pub.doi,
                            'Name': pub.name})
-    pdb.set_trace()
     return result
 
 
