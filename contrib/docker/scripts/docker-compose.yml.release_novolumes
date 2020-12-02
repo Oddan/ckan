@@ -8,6 +8,13 @@ volumes:
   # ckan_storage:
   pg_data:
 
+networks:
+  ckan_net:
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.21.0.0/16
+
 services:
   ckan:
     container_name: ckan
@@ -21,6 +28,10 @@ services:
       - redis
     ports:
       - "0.0.0.0:${CKAN_PORT}:5000"
+    networks:
+      ckan_net:
+        ipv4_address: 172.21.0.10
+      
     environment:
       # Defaults work with linked containers, change to use own Postgres, SolR, Redis or Datapusher
       - CKAN_SQLALCHEMY_URL=postgresql://ckan:${POSTGRES_PASSWORD}@db/ckan
@@ -58,14 +69,19 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     volumes:
       - pg_data:/var/lib/postgresql/data
+    networks:
+      - ckan_net
 
   solr:
     container_name: solr
     build:
       context: ../../
       dockerfile: contrib/docker/solr/Dockerfile
-
+    networks:
+      - ckan_net
 
   redis:
     container_name: redis
     image: redis:latest
+    networks:
+      - ckan_net
