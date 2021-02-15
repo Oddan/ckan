@@ -105,6 +105,11 @@ ckan.plugins = stats text_view image_view recline_view cdsaccess cdslandingpage 
 
 ckanext.spatial.search_backend = solr-spatial-field
 ckan.cdsmetadata.max_zipfile_size = 5000000000
+
+ckan.cdsmetadata.sigma2_archive_url = 
+ckan.cdsmetadata.sigma2_archive_username = 
+ckan.cdsmetadata.sigma2_archive_password = 
+
 # Define which views should be created by default
 # (plugins must be loaded in ckan.plugins)
 ckan.views.default_views = image_view text_view recline_view

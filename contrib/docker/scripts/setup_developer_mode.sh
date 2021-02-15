@@ -25,6 +25,9 @@ echo "In your configuration file, remember to add 'spatial_metadata' and 'spatia
 sed 's/^debug =.*$/debug = true/' $CKAN_CONFIG/development.ini | \
     sed 's/^ckan.site_url =.*$/ckan.site_url = http:\/\/localhost:5000/' | \
     sed 's/^ckan.plugins =.*$/ckan.plugins = stats text_view image_view recline_view cdsaccess cdslandingpage cdstheme cdsmetadata cdsmetadata_resources spatial_metadata spatial_query cdsstats cdsexport/' | \
+    sed '/ckan.plugins/ a ckan.cdsmetadata.sigma2_archive_url = ' | \
+    sed '/ckan.plugins/ a ckan.cdsmetadata.sigma2_archive_username = ' | \
+    sed '/ckan.plugins/ a ckan.cdsmetadata.sigma2_archive_password = ' | \
     sed '/ckan.plugins/ a ckan.cdsmetadata.max_zipfile_size = 5000000000' | \
     sed '/ckan.plugins/ a ckanext.spatial.search_backend = solr-spatial-field' > \
 	$CKAN_CONFIG/tmp.ini

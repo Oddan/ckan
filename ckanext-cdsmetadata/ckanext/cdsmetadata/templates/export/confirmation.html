@@ -1,0 +1,53 @@
+{% extends "page.html" %}
+
+{% block subtitle %}{{ _('Sigma2 transfer') }}{% endblock %}
+
+{% block breadcrumb_content %} {% endblock %}
+
+
+{% block primary %}
+  <article class="module">
+    <div class="module-content">
+
+      <h1>Exporting dataset with title: {{ export_dict.sigma2_metadata.datasets[0].mandatory.Title }} </h1>
+            
+      {% if error_msg is defined %}
+        <h2> An error occurred: </h2>
+         <p><i>{{ error_msg }} </i></p>
+      <br>
+      <p>Click 'submit' to try again or 'cancel' to go back to the landing page.</p>
+      {% endif %}
+
+      {% block confirm %}
+        <form action="" method="post">
+        <a class="btn btn-primary" "pull-left"
+           href=" {% url_for 'dataset_read', id=export_dict.sigma2_metadata.datasets[0].mandatory.Title %}">
+          {{ _('Cancel') }}
+        </a>
+
+        <button class="btn btn-danger" 
+                name="confirmed" 
+                value="true" 
+                type="submit"> 
+                {{_('Submit')}}
+        </button> 
+        </form>
+      {% endblock %}
+
+      {% block raw_data %}
+        
+        <h2> Data is: </h2>
+        <pre> {{ pretty_print }} </pre>
+        
+      {% endblock %}
+        
+    </div>
+  </article>
+{% endblock %}
+
+
+
+
+
+{% block secondary %}{% endblock %}
+

@@ -1,0 +1,17 @@
+{% ckan_extends %}
+
+{% block content_action %}
+ 
+  {% if h.check_access('package_update', {'id': pkg.id }) %}
+
+    {{ super() }}
+    {% link_for _('Sigma2 export'),
+                named_route='cdsexport.export_package',
+                pkg_name=pkg.name,
+                class_='btn btn-default',
+                icon='cloud-upload' %}
+    
+  {% endif %}
+{% endblock %}
+
+

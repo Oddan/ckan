@@ -5,7 +5,8 @@ import ckan.model as model
 import ckan.logic as logic
 from ckan.lib.base import abort
 from ckan.logic.converters import convert_package_name_or_id_to_id
-from ckan.common import g
+from ckan.common import g, config, request
+from ckan.lib.base import render
 import json
 from copy import deepcopy
 from flask import Blueprint
@@ -14,6 +15,8 @@ from cdsaccess_plugin import SpecialAccessRights
 from resource_category import ResourceCategory
 from plugin import License, Publication, DataFormat, Person
 from landing_page_plugin import landing_page_location
+import requests
+import pprint
 
 import pdb
 
@@ -68,11 +71,11 @@ def sigma2_parent_dataset_metadata(pkg_info):
     project = 'CO2DataShare'
 
     # trivial metadata (single fields that can be read right out of pkg_info)
-    description = pkg_info['notes']
-    title = pkg_info['title']
-    identifier = pkg_info['doi']
-    created_on = pkg_info['metadata_created']
-    location = pkg_info['location']
+    description = pkg_info.get('notes', '<empty>')
+    title = pkg_info.get('title', '<empty>')
+    identifier = pkg_info.get('doi', '<empty>')
+    created_on = pkg_info.get('metadata_created', '<empty>')
+    location = pkg_info.get('location', '<empty>')
 
     # set rights holder
     rights_holder = []
@@ -100,13 +103,11 @@ def sigma2_parent_dataset_metadata(pkg_info):
     data_manager = [x[0] for x in pkg_info['contact_person']]
     person_ids.extend(data_manager)
 
-    # set license
-    license = pkg_info['cdslicense']
-    license_ids.append(license)
-
-    # set rights (url to license)
+    # set license and rights (url to license)
+    license = pkg_info.get('cdslicense')
     rights = ''
     if license:
+        license_ids.append(license)
         lobj = model.Session.query(License).get(pkg_info['cdslicense'])
         if lobj:
             rights = lobj.license_url
@@ -116,15 +117,15 @@ def sigma2_parent_dataset_metadata(pkg_info):
     pub_ids.extend([x[0] for x in pkg_info['publications']])
 
     # temporal coverage
-    temporal_coverage = [pkg_info['temporal_coverage_start'],
-                         pkg_info['temporal_coverage_end']]
+    temporal_coverage = [pkg_info.get('temporal_coverage_start'),
+                         pkg_info.get('temporal_coverage_end')]
 
     # information fields to add to 'description'
     if len(description) > 0:
         # separate new content from existing by adding a couple of lines
         description += '\n\n\n'
 
-    description += 'Project type: ' + pkg_info['project_type'] + '\n\n'
+    description += 'Project type: ' + pkg_info.get('project_type', '<empty>') + '\n\n'
 
     if pkg_info['related_dataset']:
         description += 'Related dataset(s):\n'
@@ -372,7 +373,63 @@ def export_package(pkg_name):
                    'landing_page_location': landing_page_loc,
                    'resource_locations': resource_locations}
 
-    return json.dumps(export_dict, sort_keys=False, indent=4)
+    if request.method == 'POST':
+        # user has confirmed.  Now send off
+
+        # get token
+        error_msg = []
+        try:
+            archive_url = config.get('ckan.cdsmetadata.sigma2_archive_url')
+            token_url = archive_url + '/token'
+            upload_url = archive_url + '/api/dataset/'
+            username = config.get('ckan.cdsmetadata.sigma2_archive_username')
+            password = config.get('ckan.cdsmetadata.sigma2_archive_password')
+
+            headers = {'content-type': 'application/x-www-form-urlencoded',
+                       'accept': 'application/json'}
+            data = {'grant_type': [], 'username': username,
+                    'password': password,
+                    'scope': [], 'client_id': [], 'client_secret': []}
+            res = requests.post(token_url, headers=headers, data=data)
+
+            token = json.loads(res.content)
+
+            # upload data
+            sigma2_mdata = export_dict['sigma2_metadata']
+            headers = {'accept': 'application/json',
+                       'Authorization': 'Bearer ' + token['access_token'],
+                       'content-type': 'application/json'}
+            data = \
+                json.dumps({'title':
+                            sigma2_mdata['datasets'][0]['mandatory']['Title']})
+
+            #@@@ The following call returns a 405.  Investigate
+            res = requests.post(upload_url, headers=headers, data=data)
+
+        except requests.exceptions.RequestException:
+            error_msg = "Unable to communicate with server."
+        except json.JSONDecodeError as e:
+            error_msg = "JSON parse error occurred: {0}".format(e)
+        except Exception:
+            error_msg = "An unknown error occurred."
+
+        if error_msg:
+            return render(u'confirmation.html',
+                          extra_vars={'export_dict': export_dict,
+                                      'error_msg': error_msg})
+        else:
+            msg = 'Upload succeeded'
+            return render(u'success.html',
+                          extra_vars={'message': msg})
+
+    else:
+        # show data and ask for confirmation
+        pp = pprint.PrettyPrinter(indent=2)
+        pretty_printed_dict = pp.pformat(export_dict['sigma2_metadata'])
+
+        return render(u'confirmation.html',
+                      extra_vars={'export_dict': export_dict,
+                                  'pretty_print': pretty_printed_dict})
 
 
 class CdsSigma2Plugin(plugins.SingletonPlugin):
@@ -391,6 +448,6 @@ class CdsSigma2Plugin(plugins.SingletonPlugin):
 
         blueprint.add_url_rule(u'/export/<pkg_name>',
                                u'export_package',
-                               export_package, methods=['GET'])
+                               export_package, methods=['GET', 'POST'])
 
         return blueprint
