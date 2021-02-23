@@ -71,10 +71,18 @@ def _update_static_links(target_dir, replacement):
         raise IOError('index.html not found')
 
     f = fileinput.FileInput(fname, inplace=True)
-    for line in f:
-        print(line.replace('./static/', '/' + replacement + '/'))
-    f.close()
+    try:
+        for line in f:
+            str = line
+            str = str.decode("utf-8").\
+                replace('./static/', '/' + replacement + '/').\
+                encode("utf-8")
+            print(str)
+            # print(line.replace('./static/', '/' + replacement + '/'))
+    except:
+        raise IOError('Encoding error encountered in index.html')
 
+    f.close()
 
 def landing_page_location(pkg_name):
     # point to the designated directory in which the landing page should be
@@ -107,11 +115,11 @@ def _unpack_landing_page_zipfile(afile, pkg_name):
             os.makedirs(tmp_target_dir)
         input_zip.extractall(path=tmp_target_dir)
         _update_static_links(tmp_target_dir, path.join(pkg_name, 'static'))
-    except:
+    except Exception as e:
         # unable to extract archive.  Clean up and return error
         if path.exists(tmp_target_dir):
             shutil.rmtree(tmp_target_dir)
-        return ["Error: failed to extract zip-file.  Corrupt?"]
+        return ["Error: failed to extract zip-file: {0}".format(e)]
 
     # extraction went OK.  Move result to target directory
     if path.exists(target_dir):
