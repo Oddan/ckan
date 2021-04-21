@@ -23,7 +23,7 @@ from ckan.views import user
 import pdb
 import copy, datetime, dateutil
 
-TITLE_MAX_L = 100
+TITLE_MAX_L = 500
 NAME_MAX_L = 100
 EMAIL_MAX_L = 500
 
