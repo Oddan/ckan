@@ -106,14 +106,24 @@ class Sigma2Baseclass:
         # check that all required fields are filled in, and that all values are
         # of legal types
         if self.missingRequirements():
+            print('Class: ', type(self))
+            print('Found missing requirement for: ', self.missingRequirements()[0])
             return False
         if self.typeMismatches():
+            print('Class: ', type(self))
+            print('Fount type mismatch: ', self.typeMismatches()[0])
             return False
 
         # recursively checking attributes in the same manner
         for field in dir(self):
-            if isinstance(getattr(self, field), Sigma2Baseclass):
-                if not getattr(self, field).isValid():
+            content = getattr(self, field)
+            if type(content) == list:
+                for item in content:
+                    if isinstance(item, Sigma2Baseclass):
+                        if not item.isValid():
+                            return False
+            elif isinstance(content, Sigma2Baseclass):
+                if not content.isValid():
                     return False
 
         return True
