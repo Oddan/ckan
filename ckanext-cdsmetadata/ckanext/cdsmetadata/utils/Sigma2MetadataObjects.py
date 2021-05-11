@@ -1,7 +1,8 @@
 import json
+from json import JSONEncoder
 import pdb
 
-_schemafile = 'metadata_schema.json'
+_schemafile = 'utils/metadata_schema.json'
 
 classdict = {}
 
@@ -11,6 +12,11 @@ with open(_schemafile) as f:
 
 class Sigma2Exception(BaseException):
     pass
+
+
+class Sigma2JSONEncoder(JSONEncoder):
+    def default(self, o):
+        return o.__dict__
 
 
 def _initfun(self, pdict, **kwargs):
@@ -86,13 +92,13 @@ class Sigma2Baseclass:
             elif v[1]:  # the value sould be an array
 
                 if not type(pval) == list:
-                    mismatches.append((k, type(pval), v[0]))
+                    mismatches.append((k, type(pval), [v[0]]))
                     continue
                 # check list items
                 for item in pval:
                     if type(item) not in v[0] and \
                        type(item).__name__ not in v[0]:
-                        mismatches.append((k, type(pval), v[0]))
+                        mismatches.append((k, [type(pval)], [v[0]]))
                         break
 
             else:  # should not be an array, match directly
@@ -102,44 +108,44 @@ class Sigma2Baseclass:
 
         return mismatches
 
-    def isValid(self):
+    def metadataFields(self):
+        return list(set(dir(self)) - set(dir(Sigma2Baseclass)))
+
+    def invalidations(self):
+        missing = []
+        mismatches = []
+
         # check that all required fields are filled in, and that all values are
         # of legal types
         if self.missingRequirements():
-            print('Class: ', type(self))
-            print('Found missing requirement for: ', self.missingRequirements()[0])
-            return False
+            missing = [(type(self), x) for x in self.missingRequirements()]
         if self.typeMismatches():
-            print('Class: ', type(self))
-            print('Fount type mismatch: ', self.typeMismatches()[0])
-            return False
+            mismatches = [(type(self), x) for x in self.typeMismatches()]
 
-        # recursively checking attributes in the same manner
-        for field in dir(self):
+        # recursively checking attributes in same manner
+        for field in set(dir(self)) - set(dir(Sigma2Baseclass)):
             content = getattr(self, field)
-            if type(content) == list:
-                for item in content:
-                    if isinstance(item, Sigma2Baseclass):
-                        if not item.isValid():
-                            return False
-            elif isinstance(content, Sigma2Baseclass):
-                if not content.isValid():
-                    return False
+            if not type(content) == list:
+                content = [content]
+            for item in content:
+                if isinstance(item, Sigma2Baseclass):
+                    item_miss, item_mismatch = item.invalidations()
+                    missing.extend(item_miss)
+                    mismatches.extend(item_mismatch)
 
-        return True
+        return missing, mismatches
+
+    def isValid(self):
+        missing, mismatches = self.invalidations()
+        return not missing and not mismatches
+
+    def toJSON(self):
+        return Sigma2JSONEncoder().encode(self)
 
 
-# add the main metadata class (which will refer to everything else)
-classdict[schema['title']] = \
-    type(schema['title'],
-         (Sigma2Baseclass,),
-         {'__doc__': schema['description'],
-          '__init__': _initfunwrap(schema['properties']),
-          '_typemap': _make_typemap(schema['properties']),
-          '_required': schema['required']})
-
-# add the rest of the class definitions
-for cname, cvals in schema['definitions'].items():
+# create the main class, and all other classes
+classinfo = {'dataset': schema, **schema['definitions']}
+for cname, cvals in classinfo.items():
     classdict[cvals['title']] = \
         type(cvals['title'],
              (Sigma2Baseclass,),
