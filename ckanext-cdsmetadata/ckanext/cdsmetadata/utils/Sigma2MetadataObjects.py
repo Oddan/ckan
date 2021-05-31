@@ -1,12 +1,16 @@
 import json
+import os.path
 from json import JSONEncoder
 import pdb
 
-_schemafile = 'utils/metadata_schema.json'
+#pdb.set_trace()
+#_schemafile = 'utils/metadata_schema.json'
+_schemafile = 'metadata_schema.json'
+_filepath = os.path.dirname(__file__)
 
 classdict = {}
 
-with open(_schemafile) as f:
+with open(os.path.join(_filepath, _schemafile)) as f:
     schema = json.load(f)
 
 
@@ -20,7 +24,6 @@ class Sigma2JSONEncoder(JSONEncoder):
 
 
 def _initfun(self, pdict, **kwargs):
-
     # set default properties
     for k, v in pdict.items():
         default_val = [] if v.get('type') == 'array' else None
@@ -38,7 +41,11 @@ def _initfun(self, pdict, **kwargs):
 
 
 def _initfunwrap(pdict):
-    return lambda self, **kwargs: _initfun(self, pdict, **kwargs)
+    def fun(self, **kwargs):
+        _initfun(self, pdict, **kwargs)
+
+    return fun
+    #return lambda self, **kwargs: _initfun(self, pdict, **kwargs)
 
 
 def _make_typemap(pdict):
@@ -68,7 +75,7 @@ def _make_typemap(pdict):
     return result
 
 
-class Sigma2Baseclass:
+class Sigma2Baseclass(object):
 
     _required = []  # list over required fields
     _typemap = {}  # map fields to expected types
@@ -109,7 +116,8 @@ class Sigma2Baseclass:
         return mismatches
 
     def metadataFields(self):
-        return list(set(dir(self)) - set(dir(Sigma2Baseclass)))
+        fields = list(set(dir(self)) - set(dir(Sigma2Baseclass)))
+        return list(filter(lambda x: len(x) < 2 or x[0:2] != '__', fields))
 
     def invalidations(self):
         missing = []
@@ -144,10 +152,13 @@ class Sigma2Baseclass:
 
 
 # create the main class, and all other classes
-classinfo = {'dataset': schema, **schema['definitions']}
+# classinfo = {u'dataset': schema, **schema['definitions']} # python 3
+classinfo = {u'dataset': schema}
+classinfo.update(schema['definitions'])
+
 for cname, cvals in classinfo.items():
     classdict[cvals['title']] = \
-        type(cvals['title'],
+        type(str(cvals['title']),
              (Sigma2Baseclass,),
              {'__doc__': cvals['description'],
               '__init__': _initfunwrap(cvals['properties']),

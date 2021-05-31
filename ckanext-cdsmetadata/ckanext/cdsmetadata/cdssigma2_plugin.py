@@ -11,15 +11,17 @@ import json
 from copy import deepcopy
 from flask import Blueprint
 from os import path
+import shutil
 from cdsaccess_plugin import SpecialAccessRights
 from resource_category import ResourceCategory
 from plugin import License, Publication, DataFormat, Person
 from landing_page_plugin import landing_page_location
 import requests
 import pprint
+import copy
+from utils.Sigma2MetadataObjects import classdict as mdclasses
 
 import pdb
-
 
 def users_with_access(pkg_id):
     return [usr.id for usr in model.Session.query(SpecialAccessRights).
@@ -307,18 +309,21 @@ def sigma2_organization_metadata(org_ids):
         org = model.Session.query(model.group.Group).get(o_id)
         if org:
 
-            contact_first_name, contact_last_name, contact_email = '', '', ''
+            contact_first_name, contact_last_name = '', ''
+            contact_email, contact_id = '', ''
             if len(org.contact_person) > 0:
                 # if there are multiple contact persons, we can only return the
                 # first
                 contact_first_name = org.contact_person[0].first_name
                 contact_last_name = org.contact_person[0].last_name
                 contact_email = org.contact_person[0].email
+                contact_id = org.contact_person[0].id
 
             result.append({'id': o_id,
                            'OrgLongName': org.display_name,
                            'OrgShortName': org.display_name,
                            'HomePage': org.extra.homepageURL,
+                           'ContactID': contact_id,
                            'ContactFirstName': contact_first_name,
                            'ContactLastName': contact_last_name,
                            'ContactEmail': contact_email})
@@ -340,6 +345,151 @@ def sigma2_publication_metadata(pub_ids):
     return result
 
 
+def _create_upload_header(token):
+    return {'accept': 'application/json',
+            'Authorization': 'Bearer ' + token['access_token'],
+            'content-type': 'application/json'}
+
+
+def _ensure_entities_exist(token, api_url,
+                           null_for_search_fields, entity_list,
+                           upload_json_fun=lambda x: x.toJSON()):
+
+    headers = _create_upload_header(token)
+
+    for entity in entity_list:
+        search_entity = copy.deepcopy(entity)
+        for f in null_for_search_fields:
+            setattr(search_entity, f, "")
+        arglist = '&'.join(['{x}={xval}'.format(x=x,
+                                                xval=getattr(search_entity, x))
+                            for x in entity.metadataFields()])
+
+        exist_check = requests.get(api_url + "?" + arglist, headers=headers)
+        requests.Response.raise_for_status(exist_check)  # throw if not 200
+
+        if not exist_check.json()['registered']:
+            r = requests.post(api_url, upload_json_fun(entity),
+                              headers=headers)
+            requests.Response.raise_for_status(r)
+
+
+def _make_mdperson(pdata):
+    return mdclasses['Person'](firstname=pdata['FirstName'],
+                               lastname=pdata['LastName'],
+                               email=pdata['Email'],
+                               federatedid=pdata['Email'])
+
+
+def _make_mdorganization(odata):
+    return mdclasses['Organization'](shortname=odata['OrgShortName'],
+                                     longname=odata['OrgLongName'],
+                                     contactemail=odata['ContactEmail'],
+                                     homepage=odata['HomePage'])
+
+
+def _ensure_persons_exist(token, archive_url, persons):
+
+    plist = [_make_mdperson(p) for p in persons]
+    _ensure_entities_exist(token, archive_url + '/api/person/',
+                           ['federatedid'],
+                           plist)
+    return plist
+
+
+def _ensure_organizations_exist(token, archive_url, persons, orgs):
+
+    odict = {_make_mdorganization(o):
+             filter(lambda x: x['id'] == o['ContactID'], persons)
+             for o in orgs}
+
+    def _org_upload_json(org, odict=odict):
+        # generate the json object needed for the api to create an organization
+        if len(odict[org]) == 0:
+            raise Exception('Organization has no contact person.')
+        else:
+            person = odict[org][0]  # if multiple, use the first one
+        return '{' + '"organization": {}, "person": {}'.format(
+            org.toJSON(),
+            _make_mdperson(person).toJSON()) + '}'
+
+    olist = odict.keys()
+    _ensure_entities_exist(token, archive_url + '/api/organization/',
+                           [], olist, _org_upload_json)
+    return olist
+
+
+def _ensure_licenses_exists(token, archive_url, licenses):
+    # @@ IMPLEMENT ME
+    # (api functionality not yet ready)
+    pass
+
+
+def _send_off_manifest(token, resource_locations, lpage_zipfile_location):
+    # @@ IMPLEMENT ME
+    # (api functionality not yet ready)
+    pass
+
+
+def _prepare_dataset_api_metadata(sigma2data):
+    # @@ IMPLEMENT ME
+    pass
+
+
+def _landing_page_zipfile_location(landing_page_location):
+    pdb.set_trace()
+    if not landing_page_location:
+        # no landing page defined
+        return
+
+    dirname = path.dirname(path.normpath(landing_page_location))
+    bname = path.basename(path.normpath(landing_page_location))
+
+    target_location = path.join(dirname, bname + '.zip')
+
+    if not path.isfile(target_location):
+        # zipfile does not yet exist, create it.
+        shutil.make_archive(path.normpath(landing_page_location),
+                            'zip',
+                            path.normpath(landing_page_location))
+
+    return target_location
+
+
+def _upload_procedure(token, archive_url, export_dict):
+
+    s2data = export_dict['sigma2_metadata']
+
+    # ensure existence of persons
+    _ensure_persons_exist(token, archive_url, s2data['persons'])
+
+    # ensure existence of organiations
+    _ensure_organizations_exist(token, archive_url,
+                                s2data['persons'],
+                                s2data['organizations'])
+
+    # ensure existence of licence
+    _ensure_licenses_exists(token, archive_url, s2data['licenses'])
+
+    # prepare API metadata object for full dataset
+    dataset_api_mdata = \
+        _prepare_dataset_api_metadata(export_dict['sigma2_metadata'])
+
+    # upload API metadata object
+    # r = requests.post(archive_url + '/api/dataset/',
+    #                   dataset_api_mdata.toJSON(),
+    #                   headers=_create_upload_header(token))
+    # requests.Response.raise_for_status(r)
+
+    # ensure landing page is zipped, and get its location
+    lpage_zipfile_loc = \
+        _landing_page_zipfile_location(export_dict['landing_page_location'])
+
+    # send off manifest file to initiate full dataset transfer
+    _send_off_manifest(token,
+                       export_dict['resource_locations'], lpage_zipfile_loc)
+
+
 def export_package(pkg_name):
 
     # check credentials
@@ -355,19 +505,24 @@ def export_package(pkg_name):
     except logic.NotAuthorized:
         abort(403, ('Not authorized to see this page.'))
 
+    # get the package information object
     pkg_info = tk.get_action('package_show')(context, {'id': pkg_id})
 
+    # determine location of dataset components on local disk
     upload = upl.get_resource_uploader(pkg_info)
 
     resource_locations = {res['id']: upload.get_path(res['id'])
                           for res in pkg_info['resources']}
 
+    # extract metadata for Sigma2 from the package object
     sigma2_dict = extract_sigma2_metadata(pkg_info)
 
+    # determine the location of the landing page
     landing_page_loc = landing_page_location(pkg_info['name'])
     if not path.isdir(landing_page_loc):
         landing_page_loc = []  # no landing page has been provided
 
+    # organize all info to send to Sigma2 as a dictionary
     export_dict = {'pkg_info': pkg_info,
                    'sigma2_metadata': sigma2_dict,
                    'landing_page_location': landing_page_loc,
@@ -376,12 +531,11 @@ def export_package(pkg_name):
     if request.method == 'POST':
         # user has confirmed.  Now send off
 
-        # get token
         error_msg = []
         try:
+            # get token
             archive_url = config.get('ckan.cdsmetadata.sigma2_archive_url')
             token_url = archive_url + '/token'
-            upload_url = archive_url + '/api/dataset/'
             username = config.get('ckan.cdsmetadata.sigma2_archive_username')
             password = config.get('ckan.cdsmetadata.sigma2_archive_password')
 
@@ -395,23 +549,13 @@ def export_package(pkg_name):
             token = json.loads(res.content)
 
             # upload data
-            sigma2_mdata = export_dict['sigma2_metadata']
-            headers = {'accept': 'application/json',
-                       'Authorization': 'Bearer ' + token['access_token'],
-                       'content-type': 'application/json'}
-            data = \
-                json.dumps({'title':
-                            sigma2_mdata['datasets'][0]['mandatory']['Title']})
-
-            #@@@ The following call returns a 405.  Investigate
-            res = requests.post(upload_url, headers=headers, data=data)
-
-        except requests.exceptions.RequestException:
-            error_msg = "Unable to communicate with server."
-        except json.JSONDecodeError as e:
+            _upload_procedure(token, archive_url, export_dict)
+        except requests.exceptions.RequestException as e:
+            error_msg = "Unable to communicate with server: {0}".format(e)
+        except ValueError as e:
             error_msg = "JSON parse error occurred: {0}".format(e)
-        except Exception:
-            error_msg = "An unknown error occurred."
+        except Exception as e:
+            error_msg = "An unknown error occurred: {0}".format(e)
 
         if error_msg:
             return render(u'confirmation.html',
