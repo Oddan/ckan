@@ -59,7 +59,16 @@ def _make_typemap(pdict):
         if T:
             if is_array:
                 assert(v.get('items'))
-                valid_types = [v['items']['$ref'].split('/')[-1]]
+                item = v.get('items')
+                assert(len(item.keys()) == 1)  # should be a single key
+                key = item.keys()[0]
+                if key == '$ref':
+                    valid_types = [item[key].split('/')[-1]]
+                elif key == 'anyOf':
+                    valid_types = [x['$ref'].split('/')[-1] for x in item[key]]
+                else:
+                    assert(key == 'type')
+                    valid_types = [common_types[item[key]]]
             else:
                 valid_types = [common_types[T]]  # a single valid type
 
@@ -149,7 +158,6 @@ class Sigma2Baseclass(object):
 
     def toJSON(self):
         return Sigma2JSONEncoder().encode(self)
-
 
 # create the main class, and all other classes
 # classinfo = {u'dataset': schema, **schema['definitions']} # python 3

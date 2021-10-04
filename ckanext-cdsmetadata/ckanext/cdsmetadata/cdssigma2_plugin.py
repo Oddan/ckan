@@ -23,6 +23,7 @@ from utils.Sigma2MetadataObjects import classdict as mdclasses
 
 import pdb
 
+
 def users_with_access(pkg_id):
     return [usr.id for usr in model.Session.query(SpecialAccessRights).
             filter(SpecialAccessRights.package_id == pkg_id).all()]
@@ -61,15 +62,17 @@ def sigma2_parent_dataset_metadata(pkg_info):
     context = {'model': model, 'session': model.Session,
                'user': g.user, 'for_view': True,
                'auth_user_obj': g.userobj}
-    
+
     person_ids, org_ids, license_ids, pub_ids = [], [], [], []
 
     # constant metadata (always the same for export to Sigma2)
     language = 'English'  # always English
-    category = 'Observation'  # we use 'Observation' as default.
+    category = 'Experiment'  # we use 'Experiment' as default.
     journal = ''
-    bibliographic_citation = '' # how should this dataset be cited
-    subject = 'geological CO2 storage'  # always, for now
+    bibliographic_citation = ''  # how should this dataset be cited
+    subject = ['Professional and Applied sciences',
+               'Engineering',
+               'Environmental engineering']  # always, for now
     project = 'CO2DataShare'
 
     # trivial metadata (single fields that can be read right out of pkg_info)
@@ -368,7 +371,10 @@ def _ensure_entities_exist(token, api_url,
         exist_check = requests.get(api_url + "?" + arglist, headers=headers)
         requests.Response.raise_for_status(exist_check)  # throw if not 200
 
-        if not exist_check.json()['registered']:
+        entity_exists = exist_check.json().get('registered', False) or \
+            (exist_check.json().get('results', 0) > 0)
+
+        if not entity_exists:
             r = requests.post(api_url, upload_json_fun(entity),
                               headers=headers)
             requests.Response.raise_for_status(r)
@@ -419,10 +425,22 @@ def _ensure_organizations_exist(token, archive_url, persons, orgs):
     return olist
 
 
+def _make_mdlicense(ldata):
+    return mdclasses['Licence'](name=ldata['Name'],
+                                access=ldata['Access'],
+                                archive=ldata['Archive'])
+
+
 def _ensure_licenses_exists(token, archive_url, licenses):
-    # @@ IMPLEMENT ME
-    # (api functionality not yet ready)
-    pass
+    #pdb.set_trace()
+    if not licenses:
+        raise Exception("a license must be specified.")
+    if len(licenses) > 1:
+        raise Exception("there should be exactly one license specified.")
+
+    mdlicense = [_make_mdlicense(licenses[0])]
+
+    _ensure_entities_exist(token, archive_url + '/api/licence/', [], mdlicense)
 
 
 def _send_off_manifest(token, resource_locations, lpage_zipfile_location):
@@ -432,12 +450,103 @@ def _send_off_manifest(token, resource_locations, lpage_zipfile_location):
 
 
 def _prepare_dataset_api_metadata(sigma2data):
-    # @@ IMPLEMENT ME
-    pass
+
+    parent = sigma2data['datasets'][0]
+    assert(parent['hierarchy'].get('IsPartOf', None) is None)  # not a child
+
+    def unique(l):
+        # function to return unique items in list
+        return dict.fromkeys(l).keys()
+
+    pdb.set_trace()    
+    # --- mandatory data items --- 
+
+    # set category(ies)
+    clist = [x['mandatory']['Category'] for x in sigma2data['datasets']]
+    category = [mdclasses['Category'](name=x) for x in unique(clist)]
+
+    # set language(s)
+    llist = [x['mandatory']['Language'] for x in sigma2data['datasets']]
+    language = [mdclasses['Language'](name=x) for x in llist]
+
+    # set subject(s)
+    domains = [x['mandatory']['Subject'][0] for x in sigma2data['datasets']]
+    fields = [x['mandatory']['Subject'][1] for x in sigma2data['datasets']]
+    subfields = [x['mandatory']['Subject'][2] for x in sigma2data['datasets']]
+    subject = []
+    for ix in range(0, len(domains)):
+        sub = mdclasses['Subject'](domain=domains[ix],
+                                   field=fields[ix],
+                                   subfield=subfields[ix])
+        if sub not in subject:  # we have to do this the hard way, as the 'unique'
+            subject.append.sub  # function does not work for general objects
+
+    # set rights holder
+    rholder_id = sigma2data['datasets'][0]['mandatory']['Rights Holder']['id']
+    rholder = _get_rightsholder(rholder_id,
+                                sigma2data['persons'],
+                                sigma2data['organizations'])
+    rights_holder = mdclasses['RightsHolder'](holder=rholder)
+
+    # set data manager
+    manager_ids = unique([id for slist in [x['mandatory']['Data Manager']
+                                           for x in sigma2data['datasets']]
+                          for id in slist])
+    person_ids = [x['id'] for x in sigma2data['persons']]
+    data_managers = [_create_mdclasses_person(sigma2data['persons'][person_ids.index(x)])
+                     for x in manager_ids]
+
+    # @@@@@ PICK UP HERE NEXT TIME!
+    
+    # lic = mdclasses['FullLicense'](id="dummy license id",
+    #                                name="dummy license name",
+    #                                access="dummy license access",
+    #                                archive="dummy license archive")
+
+    return mdclasses['InitialMetadata'](title="dummy title",
+                                        description="dummy description",
+                                        state="dummy state",
+                                        category=category,
+                                        language=language,
+                                        created="2021-08-10",
+                                        licence="dummy license",
+                                        article=[],
+                                        contributor=[],
+                                        data_manager=data_managers,
+                                        rights_holder=rights_holder,
+                                        creator=[],
+                                        subject=subject)
+
+
+def _get_rightsholder(rid, persons, organizations):
+    person_ids = [x['id'] for x in persons]
+    org_ids = [x['id'] for x in organizations]
+
+    if rid in person_ids:
+        return _create_mdclasses_person(persons[person_ids.index(rid)])
+    elif rid in org_ids:
+        org = organizations[org_ids.index(rid)]
+        return _create_mdclasses_organization(org)
+    else:
+        raise Exception('No rights holder identified.')
+
+
+def _create_mdclasses_person(pdata):
+    return mdclasses['Person'](firstname=pdata['FirstName'],
+                               lastname=pdata['LastName'],
+                               email=pdata['Email'],
+                               federatedid=pdata['Email'])
+
+
+def _create_mdclasses_organization(odata):
+    return mdclasses['Organization'](shortname=odata['OrgShortName'],
+                                     longname=odata['OrgLongName'],
+                                     homepage=odata['HomePage'],
+                                     contactemail=['ContactEmail'])
 
 
 def _landing_page_zipfile_location(landing_page_location):
-    pdb.set_trace()
+
     if not landing_page_location:
         # no landing page defined
         return
@@ -457,7 +566,7 @@ def _landing_page_zipfile_location(landing_page_location):
 
 
 def _upload_procedure(token, archive_url, export_dict):
-
+    #pdb.set_trace()
     s2data = export_dict['sigma2_metadata']
 
     # ensure existence of persons
@@ -469,17 +578,18 @@ def _upload_procedure(token, archive_url, export_dict):
                                 s2data['organizations'])
 
     # ensure existence of licence
-    _ensure_licenses_exists(token, archive_url, s2data['licenses'])
+    #_ensure_licenses_exists(token, archive_url, s2data['licenses']) #@@@ Awaiting Adil
 
     # prepare API metadata object for full dataset
+    
     dataset_api_mdata = \
         _prepare_dataset_api_metadata(export_dict['sigma2_metadata'])
 
     # upload API metadata object
-    # r = requests.post(archive_url + '/api/dataset/',
-    #                   dataset_api_mdata.toJSON(),
-    #                   headers=_create_upload_header(token))
-    # requests.Response.raise_for_status(r)
+    r = requests.post(archive_url + '/api/dataset/',
+                      dataset_api_mdata.toJSON(),
+                      headers=_create_upload_header(token))
+    requests.Response.raise_for_status(r)
 
     # ensure landing page is zipped, and get its location
     lpage_zipfile_loc = \
@@ -491,7 +601,7 @@ def _upload_procedure(token, archive_url, export_dict):
 
 
 def export_package(pkg_name):
-
+    # pdb.set_trace()
     # check credentials
     context = {'model': model, 'session': model.Session,
                'user': g.user, 'for_view': True,
@@ -555,7 +665,7 @@ def export_package(pkg_name):
         except ValueError as e:
             error_msg = "JSON parse error occurred: {0}".format(e)
         except Exception as e:
-            error_msg = "An unknown error occurred: {0}".format(e)
+            error_msg = "The following error occurred: {0}".format(e)
 
         if error_msg:
             return render(u'confirmation.html',

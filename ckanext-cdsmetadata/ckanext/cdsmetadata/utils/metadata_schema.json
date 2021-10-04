@@ -1,487 +1,728 @@
 {
-    "_comment": "This schema was obtained through the Sigma2 API call 'curl \"https://staging.web.archive-api.sigma2.no/api/dataset/schema\"",
-    "title": "InitialMetadata",
-    "description": "Class consisting of parameters for the initial dataset metadata",
-    "type": "object",
-    "properties": {
-      "title": {
-        "title": "Title",
-        "type": "string"
-      },
-      "description": {
-        "title": "Description",
-        "type": "string"
-      },
-      "state": {
-        "title": "State",
-        "type": "string"
-      },
-      "category": {
-        "title": "Category",
-        "type": "array",
-        "items": {
-          "$ref": "#/definitions/Category"
-        }
-      },
-      "language": {
-        "title": "Language",
-        "type": "array",
-        "items": {
-          "$ref": "#/definitions/Language"
-        }
-      },
-      "created": {
-        "title": "Created",
-        "type": "string",
-        "format": "date"
-      },
-      "article": {
-        "title": "Article",
-        "type": "array",
-        "items": {
-          "$ref": "#/definitions/Publication"
-        }
-      },
-      "contributor": {
-        "title": "Contributor",
-        "type": "array",
-        "items": {
-          "$ref": "#/definitions/Contributor"
-        }
-      },
-      "data_manager": {
-        "title": "Data Manager",
-        "type": "array",
-        "items": {
-          "$ref": "#/definitions/DataManager"
-        }
-      },
-      "rights_holder": {
-        "$ref": "#/definitions/RightsHolder"
-      },
-      "creator": {
-        "title": "Creator",
-        "type": "array",
-        "items": {
-          "$ref": "#/definitions/Creator"
-        }
-      },
-      "subject": {
-        "title": "Subject",
-        "type": "array",
-        "items": {
-          "$ref": "#/definitions/Subject"
-        }
+  "_comment": "This schema was obtained through the Sigma2 API call 'curl \"https://staging.web.archive-api.sigma2.no/api/dataset/schema\"",
+  "title": "InitialMetadata",
+  "description": "Class consisting of parameters for the initial dataset metadata",
+  "type": "object",
+  "properties": {
+    "title": {
+      "title": "Title",
+      "type": "string"
+    },
+    "description": {
+      "title": "Description",
+      "type": "string"
+    },
+    "state": {
+      "title": "State",
+      "type": "string"
+    },
+    "category": {
+      "title": "Category",
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Category"
       }
     },
-    "required": [
-      "title",
-      "description",
-      "state",
-      "category",
-      "language",
-      "created",
-      "article",
-      "contributor",
-      "data_manager",
-      "rights_holder",
-      "creator",
-      "subject"
-    ],
-    "definitions": {
-      "Category": {
-        "title": "Category",
-        "description": "Class for a category",
-        "type": "object",
-        "properties": {
-          "name": {
-            "title": "Name",
-            "type": "string"
-          }
-        },
-        "required": [
-          "name"
-        ]
-      },
-      "Language": {
-        "title": "Language",
-        "description": "Class of a language",
-        "type": "object",
-        "properties": {
-          "name": {
-            "title": "Name",
-            "type": "string"
-          }
-        },
-        "required": [
-          "name"
-        ]
-      },
-      "Doi": {
-        "title": "Doi",
-        "description": "Class of DOI",
-        "type": "object",
-        "properties": {
-          "doi": {
-            "title": "Doi",
-            "type": "string"
-          }
-        },
-        "required": [
-          "doi"
-        ]
-      },
-      "Url": {
-        "title": "Url",
-        "description": "Class of URL",
-        "type": "object",
-        "properties": {
-          "url": {
-            "title": "Url",
-            "type": "string"
-          }
-        },
-        "required": [
-          "url"
-        ]
-      },
-      "Citation": {
-        "title": "Citation",
-        "description": "Class of citations",
-        "type": "object",
-        "properties": {
-          "citation": {
-            "title": "Citation",
-            "type": "string"
-          }
-        },
-        "required": [
-          "citation"
-        ]
-      },
-      "Published": {
-        "title": "Published",
-        "description": "Class of published articles",
-        "type": "object",
-        "properties": {
-          "published": {
-            "title": "Published",
-            "type": "boolean"
+    "language": {
+      "title": "Language",
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Language"
+      }
+    },
+    "licence": {
+      "$ref": "#/definitions/Licence"
+    },
+    "created": {
+      "title": "Created",
+      "type": "string",
+      "format": "date"
+    },
+    "article": {
+      "title": "Article",
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Publication"
+      }
+    },
+    "contributor": {
+      "title": "Contributor",
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Contributor"
+      }
+    },
+    "data_manager": {
+      "title": "Data Manager",
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/DataManager"
+      }
+    },
+    "rights_holder": {
+      "$ref": "#/definitions/RightsHolder"
+    },
+    "creator": {
+      "title": "Creator",
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Creator"
+      }
+    },
+    "subject": {
+      "title": "Subject",
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Subject"
+      }
+    },
+    "label": {
+      "title": "Label",
+      "type": "string"
+    },
+    "source": {
+      "title": "Source",
+      "type": "string"
+    },
+    "bibliographiccitation": {
+      "title": "Bibliographiccitation",
+      "type": "string"
+    },
+    "comment": {
+      "title": "Comment",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "project": {
+      "title": "Project",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "conformsto": {
+      "title": "Conformsto",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "provenance": {
+      "title": "Provenance",
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Provenance"
+      }
+    },
+    "temporal_coverage": {
+      "title": "Temporal Coverage",
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/TemporalCoverage"
+      }
+    },
+    "geo_location": {
+      "title": "Geo Location",
+      "type": "array",
+      "items": {
+        "anyOf": [
+          {
+            "$ref": "#/definitions/GPSBox"
           },
-          "reference": {
-            "title": "Reference",
-            "anyOf": [
-              {
-                "$ref": "#/definitions/Doi"
-              },
-              {
-                "$ref": "#/definitions/Url"
-              },
-              {
-                "$ref": "#/definitions/Citation"
-              }
-            ]
+          {
+            "$ref": "#/definitions/GPSPoint"
           }
-        },
-        "required": [
-          "published",
-          "reference"
-        ]
-      },
-      "Accepted": {
-        "title": "Accepted",
-        "description": "Class of articles accepted for publication",
-        "type": "object",
-        "properties": {
-          "accepted": {
-            "title": "Accepted",
-            "type": "boolean"
-          },
-          "url": {
-            "title": "Url",
-            "type": "string"
-          }
-        },
-        "required": [
-          "accepted",
-          "url"
-        ]
-      },
-      "Preparation": {
-        "title": "Preparation",
-        "description": "Class of articles in preparation",
-        "type": "object",
-        "properties": {
-          "preparation": {
-            "title": "Preparation",
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "preparation"
-        ]
-      },
-      "Conference": {
-        "title": "Conference",
-        "description": "Class of articles accepted for conference proceeding",
-        "type": "object",
-        "properties": {
-          "conference": {
-            "title": "Conference",
-            "type": "boolean"
-          },
-          "reference": {
-            "title": "Reference",
-            "anyOf": [
-              {
-                "$ref": "#/definitions/Url"
-              },
-              {
-                "$ref": "#/definitions/Citation"
-              }
-            ]
-          }
-        },
-        "required": [
-          "conference",
-          "reference"
-        ]
-      },
-      "NoPublication": {
-        "title": "NoPublication",
-        "description": "Class of articles accepted for publication",
-        "type": "object",
-        "properties": {
-          "no_publication": {
-            "title": "No Publication",
-            "type": "boolean"
-          },
-          "motivation": {
-            "title": "Motivation",
-            "type": "string"
-          }
-        },
-        "required": [
-          "no_publication",
-          "motivation"
-        ]
-      },
-      "Publication": {
-        "title": "Publication",
-        "description": "Class for the publications",
-        "type": "object",
-        "properties": {
-          "publication": {
-            "title": "Publication",
-            "anyOf": [
-              {
-                "$ref": "#/definitions/Published"
-              },
-              {
-                "$ref": "#/definitions/Accepted"
-              },
-              {
-                "$ref": "#/definitions/Preparation"
-              },
-              {
-                "$ref": "#/definitions/Conference"
-              },
-              {
-                "$ref": "#/definitions/NoPublication"
-              }
-            ]
-          }
-        },
-        "required": [
-          "publication"
-        ]
-      },
-      "Person": {
-        "title": "Person",
-        "description": "Class for a dataset person",
-        "type": "object",
-        "properties": {
-          "firstname": {
-            "title": "Firstname",
-            "type": "string"
-          },
-          "lastname": {
-            "title": "Lastname",
-            "type": "string"
-          },
-          "email": {
-            "title": "Email",
-            "type": "string"
-          },
-          "federatedid": {
-            "title": "Federatedid",
-            "type": "string"
-          }
-        },
-        "required": [
-          "firstname",
-          "lastname",
-          "email",
-          "federatedid"
-        ]
-      },
-      "Contributor": {
-        "title": "Contributor",
-        "description": "Class for a dataset datamanager",
-        "type": "object",
-        "properties": {
-          "member": {
-            "$ref": "#/definitions/Person"
-          },
-          "uploader": {
-            "title": "Uploader",
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "member",
-          "uploader"
-        ]
-      },
-      "Organization": {
-        "title": "Organization",
-        "description": "Class for a dataset organisation",
-        "type": "object",
-        "properties": {
-          "longname": {
-            "title": "Longname",
-            "type": "string"
-          },
-          "shortname": {
-            "title": "Shortname",
-            "type": "string"
-          },
-          "contactemail": {
-            "title": "Contactemail",
-            "type": "string"
-          },
-          "homepage": {
-            "title": "Homepage",
-            "type": "string"
-          }
-        },
-        "required": [
-          "longname",
-          "shortname",
-          "contactemail",
-          "homepage"
-        ]
-      },
-      "DataManager": {
-        "title": "DataManager",
-        "description": "Class for a dataset datamanager",
-        "type": "object",
-        "properties": {
-          "manager": {
-            "title": "Manager",
-            "anyOf": [
-              {
-                "$ref": "#/definitions/Person"
-              },
-              {
-                "$ref": "#/definitions/Organization"
-              }
-            ]
-          }
-        },
-        "required": [
-          "manager"
-        ]
-      },
-      "RightsHolder": {
-        "title": "RightsHolder",
-        "description": "Class for a dataset rightsholder",
-        "type": "object",
-        "properties": {
-          "holder": {
-            "title": "Holder",
-            "anyOf": [
-              {
-                "$ref": "#/definitions/Person"
-              },
-              {
-                "$ref": "#/definitions/Organization"
-              }
-            ]
-          }
-        },
-        "required": [
-          "holder"
-        ]
-      },
-      "CreatorPerson": {
-        "title": "CreatorPerson",
-        "description": "Class for a creator person",
-        "type": "object",
-        "properties": {
-          "firstname": {
-            "title": "Firstname",
-            "type": "string"
-          },
-          "lastname": {
-            "title": "Lastname",
-            "type": "string"
-          },
-          "email": {
-            "title": "Email",
-            "type": "string"
-          }
-        },
-        "required": [
-          "firstname",
-          "lastname",
-          "email"
-        ]
-      },
-      "Creator": {
-        "title": "Creator",
-        "description": "Class for a dataset datamanager",
-        "type": "object",
-        "properties": {
-          "creator": {
-            "title": "Creator",
-            "anyOf": [
-              {
-                "$ref": "#/definitions/CreatorPerson"
-              },
-              {
-                "$ref": "#/definitions/Organization"
-              }
-            ]
-          }
-        },
-        "required": [
-          "creator"
-        ]
-      },
-      "Subject": {
-        "title": "Subject",
-        "description": "Class for a dataset person",
-        "type": "object",
-        "properties": {
-          "domain": {
-            "title": "Domain",
-            "type": "string"
-          },
-          "field": {
-            "title": "Field",
-            "type": "string"
-          },
-          "subfield": {
-            "title": "Subfield",
-            "type": "string"
-          }
-        },
-        "required": [
-          "domain",
-          "field",
-          "subfield"
         ]
       }
     }
+  },
+  "required": [
+    "title",
+    "description",
+    "state",
+    "category",
+    "language",
+    "licence",
+    "created",
+    "article",
+    "contributor",
+    "data_manager",
+    "rights_holder",
+    "creator",
+    "subject"
+  ],
+  "definitions": {
+    "Category": {
+      "title": "Category",
+      "description": "Class for a category",
+      "type": "object",
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ]
+    },
+    "Language": {
+      "title": "Language",
+      "description": "Class of a language",
+      "type": "object",
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ]
+    },
+    "Licence": {
+      "title": "Licence",
+      "description": "Class for the Licence",
+      "type": "object",
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "archive": {
+          "title": "Archive",
+          "type": "string"
+        },
+        "access": {
+          "title": "Access",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id"
+      ]
+    },
+    "Doi": {
+      "title": "Doi",
+      "description": "Class of DOI",
+      "type": "object",
+      "properties": {
+        "doi": {
+          "title": "Doi",
+          "type": "string"
+        }
+      },
+      "required": [
+        "doi"
+      ]
+    },
+    "Url": {
+      "title": "Url",
+      "description": "Class of URL",
+      "type": "object",
+      "properties": {
+        "url": {
+          "title": "Url",
+          "type": "string"
+        }
+      },
+      "required": [
+        "url"
+      ]
+    },
+    "Citation": {
+      "title": "Citation",
+      "description": "Class of citations",
+      "type": "object",
+      "properties": {
+        "citation": {
+          "title": "Citation",
+          "type": "string"
+        }
+      },
+      "required": [
+        "citation"
+      ]
+    },
+    "Published": {
+      "title": "Published",
+      "description": "Class of published articles",
+      "type": "object",
+      "properties": {
+        "published": {
+          "title": "Published",
+          "type": "boolean"
+        },
+        "reference": {
+          "title": "Reference",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Doi"
+            },
+            {
+              "$ref": "#/definitions/Url"
+            },
+            {
+              "$ref": "#/definitions/Citation"
+            }
+          ]
+        }
+      },
+      "required": [
+        "published",
+        "reference"
+      ]
+    },
+    "Accepted": {
+      "title": "Accepted",
+      "description": "Class of articles accepted for publication",
+      "type": "object",
+      "properties": {
+        "accepted": {
+          "title": "Accepted",
+          "type": "boolean"
+        },
+        "url": {
+          "title": "Url",
+          "type": "string"
+        }
+      },
+      "required": [
+        "accepted",
+        "url"
+      ]
+    },
+    "Preparation": {
+      "title": "Preparation",
+      "description": "Class of articles in preparation",
+      "type": "object",
+      "properties": {
+        "preparation": {
+          "title": "Preparation",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "preparation"
+      ]
+    },
+    "Conference": {
+      "title": "Conference",
+      "description": "Class of articles accepted for conference proceeding",
+      "type": "object",
+      "properties": {
+        "conference": {
+          "title": "Conference",
+          "type": "boolean"
+        },
+        "reference": {
+          "title": "Reference",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Url"
+            },
+            {
+              "$ref": "#/definitions/Citation"
+            }
+          ]
+        }
+      },
+      "required": [
+        "conference",
+        "reference"
+      ]
+    },
+    "NoPublication": {
+      "title": "NoPublication",
+      "description": "Class of articles accepted for publication",
+      "type": "object",
+      "properties": {
+        "no_publication": {
+          "title": "No Publication",
+          "type": "boolean"
+        },
+        "motivation": {
+          "title": "Motivation",
+          "type": "string"
+        }
+      },
+      "required": [
+        "no_publication",
+        "motivation"
+      ]
+    },
+    "Publication": {
+      "title": "Publication",
+      "description": "Class for the publications",
+      "type": "object",
+      "properties": {
+        "publication": {
+          "title": "Publication",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Published"
+            },
+            {
+              "$ref": "#/definitions/Accepted"
+            },
+            {
+              "$ref": "#/definitions/Preparation"
+            },
+            {
+              "$ref": "#/definitions/Conference"
+            },
+            {
+              "$ref": "#/definitions/NoPublication"
+            }
+          ]
+        },
+        "primary": {
+          "title": "Primary",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "publication",
+        "primary"
+      ]
+    },
+    "Person": {
+      "title": "Person",
+      "description": "Class for a dataset person",
+      "type": "object",
+      "properties": {
+        "firstname": {
+          "title": "Firstname",
+          "type": "string"
+        },
+        "lastname": {
+          "title": "Lastname",
+          "type": "string"
+        },
+        "email": {
+          "title": "Email",
+          "type": "string"
+        },
+        "federatedid": {
+          "title": "Federatedid",
+          "type": "string"
+        }
+      },
+      "required": [
+        "firstname",
+        "lastname",
+        "email",
+        "federatedid"
+      ]
+    },
+    "Contributor": {
+      "title": "Contributor",
+      "description": "Class for a dataset datamanager",
+      "type": "object",
+      "properties": {
+        "member": {
+          "$ref": "#/definitions/Person"
+        },
+        "uploader": {
+          "title": "Uploader",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "member",
+        "uploader"
+      ]
+    },
+    "Organization": {
+      "title": "Organization",
+      "description": "Class for a dataset organisation",
+      "type": "object",
+      "properties": {
+        "longname": {
+          "title": "Longname",
+          "type": "string"
+        },
+        "shortname": {
+          "title": "Shortname",
+          "type": "string"
+        },
+        "contactemail": {
+          "title": "Contactemail",
+          "type": "string"
+        },
+        "homepage": {
+          "title": "Homepage",
+          "type": "string"
+        }
+      },
+      "required": [
+        "longname",
+        "shortname",
+        "contactemail",
+        "homepage"
+      ]
+    },
+    "DataManager": {
+      "title": "DataManager",
+      "description": "Class for a dataset datamanager",
+      "type": "object",
+      "properties": {
+        "manager": {
+          "title": "Manager",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Person"
+            },
+            {
+              "$ref": "#/definitions/Organization"
+            }
+          ]
+        }
+      },
+      "required": [
+        "manager"
+      ]
+    },
+    "RightsHolder": {
+      "title": "RightsHolder",
+      "description": "Class for a dataset rightsholder",
+      "type": "object",
+      "properties": {
+        "holder": {
+          "title": "Holder",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Person"
+            },
+            {
+              "$ref": "#/definitions/Organization"
+            }
+          ]
+        }
+      },
+      "required": [
+        "holder"
+      ]
+    },
+    "CreatorPerson": {
+      "title": "CreatorPerson",
+      "description": "Class for a creator person",
+      "type": "object",
+      "properties": {
+        "firstname": {
+          "title": "Firstname",
+          "type": "string"
+        },
+        "lastname": {
+          "title": "Lastname",
+          "type": "string"
+        },
+        "email": {
+          "title": "Email",
+          "type": "string"
+        }
+      },
+      "required": [
+        "firstname",
+        "lastname",
+        "email"
+      ]
+    },
+    "Creator": {
+      "title": "Creator",
+      "description": "Class for a dataset datamanager",
+      "type": "object",
+      "properties": {
+        "creator": {
+          "title": "Creator",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/CreatorPerson"
+            },
+            {
+              "$ref": "#/definitions/Organization"
+            }
+          ]
+        }
+      },
+      "required": [
+        "creator"
+      ]
+    },
+    "Subject": {
+      "title": "Subject",
+      "description": "Class for a dataset person",
+      "type": "object",
+      "properties": {
+        "domain": {
+          "title": "Domain",
+          "type": "string"
+        },
+        "field": {
+          "title": "Field",
+          "type": "string"
+        },
+        "subfield": {
+          "title": "Subfield",
+          "type": "string"
+        }
+      },
+      "required": [
+        "domain",
+        "field",
+        "subfield"
+      ]
+    },
+    "Provenance": {
+      "title": "Provenance",
+      "description": "Class for the Provenance",
+      "type": "object",
+      "properties": {
+        "action": {
+          "title": "Action",
+          "type": "string"
+        },
+        "date": {
+          "title": "Date",
+          "type": "string"
+        },
+        "actor": {
+          "title": "Actor",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "action",
+        "date",
+        "actor"
+      ]
+    },
+    "TemporalCoverage": {
+      "title": "TemporalCoverage",
+      "description": "Class for the Temporal Coverage",
+      "type": "object",
+      "properties": {
+        "start": {
+          "title": "Start",
+          "type": "string"
+        },
+        "end": {
+          "title": "End",
+          "type": "string"
+        },
+        "scheme": {
+          "title": "Scheme",
+          "type": "string"
+        },
+        "periodname": {
+          "title": "Periodname",
+          "type": "string"
+        }
+      },
+      "required": [
+        "start",
+        "end",
+        "scheme",
+        "periodname"
+      ]
+    },
+    "GPSBox": {
+      "title": "GPSBox",
+      "description": "Box geo-location",
+      "type": "object",
+      "properties": {
+        "eastlimit": {
+          "title": "Eastlimit",
+          "type": "string"
+        },
+        "northlimit": {
+          "title": "Northlimit",
+          "type": "string"
+        },
+        "westlimit": {
+          "title": "Westlimit",
+          "type": "string"
+        },
+        "southlimit": {
+          "title": "Southlimit",
+          "type": "string"
+        },
+        "uplimit": {
+          "title": "Uplimit",
+          "type": "string"
+        },
+        "downlimit": {
+          "title": "Downlimit",
+          "type": "string"
+        },
+        "units": {
+          "title": "Units",
+          "type": "string"
+        },
+        "zunits": {
+          "title": "Zunits",
+          "type": "string"
+        },
+        "location_name": {
+          "title": "Location Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "eastlimit",
+        "northlimit",
+        "westlimit",
+        "southlimit",
+        "uplimit",
+        "downlimit",
+        "units",
+        "zunits",
+        "location_name"
+      ]
+    },
+    "GPSPoint": {
+      "title": "GPSPoint",
+      "description": "Point geo-location",
+      "type": "object",
+      "properties": {
+        "east": {
+          "title": "East",
+          "type": "string"
+        },
+        "north": {
+          "title": "North",
+          "type": "string"
+        },
+        "elevation": {
+          "title": "Elevation",
+          "type": "string"
+        },
+        "units": {
+          "title": "Units",
+          "type": "string"
+        },
+        "zunits": {
+          "title": "Zunits",
+          "type": "string"
+        },
+        "location_name": {
+          "title": "Location Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "east",
+        "north",
+        "elevation",
+        "units",
+        "zunits",
+        "location_name"
+      ]
+    }
   }
+}
