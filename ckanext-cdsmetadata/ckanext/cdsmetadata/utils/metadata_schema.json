@@ -1,5 +1,4 @@
 {
-  "_comment": "This schema was obtained through the Sigma2 API call 'curl \"https://staging.web.archive-api.sigma2.no/api/dataset/schema\"",
   "title": "InitialMetadata",
   "description": "Class consisting of parameters for the initial dataset metadata",
   "type": "object",
@@ -23,6 +22,10 @@
         "$ref": "#/definitions/Category"
       }
     },
+    "external_identifier": {
+      "title": "External Identifier",
+      "type": "string"
+    },
     "language": {
       "title": "Language",
       "type": "array",
@@ -45,11 +48,11 @@
         "$ref": "#/definitions/Publication"
       }
     },
-    "contributor": {
-      "title": "Contributor",
+    "depositor": {
+      "title": "Depositor",
       "type": "array",
       "items": {
-        "$ref": "#/definitions/Contributor"
+        "$ref": "#/definitions/depositor"
       }
     },
     "data_manager": {
@@ -147,7 +150,7 @@
     "licence",
     "created",
     "article",
-    "contributor",
+    "depositor",
     "data_manager",
     "rights_holder",
     "creator",
@@ -184,7 +187,7 @@
     },
     "Licence": {
       "title": "Licence",
-      "description": "Class for the Licence",
+      "description": "Class for the fully defined licence",
       "type": "object",
       "properties": {
         "name": {
@@ -201,7 +204,9 @@
         }
       },
       "required": [
-        "id"
+        "name",
+        "archive",
+        "access"
       ]
     },
     "Doi": {
@@ -417,8 +422,8 @@
         "federatedid"
       ]
     },
-    "Contributor": {
-      "title": "Contributor",
+    "depositor": {
+      "title": "depositor",
       "description": "Class for a dataset datamanager",
       "type": "object",
       "properties": {

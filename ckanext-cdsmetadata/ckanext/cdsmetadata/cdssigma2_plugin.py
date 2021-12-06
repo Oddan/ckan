@@ -67,7 +67,7 @@ def sigma2_parent_dataset_metadata(pkg_info):
 
     # constant metadata (always the same for export to Sigma2)
     language = 'English'  # always English
-    category = 'Experiment'  # we use 'Experiment' as default.
+    category = 'EXPERIMENT'  # we use 'Experiment' as default.
     journal = ''
     bibliographic_citation = ''  # how should this dataset be cited
     subject = ['Professional and Applied sciences',
@@ -212,16 +212,16 @@ def _category_from_class(classcode):
     # Software, Image, Calibration)
     classcode = classcode.split('.')
     if classcode[0] == '1':
-        return 'Observation'
+        return 'OBSERVATION'
     elif classcode[0] == '2':
-        return 'Experiment'
+        return 'EXPERIMENT'
     elif classcode[0] == '3':
         if classcode[1] == '1' or classcode[1] == '2':
-            return 'Model'
+            return 'MODEL'
         else:
-            return 'Simulation'
+            return 'SIMULATION'
     else:
-        return 'Observation'
+        return 'OBSERVATION'
 
 
 def sigma2_dataset_component_metadata(pkg_info, parent_dataset):
@@ -380,23 +380,9 @@ def _ensure_entities_exist(token, api_url,
             requests.Response.raise_for_status(r)
 
 
-def _make_mdperson(pdata):
-    return mdclasses['Person'](firstname=pdata['FirstName'],
-                               lastname=pdata['LastName'],
-                               email=pdata['Email'],
-                               federatedid=pdata['Email'])
-
-
-def _make_mdorganization(odata):
-    return mdclasses['Organization'](shortname=odata['OrgShortName'],
-                                     longname=odata['OrgLongName'],
-                                     contactemail=odata['ContactEmail'],
-                                     homepage=odata['HomePage'])
-
-
 def _ensure_persons_exist(token, archive_url, persons):
 
-    plist = [_make_mdperson(p) for p in persons]
+    plist = [_create_mdclasses_person(p) for p in persons]
     _ensure_entities_exist(token, archive_url + '/api/person/',
                            ['federatedid'],
                            plist)
@@ -405,7 +391,7 @@ def _ensure_persons_exist(token, archive_url, persons):
 
 def _ensure_organizations_exist(token, archive_url, persons, orgs):
 
-    odict = {_make_mdorganization(o):
+    odict = {_create_mdclasses_organization(o):
              filter(lambda x: x['id'] == o['ContactID'], persons)
              for o in orgs}
 
@@ -417,7 +403,7 @@ def _ensure_organizations_exist(token, archive_url, persons, orgs):
             person = odict[org][0]  # if multiple, use the first one
         return '{' + '"organization": {}, "person": {}'.format(
             org.toJSON(),
-            _make_mdperson(person).toJSON()) + '}'
+            _create_mdclasses_person(person).toJSON()) + '}'
 
     olist = odict.keys()
     _ensure_entities_exist(token, archive_url + '/api/organization/',
@@ -432,7 +418,7 @@ def _make_mdlicense(ldata):
 
 
 def _ensure_licenses_exists(token, archive_url, licenses):
-    #pdb.set_trace()
+    
     if not licenses:
         raise Exception("a license must be specified.")
     if len(licenses) > 1:
@@ -451,15 +437,16 @@ def _send_off_manifest(token, resource_locations, lpage_zipfile_location):
 
 def _prepare_dataset_api_metadata(sigma2data):
 
+    warnings = [] # list of warnings
+
     parent = sigma2data['datasets'][0]
     assert(parent['hierarchy'].get('IsPartOf', None) is None)  # not a child
 
-    def unique(l):
+    def unique(ll):
         # function to return unique items in list
-        return dict.fromkeys(l).keys()
+        return dict.fromkeys(ll).keys()
 
-    pdb.set_trace()    
-    # --- mandatory data items --- 
+    # --- mandatory data items ---
 
     # set category(ies)
     clist = [x['mandatory']['Category'] for x in sigma2data['datasets']]
@@ -467,7 +454,7 @@ def _prepare_dataset_api_metadata(sigma2data):
 
     # set language(s)
     llist = [x['mandatory']['Language'] for x in sigma2data['datasets']]
-    language = [mdclasses['Language'](name=x) for x in llist]
+    language = [mdclasses['Language'](name=x) for x in unique(llist)]
 
     # set subject(s)
     domains = [x['mandatory']['Subject'][0] for x in sigma2data['datasets']]
@@ -478,14 +465,14 @@ def _prepare_dataset_api_metadata(sigma2data):
         sub = mdclasses['Subject'](domain=domains[ix],
                                    field=fields[ix],
                                    subfield=subfields[ix])
-        if sub not in subject:  # we have to do this the hard way, as the 'unique'
-            subject.append.sub  # function does not work for general objects
+        subject.append(sub)
+    subject = unique(subject)
 
     # set rights holder
     rholder_id = sigma2data['datasets'][0]['mandatory']['Rights Holder']['id']
-    rholder = _get_rightsholder(rholder_id,
-                                sigma2data['persons'],
-                                sigma2data['organizations'])
+    rholder = _get_person_or_org(rholder_id,
+                                 sigma2data['persons'],
+                                 sigma2data['organizations'])
     rights_holder = mdclasses['RightsHolder'](holder=rholder)
 
     # set data manager
@@ -493,37 +480,133 @@ def _prepare_dataset_api_metadata(sigma2data):
                                            for x in sigma2data['datasets']]
                           for id in slist])
     person_ids = [x['id'] for x in sigma2data['persons']]
-    data_managers = [_create_mdclasses_person(sigma2data['persons'][person_ids.index(x)])
+    data_managers = [mdclasses['DataManager'](
+        manager=_create_mdclasses_person(sigma2data['persons']
+                                         [person_ids.index(x)]))
                      for x in manager_ids]
 
-    # @@@@@ PICK UP HERE NEXT TIME!
+    # set license
+    lic_id = parent['mandatory']['Licence']  # should be same for all comps.
+    lic = _get_license(lic_id, sigma2data['licenses'])
+
+    # set contributor (in the Sigma2 API, the name has changed to "Depositor")
+
+    # Note that a contributor can be a person or an organization in
+    # CO2DataShare, but only a person the Sigma2 metadata schema.  Therefore,
+    # only persons will be transfered.  If any organizations are listed as
+    # contributors, a warning will be issued.
+
+    contributing_agents = [_get_person_or_org(contributor['id'],
+                                              sigma2data['persons'],
+                                              sigma2data['organizations'])
+                           for dset in sigma2data['datasets']
+                           for contributor in dset['mandatory']['Contributor']]
+    contributing_persons = filter(lambda x: isinstance(x, mdclasses['Person']),
+                                  contributing_agents)
+    contributing_orgs = list(set(contributing_agents) -
+                             set(contributing_persons))
+    if contributing_orgs:
+        warnings.append('The organizations listed as ''contributors'' could not be transferred.')
+
+    contributors = [mdclasses['depositor'](member=person, uploader=False)
+                    for person in unique(contributing_persons)]
+    # last person should be the CO2DataShare 'person', which is the uploader
+    contributors.append(
+        mdclasses['depositor'](
+            member=_create_mdclasses_person(sigma2data['persons'][-1]),
+            uploader=True))
+    assert(contributors[-1].member.federatedid ==
+           config.get('ckan.cdsmetadata.sigma2_uploader_email'))
+
+    # # add uploader (always a "person" representing CO2DataShare)
+    # co2datashare_email = config.get('ckan.cdsmetadata.sigma2_uploader_email')
+    # contributors.append(
+    #     mdclasses['Contributor'](
+    #         uploader=True,
+    #         member=mdclasses['Person'](
+    #             firstname='CO2DataShare',
+    #             lastname='Uploader',
+    #             federatedid=co2datashare_email,
+    #             email=co2datashare_email)))
+
+    # set creator (can be persons and/or organizations)
+    creators = unique(
+        [mdclasses['Creator'](creator=_get_person_or_org(creator['id'],
+                                                         sigma2data['persons'],
+                                                         sigma2data['organizations'],
+                                                         use_creatorpersons=True))
+         for dset in sigma2data['datasets']
+         for creator in dset['mandatory']['Creator']]
+    )
+
+    # set article(s)
+    articles = [_get_article(pub['id'], sigma2data['publications'])
+                for dset in sigma2data['datasets']
+                for pub in dset['optional']['Publication']]
+
+    # set trivial fields
+    title = parent['mandatory']['Title']
+    description = parent['mandatory']['Description']
+    state = 'DERIVED'  # usually, this is set by Norstore ('Raw', or 'Derived')
+    date_created = parent['mandatory']['Created On'][0:10]
+    external_identifier = sigma2data['datasets'][0]['hierarchy']['id']
     
-    # lic = mdclasses['FullLicense'](id="dummy license id",
-    #                                name="dummy license name",
-    #                                access="dummy license access",
-    #                                archive="dummy license archive")
+    return (mdclasses['InitialMetadata'](title=title,
+                                         description=description,
+                                         external_identifier=external_identifier,
+                                         state=state,
+                                         category=category,
+                                         language=language,
+                                         created=date_created,
+                                         licence=lic,
+                                         article=articles,
+                                         depositor=contributors,
+                                         data_manager=data_managers,
+                                         rights_holder=rights_holder,
+                                         creator=creators,
+                                         subject=subject),
+            warnings)
 
-    return mdclasses['InitialMetadata'](title="dummy title",
-                                        description="dummy description",
-                                        state="dummy state",
-                                        category=category,
-                                        language=language,
-                                        created="2021-08-10",
-                                        licence="dummy license",
-                                        article=[],
-                                        contributor=[],
-                                        data_manager=data_managers,
-                                        rights_holder=rights_holder,
-                                        creator=[],
-                                        subject=subject)
+# @@ The following fields were also flagged as 'mandatory' in the Norstore
+# metadata document, but are not currently found in the metadata schema
+# returned by the server:
+# ['Rights', 'Identifier', 'Access Rights', 'Journal', 'Subject']
 
 
-def _get_rightsholder(rid, persons, organizations):
+def _get_article(article_id, publications):
+    pub_ids = [pub['id'] for pub in publications]
+    assert(article_id in pub_ids)
+    pub = publications[pub_ids.index(article_id)]
+
+    if len(pub['JournalDOI']) > 0:
+        reference = mdclasses['Doi'](doi=pub['JournalDOI'])
+    else:
+        reference = mdclasses['Citation'](citation=pub['JournalCitation'])
+
+    return mdclasses['Publication'](primary=True,  # @@ is this always true?
+                                    publication=mdclasses['Published'](
+                                        published=True,  # @@  always true?
+                                        reference=reference))
+
+def _get_license(lid, licenses):
+    # for the time being, we always assume there is only a single license
+    # associated with a dataset
+    assert(len(licenses) == 1)
+    lic = licenses[0]
+    assert(lic['id'] == lid)
+
+    return mdclasses['Licence'](name=lic['Name'],
+                                archive=lic['Archive'],
+                                access=lic['Access'])
+
+
+def _get_person_or_org(rid, persons, organizations, use_creatorpersons=False):
     person_ids = [x['id'] for x in persons]
     org_ids = [x['id'] for x in organizations]
 
     if rid in person_ids:
-        return _create_mdclasses_person(persons[person_ids.index(rid)])
+        return _create_mdclasses_person(persons[person_ids.index(rid)],
+                                        use_creatorpersons)
     elif rid in org_ids:
         org = organizations[org_ids.index(rid)]
         return _create_mdclasses_organization(org)
@@ -531,18 +614,26 @@ def _get_rightsholder(rid, persons, organizations):
         raise Exception('No rights holder identified.')
 
 
-def _create_mdclasses_person(pdata):
-    return mdclasses['Person'](firstname=pdata['FirstName'],
-                               lastname=pdata['LastName'],
-                               email=pdata['Email'],
-                               federatedid=pdata['Email'])
+def _create_mdclasses_person(pdata, is_creatorperson=False):
+
+    if is_creatorperson:
+        # creatorpersons do not have federated ids
+        return mdclasses['CreatorPerson'](firstname=pdata['FirstName'],
+                                          lastname=pdata['LastName'],
+                                          email=pdata['Email'])
+    else:
+        return mdclasses['Person'](firstname=pdata['FirstName'],
+                                   lastname=pdata['LastName'],
+                                   email=pdata['Email'],
+                                   federatedid=pdata['Email'])
 
 
 def _create_mdclasses_organization(odata):
+
     return mdclasses['Organization'](shortname=odata['OrgShortName'],
                                      longname=odata['OrgLongName'],
                                      homepage=odata['HomePage'],
-                                     contactemail=['ContactEmail'])
+                                     contactemail=odata['ContactEmail'])
 
 
 def _landing_page_zipfile_location(landing_page_location):
@@ -566,8 +657,15 @@ def _landing_page_zipfile_location(landing_page_location):
 
 
 def _upload_procedure(token, archive_url, export_dict):
-    #pdb.set_trace()
+
     s2data = export_dict['sigma2_metadata']
+
+    # add "uploader" person CO2DataShare
+    s2data['persons'].append(
+        {'FirstName': 'CO2DataShare',
+         'LastName': 'Uploader',
+         'id': '0', # dummy ID
+         'Email': config.get('ckan.cdsmetadata.sigma2_uploader_email')})
 
     # ensure existence of persons
     _ensure_persons_exist(token, archive_url, s2data['persons'])
@@ -578,17 +676,42 @@ def _upload_procedure(token, archive_url, export_dict):
                                 s2data['organizations'])
 
     # ensure existence of licence
-    #_ensure_licenses_exists(token, archive_url, s2data['licenses']) #@@@ Awaiting Adil
+    _ensure_licenses_exists(token, archive_url, s2data['licenses'])
 
     # prepare API metadata object for full dataset
-    
-    dataset_api_mdata = \
+
+    dataset_api_mdata, warnings = \
         _prepare_dataset_api_metadata(export_dict['sigma2_metadata'])
 
+    #pdb.set_trace()
+    # check if dataset metadata has previously be uploaded
+    r = requests.get(archive_url + '/api/external_dataset/' +
+                     dataset_api_mdata.external_identifier,
+                     _create_upload_header(token))
+    requests.Response.raise_for_status(r)
+    dset_ref = json.loads(r.text)
+    dbase_id = None if len(dset_ref) == 0 else dset_ref[0][1]
+
+    if len(dset_ref) > 1:
+        warnings.append(
+            'Multiple ({}) instances of this dataset metadata were found.'.
+            format(len(dset_ref)) +
+            ' Updating most recently uploaded instance.')
+    elif dbase_id:
+        warnings.append('Metadata already uploaded. Updating existing.')
+
     # upload API metadata object
-    r = requests.post(archive_url + '/api/dataset/',
-                      dataset_api_mdata.toJSON(),
-                      headers=_create_upload_header(token))
+    full_url = archive_url + '/api/dataset/'
+
+    if dbase_id:
+        r = requests.put(full_url + dbase_id,
+                         dataset_api_mdata.toJSON(),
+                         headers=_create_upload_header(token))
+    else:
+        r = requests.post(full_url + dbase_id,
+                          dataset_api_mdata.toJSON(),
+                          headers=_create_upload_header(token))
+
     requests.Response.raise_for_status(r)
 
     # ensure landing page is zipped, and get its location
@@ -599,9 +722,11 @@ def _upload_procedure(token, archive_url, export_dict):
     _send_off_manifest(token,
                        export_dict['resource_locations'], lpage_zipfile_loc)
 
+    return warnings
+
 
 def export_package(pkg_name):
-    # pdb.set_trace()
+
     # check credentials
     context = {'model': model, 'session': model.Session,
                'user': g.user, 'for_view': True,
@@ -659,7 +784,7 @@ def export_package(pkg_name):
             token = json.loads(res.content)
 
             # upload data
-            _upload_procedure(token, archive_url, export_dict)
+            warnings = _upload_procedure(token, archive_url, export_dict)  # @@ TODO: add handling of warnings!!
         except requests.exceptions.RequestException as e:
             error_msg = "Unable to communicate with server: {0}".format(e)
         except ValueError as e:
@@ -672,9 +797,14 @@ def export_package(pkg_name):
                           extra_vars={'export_dict': export_dict,
                                       'error_msg': error_msg})
         else:
-            msg = 'Upload succeeded'
+            msg = 'Upload succeeded.'
+            if warnings:
+                msg = msg + "\n\n  The following warning(s) were issued:\n"
+                for w in warnings:
+                    msg = msg + '- ' + w + '\n'
+
             return render(u'success.html',
-                          extra_vars={'message': msg})
+                          extra_vars={'message': msg.split('\n')})
 
     else:
         # show data and ask for confirmation

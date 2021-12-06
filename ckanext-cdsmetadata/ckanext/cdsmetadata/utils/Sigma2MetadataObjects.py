@@ -89,6 +89,12 @@ class Sigma2Baseclass(object):
     _required = []  # list over required fields
     _typemap = {}  # map fields to expected types
 
+    def __hash__(self):
+        return hash(self.toJSON())
+
+    def __eq__(self, other):
+        return self.toJSON() == other.toJSON()
+
     def missingRequirements(self):
         result = []
         for field in self._required:

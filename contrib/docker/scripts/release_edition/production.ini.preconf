@@ -108,7 +108,8 @@ ckan.cdsmetadata.max_zipfile_size = 5000000000
 
 ckan.cdsmetadata.sigma2_archive_url = 
 ckan.cdsmetadata.sigma2_archive_username = 
-ckan.cdsmetadata.sigma2_archive_password = 
+ckan.cdsmetadata.sigma2_archive_password =
+ckan.cdsmetadata.sigma2_uploader_email = 
 
 # Define which views should be created by default
 # (plugins must be loaded in ckan.plugins)

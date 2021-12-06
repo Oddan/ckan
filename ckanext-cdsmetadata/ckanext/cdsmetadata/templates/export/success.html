@@ -5,10 +5,13 @@
 {% block breadcrumb_content %} {% endblock %}
 
 {% block primary %}
+
   <article class="module">
     <div class="module-content">
       <h1> Upload succeeded </h1>
-      <p> {{ message }} </p>
+      {% for para in message %}
+        <p>{{para}}</p>
+        {% endfor %}
     </div>
   </article>
 {% endblock %}
