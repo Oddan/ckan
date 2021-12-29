@@ -69,7 +69,7 @@ def sigma2_parent_dataset_metadata(pkg_info):
     language = 'English'  # always English
     category = 'EXPERIMENT'  # we use 'Experiment' as default.
     journal = ''
-    bibliographic_citation = ''  # how should this dataset be cited
+    bibliographic_citation = pkg_info.get('doi', '<empty>')  # how should this dataset be cited
     subject = ['Professional and Applied sciences',
                'Engineering',
                'Environmental engineering']  # always, for now
@@ -436,7 +436,7 @@ def _send_off_manifest(token, resource_locations, lpage_zipfile_location):
 
 
 def _prepare_dataset_api_metadata(sigma2data):
-
+    pdb.set_trace()
     warnings = [] # list of warnings
 
     parent = sigma2data['datasets'][0]
@@ -550,7 +550,24 @@ def _prepare_dataset_api_metadata(sigma2data):
     state = 'DERIVED'  # usually, this is set by Norstore ('Raw', or 'Derived')
     date_created = parent['mandatory']['Created On'][0:10]
     external_identifier = sigma2data['datasets'][0]['hierarchy']['id']
-    
+
+    # set additional, optional fields
+    bib_citation = sigma2data['datasets'][0]['optional']['BibliographicCitation']  # how should dataset be cited
+    source = '' # source from which this dataset was derived.  Currently no equivalent
+    label = title  # should really be a "short form" of the title, but we do not have that
+    conformsto=''  # "established standard the dataset conforms to"
+    parent_dset = sigma2data['datasets'][0]
+    geo_location = [mdclasses['GPSPoint'](east=parent_dset['optional']['Geolocation'][0],
+                                          north=parent_dset['optional']['Geolocation'][1],
+                                          elevation='',
+                                          zunits='',
+                                          location_name='',
+                                          units="WGS 84")]
+    temporal_coverage = [mdclasses['TemporalCoverage'](start=parent_dset['optional']['Temporal Coverage'][0],
+                                                       end=parent_dset['optional']['Temporal Coverage'][1],
+                                                       scheme='',
+                                                       periodname='')]
+
     return (mdclasses['InitialMetadata'](title=title,
                                          description=description,
                                          external_identifier=external_identifier,
@@ -564,7 +581,13 @@ def _prepare_dataset_api_metadata(sigma2data):
                                          data_manager=data_managers,
                                          rights_holder=rights_holder,
                                          creator=creators,
-                                         subject=subject),
+                                         subject=subject,
+                                         bibliographiccitation=bib_citation,
+                                         source=source,
+                                         label=label,
+                                         geo_location=geo_location,
+                                         temporal_coverage=temporal_coverage
+                                        ),
             warnings)
 
 # @@ The following fields were also flagged as 'mandatory' in the Norstore
@@ -683,7 +706,6 @@ def _upload_procedure(token, archive_url, export_dict):
     dataset_api_mdata, warnings = \
         _prepare_dataset_api_metadata(export_dict['sigma2_metadata'])
 
-    #pdb.set_trace()
     # check if dataset metadata has previously be uploaded
     r = requests.get(archive_url + '/api/external_dataset/' +
                      dataset_api_mdata.external_identifier,
