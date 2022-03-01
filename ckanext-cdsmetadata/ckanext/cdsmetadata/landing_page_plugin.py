@@ -70,6 +70,11 @@ def _update_static_links(target_dir, replacement):
     if not os.path.exists(fname):
         raise IOError('index.html not found')
 
+    # the inplace replacement below does not play well with unicode, so we need                          
+    # to downgrade to ascii if necessary                                                                 
+    if isintance(replacement, unicode):
+        replacement = replacement.decode('utf-8').encode('ascii', 'ignore')
+
     f = fileinput.FileInput(fname, inplace=True)
     try:
         for line in f:
