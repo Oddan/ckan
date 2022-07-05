@@ -8,7 +8,7 @@ ckan-pip install -U pip
 ckan-pip install --upgrade --no-cache-dir -r $CKAN_VENV/src/ckan/requirement-setuptools.txt
 ckan-pip install --upgrade --no-cache-dir -r $CKAN_VENV/src/ckan/requirements.txt
 ckan-pip install -e $CKAN_VENV/src/ckan/
-ckan-pip install flask_debugtoolbar --upgrade
+ckan-pip install flask_debugtoolbar==0.11.0
 ln -s $CKAN_VENV/src/ckan/ckan/config/who.ini $CKAN_CONFIG/who.ini
 chown -R ckan:ckan $CKAN_HOME $CKAN_VENV $CKAN_CONFIG $CKAN_STORAGE_PATH
 
@@ -17,8 +17,8 @@ CONFIG=$CKAN_CONFIG/development.ini
 ckan-paster make-config --no-interactive ckan "$CONFIG"
 
 # installing ckanext_spatial stuff
-ckan-pip install -e "git+https://github.com/ckan/ckanext-spatial.git#egg=ckanext-spatial"
-ckan-pip install -r $CKAN_VENV/src/ckanext-spatial/pip-requirements-py2.txt
+ckan-pip install -e "git+https://github.com/ckan/ckanext-spatial.git@4ac25f19aa4eb9c798451f5eeb3084f907ccc003#egg=ckanext-spatial"
+ckan-pip install -r $CKAN_VENV/src/ckanext-spatial/pip-requirements.txt
 echo "In your configuration file, remember to add 'spatial_metadata' and 'spatial_query' to your plugin list, and introduce 'ckanext.spatial.search_backend = solr-spatial-field'"
 
 # modifying configuration file
