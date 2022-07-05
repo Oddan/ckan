@@ -19,7 +19,6 @@ ckan-paster make-config --no-interactive ckan "$CONFIG"
 # installing ckanext_spatial stuff
 ckan-pip install -e "git+https://github.com/ckan/ckanext-spatial.git@4ac25f19aa4eb9c798451f5eeb3084f907ccc003#egg=ckanext-spatial"
 ckan-pip install -r $CKAN_VENV/src/ckanext-spatial/pip-requirements.txt
-echo "In your configuration file, remember to add 'spatial_metadata' and 'spatial_query' to your plugin list, and introduce 'ckanext.spatial.search_backend = solr-spatial-field'"
 
 # modifying configuration file
 sed 's/^debug =.*$/debug = true/' $CKAN_CONFIG/development.ini | \
