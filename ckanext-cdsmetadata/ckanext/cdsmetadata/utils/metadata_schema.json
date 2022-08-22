@@ -3,6 +3,11 @@
   "description": "Class consisting of parameters for the initial dataset metadata",
   "type": "object",
   "properties": {
+    "publish": {
+      "title": "Publish",
+      "default": false,
+      "type": "boolean"
+    },
     "title": {
       "title": "Title",
       "type": "string"
@@ -190,6 +195,10 @@
       "description": "Class for the fully defined licence",
       "type": "object",
       "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
         "name": {
           "title": "Name",
           "type": "string"
@@ -203,7 +212,8 @@
           "type": "string"
         }
       },
-      "required": [
+        "required": [
+        "id",
         "name",
         "archive",
         "access"

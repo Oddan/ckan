@@ -21,7 +21,7 @@
       {% block confirm %}
         <form action="" method="post">
         <a class="btn btn-primary" "pull-left"
-           href=" {% url_for 'dataset_read', id=export_dict.sigma2_metadata.datasets[0].mandatory.Title %}">
+           href=" {% url_for 'dataset_read', id=export_dict.pkg_info.name %}">
           {{ _('Cancel') }}
         </a>
 

@@ -72,7 +72,7 @@ def _update_static_links(target_dir, replacement):
 
     # the inplace replacement below does not play well with unicode, so we need                          
     # to downgrade to ascii if necessary                                                                 
-    if isintance(replacement, unicode):
+    if isinstance(replacement, unicode):
         replacement = replacement.decode('utf-8').encode('ascii', 'ignore')
 
     f = fileinput.FileInput(fname, inplace=True)

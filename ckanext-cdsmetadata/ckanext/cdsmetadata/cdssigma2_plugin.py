@@ -412,10 +412,10 @@ def _ensure_organizations_exist(token, archive_url, persons, orgs):
 
 
 def _make_mdlicense(ldata):
-    return mdclasses['Licence'](name=ldata['Name'],
+    return mdclasses['Licence'](id=ldata['Name'],  # @@ for now, we use name as id
+                                name=ldata['Name'],
                                 access=ldata['Access'],
                                 archive=ldata['Archive'])
-
 
 def _ensure_licenses_exists(token, archive_url, licenses):
     
@@ -436,7 +436,7 @@ def _send_off_manifest(token, resource_locations, lpage_zipfile_location):
 
 
 def _prepare_dataset_api_metadata(sigma2data):
-    pdb.set_trace()
+    #pdb.set_trace()
     warnings = [] # list of warnings
 
     parent = sigma2data['datasets'][0]
@@ -618,9 +618,11 @@ def _get_license(lid, licenses):
     lic = licenses[0]
     assert(lic['id'] == lid)
 
-    return mdclasses['Licence'](name=lic['Name'],
-                                archive=lic['Archive'],
-                                access=lic['Access'])
+    return _make_mdlicense(lic);
+
+    # return mdclasses['Licence'](name=lic['Name'],
+    #                             archive=lic['Archive'],
+    #                             access=lic['Access'])
 
 
 def _get_person_or_org(rid, persons, organizations, use_creatorpersons=False):
@@ -680,7 +682,7 @@ def _landing_page_zipfile_location(landing_page_location):
 
 
 def _upload_procedure(token, archive_url, export_dict):
-
+    pdb.set_trace()
     s2data = export_dict['sigma2_metadata']
 
     # add "uploader" person CO2DataShare
@@ -702,7 +704,7 @@ def _upload_procedure(token, archive_url, export_dict):
     _ensure_licenses_exists(token, archive_url, s2data['licenses'])
 
     # prepare API metadata object for full dataset
-
+    #pdb.set_trace()
     dataset_api_mdata, warnings = \
         _prepare_dataset_api_metadata(export_dict['sigma2_metadata'])
 
@@ -730,7 +732,7 @@ def _upload_procedure(token, archive_url, export_dict):
                          dataset_api_mdata.toJSON(),
                          headers=_create_upload_header(token))
     else:
-        r = requests.post(full_url + dbase_id,
+        r = requests.post(full_url,
                           dataset_api_mdata.toJSON(),
                           headers=_create_upload_header(token))
 
@@ -788,6 +790,7 @@ def export_package(pkg_name):
     if request.method == 'POST':
         # user has confirmed.  Now send off
 
+        #pdb.set_trace()
         error_msg = []
         try:
             # get token
@@ -815,8 +818,10 @@ def export_package(pkg_name):
             error_msg = "The following error occurred: {0}".format(e)
 
         if error_msg:
+            pp = pprint.PrettyPrinter(indent=2)
             return render(u'confirmation.html',
                           extra_vars={'export_dict': export_dict,
+                                      'pretty_print': pp.pformat(export_dict['sigma2_metadata']),
                                       'error_msg': error_msg})
         else:
             msg = 'Upload succeeded.'
