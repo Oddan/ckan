@@ -19,6 +19,7 @@ from landing_page_plugin import landing_page_location
 import requests
 import pprint
 import copy
+import re #@@ For a temporary workaround hack
 from utils.Sigma2MetadataObjects import classdict as mdclasses
 
 import pdb
@@ -682,7 +683,7 @@ def _landing_page_zipfile_location(landing_page_location):
 
 
 def _upload_procedure(token, archive_url, export_dict):
-    pdb.set_trace()
+    #pdb.set_trace()
     s2data = export_dict['sigma2_metadata']
 
     # add "uploader" person CO2DataShare
@@ -727,13 +728,22 @@ def _upload_procedure(token, archive_url, export_dict):
     # upload API metadata object
     full_url = archive_url + '/api/dataset/'
 
+    pdb.set_trace()
+    dataset_json = dataset_api_mdata.toJSON()
+
+    # @@ The following line is a temporary workaround hack while Sigma2 sorts
+    # out how licences should be handled in a unified way.  We here remove all
+    # other fields than 'id' from dataset license
+    dataset_json = re.sub('"licence": {.*"id":(.*?)}',
+                          r'"licence": {"id": \1}', dataset_json)
+    
     if dbase_id:
         r = requests.put(full_url + dbase_id,
-                         dataset_api_mdata.toJSON(),
+                         dataset_json,
                          headers=_create_upload_header(token))
     else:
         r = requests.post(full_url,
-                          dataset_api_mdata.toJSON(),
+                          dataset_json,
                           headers=_create_upload_header(token))
 
     requests.Response.raise_for_status(r)
