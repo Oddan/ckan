@@ -73,8 +73,8 @@ def _enum_validator(code, title, value, errors):
                filter_by(category_id=cur_code).\
                filter_by(title=title)
         if item.count() > 0:
-            assert(item.count() == 1,
-                   'more than one instance of the metadata item found')
+            assert item.count() == 1, \
+                   'more than one instance of the metadata item found'
             item = list(item)[0]
             break
 
