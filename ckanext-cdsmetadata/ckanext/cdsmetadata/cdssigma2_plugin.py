@@ -19,8 +19,10 @@ from landing_page_plugin import landing_page_location
 import requests
 import pprint
 import copy
+
 import re #@@ For a temporary workaround hack
-from utils.Sigma2MetadataObjects import classdict as mdclasses
+#from utils.Sigma2MetadataObjects import classdict as mdclasses
+from Sigma2MetadataObjects import classdict as mdclasses
 
 import pdb
 
@@ -31,10 +33,19 @@ def users_with_access(pkg_id):
 
 
 def extract_sigma2_metadata(pkg_info):
-
+    #pdb.set_trace()
     datasets, person_ids, org_ids, license_ids, pub_ids =\
         sigma2_dataset_metadata(pkg_info)
 
+    # ensure that the organization contact person is included among the persons
+    # that need to be associated with this dataset
+    s2org_mdata = sigma2_organization_metadata(org_ids)
+    for org in s2org_mdata:
+        cid = org.get('ContactID')
+        if cid:
+            person_ids.append(cid)
+    person_ids = _unique(person_ids) # remove possible duplicates
+    
     return {'datasets': datasets,
             'persons': sigma2_person_metadata(person_ids),
             'publications': sigma2_publication_metadata(pub_ids),
@@ -59,7 +70,7 @@ def _remove_duplicate(lst):
 
 
 def sigma2_parent_dataset_metadata(pkg_info):
-
+    
     context = {'model': model, 'session': model.Session,
                'user': g.user, 'for_view': True,
                'auth_user_obj': g.userobj}
@@ -94,9 +105,11 @@ def sigma2_parent_dataset_metadata(pkg_info):
     status = 'embargoed' if pkg_info.get('access_level') == 'Embargoed' \
         else 'published'
     access_rights = 'public'
-    if pkg_info.get('access_level') == 'Open':
-        access_rights = users_with_access(pkg_info['id'])
-        person_ids.extend(access_rights)
+    if pkg_info.get('access_level') != "Open":
+        raise Exception("Dataset has restricted access, so cannot be transfered")
+    # if pkg_info.get('access_level') == 'Open':
+    #     access_rights = users_with_access(pkg_info['id'])
+    #     person_ids.extend(access_rights)
 
     # set contributor(s)
     contributor = [
@@ -317,7 +330,8 @@ def sigma2_organization_metadata(org_ids):
             contact_email, contact_id = '', ''
             if len(org.contact_person) > 0:
                 # if there are multiple contact persons, we can only return the
-                # first
+                # first.  Note that we do not register affiliates, as this
+                # information is not supported in Sigma2.
                 contact_first_name = org.contact_person[0].first_name
                 contact_last_name = org.contact_person[0].last_name
                 contact_email = org.contact_person[0].email
@@ -431,10 +445,22 @@ def _ensure_licenses_exists(token, archive_url, licenses):
 
 
 def _send_off_manifest(token, resource_locations, lpage_zipfile_location):
+
+    # Call API endpoint to inform where DOI should point (landing page location)
+
+    # Prepare data, and call ingest endpoint to transfer it
+
+    #
+
+    
     # @@ IMPLEMENT ME
     # (api functionality not yet ready)
     pass
 
+
+def _unique(ll):
+    # utility function to return unique items in list
+    return dict.fromkeys(ll).keys()
 
 def _prepare_dataset_api_metadata(sigma2data):
     #pdb.set_trace()
@@ -443,19 +469,16 @@ def _prepare_dataset_api_metadata(sigma2data):
     parent = sigma2data['datasets'][0]
     assert(parent['hierarchy'].get('IsPartOf', None) is None)  # not a child
 
-    def unique(ll):
-        # function to return unique items in list
-        return dict.fromkeys(ll).keys()
 
     # --- mandatory data items ---
 
     # set category(ies)
     clist = [x['mandatory']['Category'] for x in sigma2data['datasets']]
-    category = [mdclasses['Category'](name=x) for x in unique(clist)]
+    category = [mdclasses['Category'](name=x) for x in _unique(clist)]
 
     # set language(s)
     llist = [x['mandatory']['Language'] for x in sigma2data['datasets']]
-    language = [mdclasses['Language'](name=x) for x in unique(llist)]
+    language = [mdclasses['Language'](name=x) for x in _unique(llist)]
 
     # set subject(s)
     domains = [x['mandatory']['Subject'][0] for x in sigma2data['datasets']]
@@ -467,7 +490,7 @@ def _prepare_dataset_api_metadata(sigma2data):
                                    field=fields[ix],
                                    subfield=subfields[ix])
         subject.append(sub)
-    subject = unique(subject)
+    subject = _unique(subject)
 
     # set rights holder
     rholder_id = sigma2data['datasets'][0]['mandatory']['Rights Holder']['id']
@@ -477,7 +500,7 @@ def _prepare_dataset_api_metadata(sigma2data):
     rights_holder = mdclasses['RightsHolder'](holder=rholder)
 
     # set data manager
-    manager_ids = unique([id for slist in [x['mandatory']['Data Manager']
+    manager_ids = _unique([id for slist in [x['mandatory']['Data Manager']
                                            for x in sigma2data['datasets']]
                           for id in slist])
     person_ids = [x['id'] for x in sigma2data['persons']]
@@ -510,7 +533,7 @@ def _prepare_dataset_api_metadata(sigma2data):
         warnings.append('The organizations listed as ''contributors'' could not be transferred.')
 
     contributors = [mdclasses['depositor'](member=person, uploader=False)
-                    for person in unique(contributing_persons)]
+                    for person in _unique(contributing_persons)]
     # last person should be the CO2DataShare 'person', which is the uploader
     contributors.append(
         mdclasses['depositor'](
@@ -531,7 +554,7 @@ def _prepare_dataset_api_metadata(sigma2data):
     #             email=co2datashare_email)))
 
     # set creator (can be persons and/or organizations)
-    creators = unique(
+    creators = _unique(
         [mdclasses['Creator'](creator=_get_person_or_org(creator['id'],
                                                          sigma2data['persons'],
                                                          sigma2data['organizations'],
@@ -594,7 +617,7 @@ def _prepare_dataset_api_metadata(sigma2data):
 # @@ The following fields were also flagged as 'mandatory' in the Norstore
 # metadata document, but are not currently found in the metadata schema
 # returned by the server:
-# ['Rights', 'Identifier', 'Access Rights', 'Journal', 'Subject']
+# ['Rights', 'Identifier', 'Access Rights', 'Journal']
 
 
 def _get_article(article_id, publications):
@@ -683,7 +706,7 @@ def _landing_page_zipfile_location(landing_page_location):
 
 
 def _upload_procedure(token, archive_url, export_dict):
-    #pdb.set_trace()
+    
     s2data = export_dict['sigma2_metadata']
 
     # add "uploader" person CO2DataShare
@@ -701,6 +724,7 @@ def _upload_procedure(token, archive_url, export_dict):
                                 s2data['persons'],
                                 s2data['organizations'])
 
+    
     # ensure existence of licence
     _ensure_licenses_exists(token, archive_url, s2data['licenses'])
 
@@ -728,15 +752,18 @@ def _upload_procedure(token, archive_url, export_dict):
     # upload API metadata object
     full_url = archive_url + '/api/dataset/'
 
-    pdb.set_trace()
+    #pdb.set_trace()
     dataset_json = dataset_api_mdata.toJSON()
 
     # @@ The following line is a temporary workaround hack while Sigma2 sorts
     # out how licences should be handled in a unified way.  We here remove all
     # other fields than 'id' from dataset license
-    dataset_json = re.sub('"licence": {.*"id":(.*?)}',
-                          r'"licence": {"id": \1}', dataset_json)
+    # dataset_json = re.sub('"licence": {.*"id":(.*?)}',
+    #                       r'"licence": {"id": \1}', dataset_json)
     
+    dataset_json = re.sub('"licence": {.*"id":(.*?)},',
+                          '"licence": {"id": "SMEAHEIA"},', dataset_json)
+    #pdb.set_trace()
     if dbase_id:
         r = requests.put(full_url + dbase_id,
                          dataset_json,
@@ -760,7 +787,7 @@ def _upload_procedure(token, archive_url, export_dict):
 
 
 def export_package(pkg_name):
-
+    #pdb.set_trace()
     # check credentials
     context = {'model': model, 'session': model.Session,
                'user': g.user, 'for_view': True,
@@ -784,7 +811,10 @@ def export_package(pkg_name):
                           for res in pkg_info['resources']}
 
     # extract metadata for Sigma2 from the package object
-    sigma2_dict = extract_sigma2_metadata(pkg_info)
+    try:
+        sigma2_dict = extract_sigma2_metadata(pkg_info)
+    except Exception as e:
+        abort(400, "Error when preparing dataset transfer: {0}.".format(e))
 
     # determine the location of the landing page
     landing_page_loc = landing_page_location(pkg_info['name'])
@@ -821,7 +851,9 @@ def export_package(pkg_name):
             # upload data
             warnings = _upload_procedure(token, archive_url, export_dict)  # @@ TODO: add handling of warnings!!
         except requests.exceptions.RequestException as e:
-            error_msg = "Unable to communicate with server: {0}".format(e)
+            #pdb.set_trace()
+            error_msg = "Unable to communicate with server.  Error message was: {0}\n  The reason given was: {1}.".format(e, e.response.text)
+            
         except ValueError as e:
             error_msg = "JSON parse error occurred: {0}".format(e)
         except Exception as e:
