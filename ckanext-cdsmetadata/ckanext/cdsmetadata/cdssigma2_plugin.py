@@ -3,6 +3,7 @@ import ckan.plugins.toolkit as tk
 import ckan.lib.uploader as upl
 import ckan.model as model
 import ckan.logic as logic
+import ckan.lib.helpers as h
 from ckan.lib.base import abort
 from ckan.logic.converters import convert_package_name_or_id_to_id
 from ckan.common import g, config, request
@@ -22,7 +23,7 @@ import copy
 
 import re #@@ For a temporary workaround hack
 #from utils.Sigma2MetadataObjects import classdict as mdclasses
-from Sigma2MetadataObjects import classdict as mdclasses
+from utils.Sigma2MetadataObjects import classdict as mdclasses
 
 import pdb
 
@@ -444,14 +445,17 @@ def _ensure_licenses_exists(token, archive_url, licenses):
     _ensure_entities_exist(token, archive_url + '/api/licence/', [], mdlicense)
 
 
-def _send_off_manifest(token, resource_locations, lpage_zipfile_location):
+def _send_off_manifest(pkg_name, token, resource_locations, lpage_zipfile_location):
 
     # Call API endpoint to inform where DOI should point (landing page location)
+    
+    landing_page_url = h.url_for(qualified=True, controller='package', action='read', id=pkg_name)
 
+    _@@CALL_API_ENDPOINT;
+    
     # Prepare data, and call ingest endpoint to transfer it
-
+    
     #
-
     
     # @@ IMPLEMENT ME
     # (api functionality not yet ready)
@@ -705,7 +709,7 @@ def _landing_page_zipfile_location(landing_page_location):
     return target_location
 
 
-def _upload_procedure(token, archive_url, export_dict):
+def _upload_procedure(pkg_name, token, archive_url, export_dict):
     
     s2data = export_dict['sigma2_metadata']
 
@@ -752,7 +756,6 @@ def _upload_procedure(token, archive_url, export_dict):
     # upload API metadata object
     full_url = archive_url + '/api/dataset/'
 
-    #pdb.set_trace()
     dataset_json = dataset_api_mdata.toJSON()
 
     # @@ The following line is a temporary workaround hack while Sigma2 sorts
@@ -763,7 +766,7 @@ def _upload_procedure(token, archive_url, export_dict):
     
     dataset_json = re.sub('"licence": {.*"id":(.*?)},',
                           '"licence": {"id": "SMEAHEIA"},', dataset_json)
-    #pdb.set_trace()
+
     if dbase_id:
         r = requests.put(full_url + dbase_id,
                          dataset_json,
@@ -780,14 +783,14 @@ def _upload_procedure(token, archive_url, export_dict):
         _landing_page_zipfile_location(export_dict['landing_page_location'])
 
     # send off manifest file to initiate full dataset transfer
-    _send_off_manifest(token,
+    _send_off_manifest(pkg_name, token,
                        export_dict['resource_locations'], lpage_zipfile_loc)
 
     return warnings
 
 
 def export_package(pkg_name):
-    #pdb.set_trace()
+    
     # check credentials
     context = {'model': model, 'session': model.Session,
                'user': g.user, 'for_view': True,
@@ -830,7 +833,7 @@ def export_package(pkg_name):
     if request.method == 'POST':
         # user has confirmed.  Now send off
 
-        #pdb.set_trace()
+        pdb.set_trace()
         error_msg = []
         try:
             # get token
@@ -849,7 +852,7 @@ def export_package(pkg_name):
             token = json.loads(res.content)
 
             # upload data
-            warnings = _upload_procedure(token, archive_url, export_dict)  # @@ TODO: add handling of warnings!!
+            warnings = _upload_procedure(pkg_name, token, archive_url, export_dict)  # @@ TODO: add handling of warnings!!
         except requests.exceptions.RequestException as e:
             #pdb.set_trace()
             error_msg = "Unable to communicate with server.  Error message was: {0}\n  The reason given was: {1}.".format(e, e.response.text)
