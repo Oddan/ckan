@@ -445,22 +445,47 @@ def _ensure_licenses_exists(token, archive_url, licenses):
     _ensure_entities_exist(token, archive_url + '/api/licence/', [], mdlicense)
 
 
-def _send_off_manifest(pkg_name, token, resource_locations, lpage_zipfile_location):
+def _send_off_manifest(pkg_name, dataset_id, token, resource_locations,
+                       lpage_zipfile_location, archive_url):
 
     # Call API endpoint to inform where DOI should point (landing page location)
-    
+    #pdb.set_trace()
     landing_page_url = h.url_for(qualified=True, controller='package', action='read', id=pkg_name)
 
-    _@@CALL_API_ENDPOINT;
-    
     # Prepare data, and call ingest endpoint to transfer it
-    
-    #
-    
-    # @@ IMPLEMENT ME
-    # (api functionality not yet ready)
-    pass
+    r = requests.get(archive_url + '/api/dataset/ingest/root_path',
+                     headers=_create_upload_header(token))
+    requests.Response.raise_for_status(r)
 
+    root_path = json.loads(r.text)['root_path']
+    
+    # determine full name of resources
+    resource_mapping = {}
+    for k in resource_locations.keys():
+        ckan_internal_name = path.basename(resource_locations[k])
+        sigma2_name = path.basename(model.Session.query(model.Resource).get(k).url)
+        resource_mapping[ckan_internal_name] = sigma2_name
+        
+
+    obj = {}
+    obj['dataset_id'] = dataset_id
+    obj['landing_page_url'] = landing_page_url
+    obj['paths'] = [root_path + r for r in resource_locations.values()]
+    obj['path_mapping'] = resource_mapping
+
+    if lpage_zipfile_location is not None:
+        zloc = lpage_zipfile_location
+        obj['paths'].append(root_path + zloc)
+        obj['path_mapping'][path.basename(zloc)] = path.basename(zloc)
+
+    json_obj = json.dumps(obj)
+
+    # we are now ready to send off manifest
+    r = requests.post(archive_url + '/api/dataset/ingest',
+                      json_obj,
+                      headers=_create_upload_header(token))
+
+    requests.Response.raise_for_status(r)
 
 def _unique(ll):
     # utility function to return unique items in list
@@ -776,15 +801,16 @@ def _upload_procedure(pkg_name, token, archive_url, export_dict):
                           dataset_json,
                           headers=_create_upload_header(token))
 
-    requests.Response.raise_for_status(r)
+    #requests.Response.raise_for_status(r) @@@@@@
 
     # ensure landing page is zipped, and get its location
     lpage_zipfile_loc = \
         _landing_page_zipfile_location(export_dict['landing_page_location'])
 
     # send off manifest file to initiate full dataset transfer
-    _send_off_manifest(pkg_name, token,
-                       export_dict['resource_locations'], lpage_zipfile_loc)
+    _send_off_manifest(pkg_name, dbase_id, token,
+                       export_dict['resource_locations'], lpage_zipfile_loc,
+                       archive_url)
 
     return warnings
 
@@ -833,7 +859,7 @@ def export_package(pkg_name):
     if request.method == 'POST':
         # user has confirmed.  Now send off
 
-        pdb.set_trace()
+        #pdb.set_trace()
         error_msg = []
         try:
             # get token
