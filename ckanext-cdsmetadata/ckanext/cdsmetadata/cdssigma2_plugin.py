@@ -21,8 +21,7 @@ import requests
 import pprint
 import copy
 
-import re #@@ For a temporary workaround hack
-#from utils.Sigma2MetadataObjects import classdict as mdclasses
+import re
 from utils.Sigma2MetadataObjects import classdict as mdclasses
 
 import pdb
@@ -449,7 +448,7 @@ def _send_off_manifest(pkg_name, dataset_id, token, resource_locations,
                        lpage_zipfile_location, archive_url):
 
     # Call API endpoint to inform where DOI should point (landing page location)
-    #pdb.set_trace()
+
     landing_page_url = h.url_for(qualified=True, controller='package', action='read', id=pkg_name)
 
     # Prepare data, and call ingest endpoint to transfer it
@@ -783,14 +782,11 @@ def _upload_procedure(pkg_name, token, archive_url, export_dict):
 
     dataset_json = dataset_api_mdata.toJSON()
 
-    # @@ The following line is a temporary workaround hack while Sigma2 sorts
-    # out how licences should be handled in a unified way.  We here remove all
-    # other fields than 'id' from dataset license
-    # dataset_json = re.sub('"licence": {.*"id":(.*?)}',
-    #                       r'"licence": {"id": \1}', dataset_json)
-    
-    dataset_json = re.sub('"licence": {.*"id":(.*?)},',
-                          '"licence": {"id": "SMEAHEIA"},', dataset_json)
+    # When uploading metadata for a dataset, Sigma2 only accepts a reduced
+    # licence object that only takes the id field.  Other fields must be
+    # removed, hence the post-hoc manipulation below.
+    dataset_json = re.sub('"licence": {.*"id":(.*?)}',
+                          r'"licence": {"id": \1}', dataset_json)
 
     if dbase_id:
         r = requests.put(full_url + dbase_id,
