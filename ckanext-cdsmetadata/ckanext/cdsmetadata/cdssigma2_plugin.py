@@ -797,8 +797,6 @@ def _upload_procedure(pkg_name, token, archive_url, export_dict):
                           dataset_json,
                           headers=_create_upload_header(token))
 
-    #requests.Response.raise_for_status(r) @@@@@@
-
     # ensure landing page is zipped, and get its location
     lpage_zipfile_loc = \
         _landing_page_zipfile_location(export_dict['landing_page_location'])
