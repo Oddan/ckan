@@ -15,3 +15,25 @@
   text-indent: -900em;
 
 }
+
+.attribution .sintef-footer-logo {
+  display: block;
+  width: 120px;
+  height: 21px;
+  margin-top: 2px;
+  color: transparent;
+  background: url("../../../base/images/sintef-footer.png") no-repeat top left;
+}
+
+.attribution .nccs-footer-logo {
+  display: block;
+  width: 120px;
+  height: 21px;
+  margin-top: 2px;
+  color: transparent;
+  background: url("../../../base/images/nccs-footer.png") no-repeat top left;
+}
+
+
+
+  /* margin:auto; */
