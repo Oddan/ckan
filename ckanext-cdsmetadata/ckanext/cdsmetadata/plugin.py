@@ -17,7 +17,7 @@ from ckan.lib.base import abort, render
 from resource_category import ResourceCategory, ResourceCategoryMetadataItem
 from resource_category import category_metadata_datatypes
 from ckan.lib import helpers as h
-from plugin2 import get_required_metadata_fields
+from resources_plugin import get_required_metadata_fields
 import re
 from ckan.views import user
 import pdb
